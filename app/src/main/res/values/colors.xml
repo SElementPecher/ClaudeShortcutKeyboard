@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <color name="primary">#2E5BD8</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="background">#F6F7FB</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#E8ECF6</color>
+    <color name="text_primary">#1B1D24</color>
+    <color name="text_secondary">#5A6070</color>
+    <color name="outline">#C9CFDD</color>
+    <color name="success">#1E8E3E</color>
+    <color name="danger">#C5221F</color>
+
+    <!-- Keyboard -->
+    <color name="kb_background">#E3E6EE</color>
+    <color name="kb_key">#FFFFFF</color>
+    <color name="kb_key_pressed">#C9CEDA</color>
+    <color name="kb_key_special">#C7CCD8</color>
+    <color name="kb_key_special_pressed">#AEB4C3</color>
+    <color name="kb_key_text">#1B1D24</color>
+    <color name="kb_accent">#2E5BD8</color>
+    <color name="kb_accent_pressed">#2347AB</color>
+    <color name="kb_on_accent">#FFFFFF</color>
+    <color name="kb_chip">#FFFFFF</color>
+    <color name="kb_chip_selected">#D3DEFA</color>
+    <color name="kb_chip_text">#1B1D24</color>
+    <color name="kb_hint_text">#5A6070</color>
+</resources>
