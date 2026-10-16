@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings for one blank in the shortcut editor. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/AppCard">
+
+    <TextView
+        android:id="@+id/blank_label"
+        style="@style/AppText.Code"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        style="@style/AppText.Label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/blank_type_label" />
+
+    <Spinner
+        android:id="@+id/blank_type"
+        style="@style/AppSpinner"
+        android:contentDescription="@string/blank_type_label"
+        android:saveEnabled="false" />
+
+    <TextView
+        android:id="@+id/blank_type_hint"
+        style="@style/AppText.Help"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/blank_offset_warning"
+        style="@style/AppText.Error"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/blank_offset_warning" />
+
+    <!-- Only for "Pick from a list". -->
+    <LinearLayout
+        android:id="@+id/blank_options_group"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            style="@style/AppText.Label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/blank_options_label" />
+
+        <EditText
+            android:id="@+id/blank_options"
+            style="@style/AppField"
+            android:contentDescription="@string/blank_options_label"
+            android:gravity="top|start"
+            android:hint="@string/blank_options_hint"
+            android:importantForAutofill="no"
+            android:inputType="textMultiLine|textCapSentences"
+            android:minLines="3"
+            android:saveEnabled="false" />
+
+        <CheckBox
+            android:id="@+id/blank_remember"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/app_gap_small"
+            android:minHeight="48dp"
+            android:paddingStart="8dp"
+            android:saveEnabled="false"
+            android:text="@string/blank_remember"
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/app_text_body" />
+    </LinearLayout>
+</LinearLayout>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Drop-down box: a field outline with an arrow at the end. -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="?android:attr/colorControlHighlight">
+    <item android:drawable="@drawable/app_field" />
+    <item
+        android:width="@dimen/app_icon"
+        android:height="@dimen/app_icon"
+        android:end="14dp"
+        android:gravity="center_vertical|end"
+        android:drawable="@drawable/app_ic_dropdown" />
+    <item android:id="@android:id/mask">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFFFF" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+</ripple>

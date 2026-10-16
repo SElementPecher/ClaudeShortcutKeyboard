@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shortcut bar -->
+    <string name="kb_add_shortcut">+ Add a shortcut</string>
+    <string name="kb_open_app">Open Shortcut Keyboard</string>
+    <string name="kb_untitled">Shortcut</string>
+
+    <!-- Fill-in panel. %1$s is the shortcut name, %2$d the blank number, %3$d how many blanks. -->
+    <string name="kb_fill_title">%1$s · %2$d of %3$d</string>
+    <string name="kb_cancel">Stop and close</string>
+    <string name="kb_insert">Insert</string>
+    <string name="kb_back">‹ Back</string>
+    <string name="kb_next">Next ›</string>
+    <string name="kb_type_new">+ Type new</string>
+    <string name="kb_show_list">Show list</string>
+    <string name="kb_type_here">Type here</string>
+    <string name="kb_now">Now</string>
+    <string name="kb_yesterday">Yesterday</string>
+    <string name="kb_today">Today</string>
+    <string name="kb_tomorrow">Tomorrow</string>
+    <string name="kb_day_earlier">−1 day</string>
+    <string name="kb_day_later">+1 day</string>
+    <string name="kb_day_earlier_desc">One day earlier</string>
+    <string name="kb_day_later_desc">One day later</string>
+    <string name="kb_time_minus_1h">−1h</string>
+    <string name="kb_time_minus_15m">−15m</string>
+    <string name="kb_time_minus_5m">−5m</string>
+    <string name="kb_time_plus_5m">+5m</string>
+    <string name="kb_time_plus_15m">+15m</string>
+    <string name="kb_time_plus_1h">+1h</string>
+    <string name="kb_time_minus_1h_desc">One hour earlier</string>
+    <string name="kb_time_minus_15m_desc">15 minutes earlier</string>
+    <string name="kb_time_minus_5m_desc">5 minutes earlier</string>
+    <string name="kb_time_plus_5m_desc">5 minutes later</string>
+    <string name="kb_time_plus_15m_desc">15 minutes later</string>
+    <string name="kb_time_plus_1h_desc">One hour later</string>
+
+    <!-- Enter key -->
+    <string name="kb_action_go">Go</string>
+    <string name="kb_action_search">Search</string>
+    <string name="kb_action_send">Send</string>
+    <string name="kb_action_next">Next</string>
+    <string name="kb_action_done">Done</string>
+    <string name="kb_action_previous">Back</string>
+
+    <!-- Spoken names for keys, for screen readers -->
+    <string name="kb_desc_shift">Shift</string>
+    <string name="kb_desc_shift_on">Shift on</string>
+    <string name="kb_desc_caps_lock">Capitals on</string>
+    <string name="kb_desc_delete">Delete</string>
+    <string name="kb_desc_enter">Enter</string>
+    <string name="kb_desc_space">Space</string>
+    <string name="kb_desc_next_keyboard">Next keyboard</string>
+    <string name="kb_desc_symbols">Numbers and symbols</string>
+    <string name="kb_desc_more_symbols">More symbols</string>
+    <string name="kb_desc_letters">Letters</string>
+</resources>

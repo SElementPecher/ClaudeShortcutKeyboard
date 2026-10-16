@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="app_screen_padding">16dp</dimen>
+    <dimen name="app_card_padding">16dp</dimen>
+    <dimen name="app_gap">12dp</dimen>
+    <dimen name="app_gap_small">8dp</dimen>
+    <dimen name="app_gap_tiny">4dp</dimen>
+    <dimen name="app_button_height">52dp</dimen>
+    <dimen name="app_toolbar_button_height">40dp</dimen>
+    <dimen name="app_field_min_height">56dp</dimen>
+    <dimen name="app_field_padding">14dp</dimen>
+    <dimen name="app_step_badge">36dp</dimen>
+    <dimen name="app_icon">24dp</dimen>
+
+    <dimen name="app_text_heading">19sp</dimen>
+    <dimen name="app_text_section">20sp</dimen>
+    <dimen name="app_text_body">17sp</dimen>
+    <dimen name="app_text_field">18sp</dimen>
+    <dimen name="app_text_help">15sp</dimen>
+    <dimen name="app_text_button">17sp</dimen>
+    <dimen name="app_text_code">18sp</dimen>
+</resources>
