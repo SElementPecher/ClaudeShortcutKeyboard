@@ -47,6 +47,11 @@ class FillSession(
         values[variable.key] = value
     }
 
+    /** Empties a blank, so the preview shows it as [name] again. */
+    fun clearValue(variable: VariableDef) {
+        values.remove(variable.key)
+    }
+
     /** Moves to the next blank. Returns false when there is none. */
     fun next(): Boolean {
         if (isLast) return false
@@ -112,10 +117,10 @@ class FillSession(
                 VariableType.TIME, VariableType.DATE -> variable
                 VariableType.CHOICE -> {
                     if (value.isEmpty()) return@map variable
-                    val known = variable.options.any { it.equals(value, ignoreCase = true) }
+                    val known = variable.options.firstOrNull { it.equals(value, ignoreCase = true) }
                     variable.copy(
-                        options = if (variable.remember && !known) variable.options + value else variable.options,
-                        lastValue = value,
+                        options = if (variable.remember && known == null) variable.options + value else variable.options,
+                        lastValue = known ?: value,
                     )
                 }
                 else -> if (value.isEmpty()) variable else variable.copy(lastValue = value)

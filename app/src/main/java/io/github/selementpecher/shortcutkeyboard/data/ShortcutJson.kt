@@ -54,10 +54,10 @@ object ShortcutJson {
     private fun shortcutFromJson(json: JSONObject): Shortcut {
         val variables = json.optJSONArray("variables") ?: JSONArray()
         return Shortcut(
-            id = json.optString("id").ifBlank { UUID.randomUUID().toString() },
-            name = json.optString("name"),
-            trigger = json.optString("trigger"),
-            template = json.getString("template"),
+            id = text(json, "id").ifBlank { UUID.randomUUID().toString() },
+            name = text(json, "name"),
+            trigger = text(json, "trigger"),
+            template = requiredText(json, "template"),
             variables = (0 until variables.length()).map { variableFromJson(variables.getJSONObject(it)) },
         )
     }
@@ -65,11 +65,19 @@ object ShortcutJson {
     private fun variableFromJson(json: JSONObject): VariableDef {
         val options = json.optJSONArray("options") ?: JSONArray()
         return VariableDef(
-            name = json.getString("name"),
+            name = requiredText(json, "name"),
             type = VariableType.fromId(json.optString("type")),
             options = (0 until options.length()).map { options.getString(it) },
             remember = json.optBoolean("remember", true),
-            lastValue = if (json.has("lastValue") && !json.isNull("lastValue")) json.getString("lastValue") else null,
+            lastValue = text(json, "lastValue").ifEmpty { null },
         )
+    }
+
+    // Android's org.json turns a JSON null into the text "null", so check for it first.
+    private fun text(json: JSONObject, key: String): String = if (json.isNull(key)) "" else json.optString(key)
+
+    private fun requiredText(json: JSONObject, key: String): String {
+        if (json.isNull(key)) throw JSONException("Missing \"$key\"")
+        return json.getString(key)
     }
 }

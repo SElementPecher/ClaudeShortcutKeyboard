@@ -426,7 +426,7 @@ class EditShortcutActivity : Activity() {
     private fun showDialog(newDialog: Dialog) {
         dialog?.dismiss()
         dialog = newDialog
-        newDialog.show()
+        showReadable(newDialog)
     }
 
     companion object {

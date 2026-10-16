@@ -42,7 +42,7 @@ internal class KeysView(
     }
 
     /** Height of the whole key area for a given key height, gaps included. */
-    fun heightFor(keyHeight: Int): Int = ROWS * (keyHeight + gap) + gap
+    fun heightFor(keyHeight: Int): Int = ROWS * (keyHeight + gap) + (gap / 2) * 2
 
     fun render(
         page: KeyboardPage,
@@ -66,7 +66,14 @@ internal class KeysView(
         }
         val pageChanged = page != shownPage
         if (pageChanged) {
-            for ((p, built) in pages) built.view.visibility = if (p == page) View.VISIBLE else View.GONE
+            for ((p, built) in pages) {
+                if (p == page) {
+                    built.view.visibility = View.VISIBLE
+                } else {
+                    built.view.visibility = View.GONE
+                    built.keys.forEach { it.stop() }
+                }
+            }
         }
         for (key in current.keys) {
             when (key.key.kind) {

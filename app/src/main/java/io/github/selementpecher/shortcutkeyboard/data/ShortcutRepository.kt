@@ -51,8 +51,9 @@ object ShortcutRepository {
     /** Adds [shortcuts], replacing any existing ones with the same id. */
     fun merge(context: Context, shortcuts: List<Shortcut>) {
         update(context) { list ->
+            // If the incoming list repeats an id, the last copy wins.
             val incoming = shortcuts.associateBy { it.id }
-            list.map { incoming[it.id] ?: it } + shortcuts.filter { new -> list.none { it.id == new.id } }
+            list.map { incoming[it.id] ?: it } + incoming.values.filter { new -> list.none { it.id == new.id } }
         }
     }
 
@@ -78,7 +79,8 @@ object ShortcutRepository {
     private fun load(context: Context): List<Shortcut> {
         val file = file(context)
         if (!file.baseFile.exists()) {
-            write(context, SampleShortcuts.all)
+            // If this write fails (e.g. a full disk) the samples are still shown and saved on the next change.
+            runCatching { write(context, SampleShortcuts.all) }.onFailure { Log.e(TAG, "Could not save samples", it) }
             return SampleShortcuts.all
         }
         return try {

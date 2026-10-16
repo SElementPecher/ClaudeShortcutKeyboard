@@ -60,9 +60,15 @@ internal class FillInputView(context: Context) : TextView(context) {
     }
 
     private fun refresh() {
-        val text = SpannableStringBuilder(value)
-        if (allSelected && value.isNotEmpty()) {
-            text.setSpan(BackgroundColorSpan(selectedColor), 0, value.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        // Long text: show the end, where the cursor is.
+        val shown = if (value.length > MAX_SHOWN) {
+            ELLIPSIS + value.takeLast(MAX_SHOWN - 1).let { if (Character.isLowSurrogate(it[0])) it.drop(1) else it }
+        } else {
+            value
+        }
+        val text = SpannableStringBuilder(shown)
+        if (allSelected && shown.isNotEmpty()) {
+            text.setSpan(BackgroundColorSpan(selectedColor), 0, shown.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
         val caretStart = text.length
         text.append(CARET)
@@ -72,7 +78,7 @@ internal class FillInputView(context: Context) : TextView(context) {
             text.length,
             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
         )
-        if (value.isEmpty()) {
+        if (shown.isEmpty()) {
             val hintStart = text.length
             text.append(hint)
             text.setSpan(ForegroundColorSpan(hintColor), hintStart, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -102,6 +108,8 @@ internal class FillInputView(context: Context) : TextView(context) {
 
     companion object {
         private const val CARET = "|"
+        private const val ELLIPSIS = "…"
+        private const val MAX_SHOWN = 60
         private const val BLINK_MILLIS = 530L
     }
 }

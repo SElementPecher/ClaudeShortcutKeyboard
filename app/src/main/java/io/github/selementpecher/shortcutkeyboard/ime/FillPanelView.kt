@@ -235,7 +235,7 @@ internal class FillPanelView(
         val flow = FlowLayout(context).apply {
             horizontalSpacing = gap
             verticalSpacing = gap
-            setPadding(0, gap, 0, gap)
+            setPadding(0, gap, 0, 0)
         }
         for (option in content.options) {
             flow.addView(chip(option, selected = option == content.selected) { listener.onChoicePicked(option) })

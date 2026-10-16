@@ -233,7 +233,7 @@ class MainActivity : Activity() {
         emptyText.visibility = if (shortcuts.isEmpty()) View.VISIBLE else View.GONE
 
         val trigger = shortcuts.firstOrNull { it.trigger.isNotBlank() }?.trigger?.trim()
-        tryTip.text = if (trigger != null) getString(R.string.try_tip_trigger, trigger) else getString(R.string.try_tip)
+        tryTip.text = if (trigger != null) getString(R.string.try_tip_trigger, unbreakable(trigger)) else getString(R.string.try_tip)
     }
 
     private fun shortcutRow(shortcut: Shortcut, now: LocalDateTime, locale: Locale): View {
@@ -250,6 +250,9 @@ class MainActivity : Activity() {
         row.setOnClickListener { openEditor(shortcut.id) }
         return row
     }
+
+    /** Stops a line break inside a word like "/meds" (Android may break after the slash). */
+    private fun unbreakable(word: String): String = word.toCharArray().joinToString(WORD_JOINER)
 
     private fun openEditor(id: String?) {
         val intent = Intent(this, EditShortcutActivity::class.java)
@@ -371,7 +374,7 @@ class MainActivity : Activity() {
     private fun showDialog(newDialog: Dialog) {
         dialog?.dismiss()
         dialog = newDialog
-        newDialog.show()
+        showReadable(newDialog)
     }
 
     private fun toast(message: Int) = toast(getString(message))
@@ -394,6 +397,7 @@ class MainActivity : Activity() {
         private const val REQUEST_RESTORE = 2
         private const val STATE_PENDING_RESTORE = "pendingRestore"
         private const val DISABLED_ALPHA = 0.45f
+        private const val WORD_JOINER = "\u2060"
         private const val BACKUP_MIME_TYPE = "application/json"
         private val RESTORE_MIME_TYPES = arrayOf("application/json", "text/plain", "application/octet-stream", "*/*")
 

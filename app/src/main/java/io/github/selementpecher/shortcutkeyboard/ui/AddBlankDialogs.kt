@@ -2,6 +2,8 @@ package io.github.selementpecher.shortcutkeyboard.ui
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.os.Build
+import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -23,6 +25,7 @@ internal object AddBlankDialogs {
     private const val MAX_HOURS = 23
     private const val MINUTE_STEP = 5
     private const val DEFAULT_HOURS = 4
+    private const val PICKER_TEXT_SP = 24f
 
     /**
      * Asks for a blank's name and how it is filled in.
@@ -143,6 +146,13 @@ internal object AddBlankDialogs {
             picker.wrapSelectorWheel = false
             // Scroll or tap the arrows; don't pop up a keyboard for these.
             picker.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                picker.textSize = TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_SP,
+                    PICKER_TEXT_SP,
+                    activity.resources.displayMetrics,
+                )
+            }
         }
 
         fun offsetMinutes(): Long = hours.value * 60L + minutes.value * MINUTE_STEP.toLong()

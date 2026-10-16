@@ -107,7 +107,8 @@ class Template private constructor(val parts: List<Part>) {
             }
             VariableType.DATE -> {
                 val date = parseDate(value) ?: return value
-                val moved = date.plusDays(Math.floorDiv(ref.offsetMinutes, MINUTES_PER_DAY))
+                // A silly offset (a typo, or an old backup) would go past year 999999999: show the date unmoved.
+                val moved = runCatching { date.plusDays(Math.floorDiv(ref.offsetMinutes, MINUTES_PER_DAY)) }.getOrDefault(date)
                 format(moved, ref.format, DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM), locale)
             }
             else -> value
@@ -194,7 +195,11 @@ class Template private constructor(val parts: List<Part>) {
                 for (piece in OFFSET_PIECE.findAll(match.groupValues[2])) {
                     val amount = piece.groupValues[1].toLongOrNull() ?: return null
                     val unit = unitMinutes(piece.groupValues[2]) ?: return null
-                    total += sign * amount * unit
+                    total = try {
+                        Math.addExact(total, Math.multiplyExact(sign * amount, unit))
+                    } catch (e: ArithmeticException) {
+                        return null
+                    }
                 }
                 pos = match.range.last + 1
                 while (pos < trimmed.length && trimmed[pos].isWhitespace()) pos++
@@ -241,13 +246,22 @@ class Template private constructor(val parts: List<Part>) {
             return fallback.withLocale(locale).format(value)
         }
 
-        /** Guesses a sensible type for a new blank from its name. */
+        private val DATE_WORDS = setOf("date", "day", "birthday", "dob")
+        private val TIME_WORDS = setOf("time", "at", "when", "clock")
+        private val NUMBER_WORDS = setOf("number", "num", "count", "amount", "qty", "quantity")
+
+        /** Guesses a sensible type for a new blank from the words in its name, e.g. "arrival time" -> TIME. */
         fun guessType(name: String, usesOffset: Boolean = false): VariableType {
-            val key = VariableDef.keyOf(name)
+            val words = name
+                .replace(Regex("([a-z])([A-Z])"), "$1 $2")
+                .lowercase()
+                .split(Regex("[^a-z0-9]+"))
+                .filter { it.isNotEmpty() }
+                .toSet()
             return when {
-                key.contains("date") || key.contains("day") -> VariableType.DATE
-                usesOffset || key.contains("time") || key == "at" || key.contains("when") -> VariableType.TIME
-                key.contains("number") || key.contains("count") || key.contains("amount") -> VariableType.NUMBER
+                words.any { it in DATE_WORDS } -> VariableType.DATE
+                usesOffset || words.any { it in TIME_WORDS } -> VariableType.TIME
+                words.any { it in NUMBER_WORDS } -> VariableType.NUMBER
                 else -> VariableType.CHOICE
             }
         }

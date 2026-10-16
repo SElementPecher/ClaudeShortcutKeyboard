@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark navigation bar buttons on the light background (Android 8.1+). -->
+    <style name="AppTheme" parent="Base.AppTheme">
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+</resources>
