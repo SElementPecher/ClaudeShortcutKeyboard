@@ -215,7 +215,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         private val back = iconButton(Icons.Kind.BACK, R.string.kb_desc_up) { onBack() }
         private val title = label("", look.type.headingSp, heading = true, gravity = Gravity.CENTER_VERTICAL or Gravity.START)
         private val settings = iconButton(Icons.Kind.GEAR, R.string.kb_desc_open_app) { onSettings() }
-        private val abc = TileView(context, theme)
+        private val strip = row()
         private val dots = DotsView(context, theme)
         private val previous = iconButton(Icons.Kind.BACK, R.string.kb_desc_prev_page) { onPrevious() }
         private val next = iconButton(Icons.Kind.FORWARD, R.string.kb_desc_next_page) { onNext() }
@@ -258,9 +258,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
             body.addView(emptyBox, FrameLayout.LayoutParams(MATCH, MATCH))
             root.addView(body, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { setMargins(0, gap / 4, 0, gap / 4) })
 
-            val strip = row()
-            abc.minimumWidth = theme.dp(ABC_MIN_WIDTH_DP)
-            strip.addView(abc, LinearLayout.LayoutParams(WRAP, MATCH))
+            // The phone's own keyboard switcher does the job of an ABC key, so the strip only pages.
             strip.addView(dots, LinearLayout.LayoutParams(0, MATCH, 1f))
             strip.addView(previous, iconParams())
             strip.addView(next, iconParams(end = -theme.dp(8)))
@@ -289,13 +287,8 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
                 )
             }
 
-            abc.bind(
-                TileSpec(
-                    getString(R.string.kb_abc), TileLook(TileLook.Kind.SPECIAL, pill = true), getString(R.string.kb_desc_abc),
-                    icon = Icons.Kind.KEYBOARD, textSp = look.type.bodySp, onClick = model.onAbc,
-                ),
-            )
-            dots.visibility = if (paged) VISIBLE else INVISIBLE
+            strip.visibility = if (paged) VISIBLE else GONE
+            dots.visibility = VISIBLE
             dots.set(model.pageCount, model.page)
             dots.contentDescription = getString(R.string.kb_desc_page, model.page + 1, model.pageCount)
             previous.visibility = if (paged) VISIBLE else GONE
@@ -581,7 +574,6 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         private const val SMALL_TITLE_SP = 15f
         private const val EMPTY_EMOJI_SP = 40f
         private const val READING_LINE_SPACING = 1.3f
-        private const val ABC_MIN_WIDTH_DP = 112
         private const val MAX_BAR_EXTRA_DP = 12
         private const val LIFT_DP = 18
         private const val SHADOW_COLOUR = 0xFF000000.toInt()
