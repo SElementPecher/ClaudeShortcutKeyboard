@@ -190,6 +190,7 @@ class MainActivity : Activity() {
             val enabled = KeyboardSetup.isEnabled(this@MainActivity)
             // One step only: once the keyboard is turned on, the whole box goes away.
             if (selecting) content.add(selectionHeader(library)) else if (!enabled) content.add(setupCard())
+            if (!selecting && currentFolderId == null && shouldOfferExamples(library)) content.add(examplesOffer(), top = if (enabled) 0 else 16)
 
             val folder = library.folder(currentFolderId)
             if (folder != null && !selecting) content.add(folderHeader(library, folder), top = 16)
@@ -212,6 +213,32 @@ class MainActivity : Activity() {
             }
             shownIds = children.map { it.id }.toSet()
         }
+    }
+
+    /** Phones that were set up before the examples existed are offered them once. */
+    private fun shouldOfferExamples(library: Library): Boolean =
+        !Onboarding.examplesAsked(this) && io.github.selementpecher.shortcutkeyboard.data.SampleShortcuts.all.none { library.shortcut(it.id) != null }
+
+    private fun examplesOffer(): View = with(ui) {
+        val card = card()
+        card.add(heading(getString(R.string.examples_offer_title)))
+        card.add(small(getString(R.string.examples_offer_help)), top = 4)
+        val add = primaryButton(getString(R.string.examples_button)) {
+            Onboarding.setExamplesAsked(this@MainActivity)
+            try {
+                ShortcutRepository.addExamples(this@MainActivity)
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not add the examples", e)
+                screen.snack(getString(R.string.edit_save_failed), error = true)
+            }
+            render()
+        }
+        val no = secondaryButton(getString(R.string.examples_no)) {
+            Onboarding.setExamplesAsked(this@MainActivity)
+            render()
+        }
+        card.add(buttonRow(add, no), top = 14)
+        card
     }
 
     /** The two buttons at the bottom: make something new, or (while choosing) delete what is chosen. */

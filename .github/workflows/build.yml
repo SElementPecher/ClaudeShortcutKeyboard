@@ -36,7 +36,7 @@ jobs:
       - name: Upload the APK
         uses: actions/upload-artifact@v4
         with:
-          name: ShortcutKeyboard-apk
+          name: quiKey-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
@@ -71,7 +71,7 @@ jobs:
       - name: Download the APK
         uses: actions/download-artifact@v4
         with:
-          name: ShortcutKeyboard-apk
+          name: quiKey-apk
           path: apk
 
       - name: Rename the APK
@@ -82,7 +82,7 @@ jobs:
             echo "Expected exactly one APK, found ${#files[@]}" >&2
             exit 1
           fi
-          mv "${files[0]}" ShortcutKeyboard.apk
+          mv "${files[0]}" quiKey.apk
 
       - name: Replace the "Latest build" release
         env:
@@ -90,8 +90,8 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           gh release delete latest-build --cleanup-tag -y || true
-          gh release create latest-build ShortcutKeyboard.apk \
+          gh release create latest-build quiKey.apk \
             --prerelease \
             --title "Latest build" \
-            --notes "The newest quiKey app. On your phone, tap ShortcutKeyboard.apk below to download it, then open it to install. Built from ${GITHUB_REF_NAME} at ${GITHUB_SHA::7}." \
+            --notes "The newest quiKey app. On your phone, tap quiKey.apk below to download it, then open it to install. Built from ${GITHUB_REF_NAME} at ${GITHUB_SHA::7}." \
             --target "$GITHUB_SHA"

@@ -15,7 +15,7 @@
     <string name="tour_2_note">The coloured words are the parts that change.</string>
 
     <string name="tour_3_title">Keep things tidy</string>
-    <string name="tour_3_text">Put quiKeys in folders. Press and hold a tile, then drag it to move it. To delete many at once, tap the tick at the top.</string>
+    <string name="tour_3_text">Put quiKies in folders. Press and hold a tile, then drag it to move it. To delete many at once, tap the tick at the top.</string>
     <string name="tour_3_folder">Kids</string>
     <string name="tour_3_folder_items">3 items</string>
     <string name="tour_3_shortcut">Running late</string>
@@ -30,12 +30,16 @@
     <string name="tour_again_help">A quick look at how it works.</string>
     <string name="tour_again_button">Show the tour</string>
 
-    <string name="examples_title">Example quiKeys</string>
-    <string name="examples_help">Add the starter folders and quiKeys again. Yours stay as they are.</string>
+    <string name="examples_title">Example quiKies</string>
+    <string name="examples_help">Add the starter folders and quiKies again. Yours stay as they are.</string>
     <string name="examples_button">Add the examples</string>
     <plurals name="examples_added">
         <item quantity="one">Added %d example quiKey.</item>
-        <item quantity="other">Added %d example quiKeys.</item>
+        <item quantity="other">Added %d example quiKies.</item>
     </plurals>
     <string name="examples_none">You already have all the examples.</string>
+
+    <string name="examples_offer_title">Want some example quiKies?</string>
+    <string name="examples_offer_help">A few ready-made ones to try: Kids, Running late and more. You can change or delete them.</string>
+    <string name="examples_no">No thanks</string>
 </resources>

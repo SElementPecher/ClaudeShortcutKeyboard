@@ -9,7 +9,7 @@ There are **no letter keys**. You tap tiles, and it does the rest.
 
 - You save a **quiKey**. A quiKey is a message you send a lot.
 - The message has **blanks** in it, like `{child}` or `{time}`.
-- quiKeys live on **tiles**. Tiles can sit inside **folders**.
+- quiKies live on **tiles**. Tiles can sit inside **folders**.
 - When you use a quiKey, the keyboard asks **one question at a time**.
 - Then it types the **whole message** for you.
 
@@ -38,7 +38,7 @@ Do these steps **on your phone**.
 1. Open this page on GitHub.
 2. Find **Releases** and tap **Latest build**.
    (Or go straight to the [Latest build page](../../releases/tag/latest-build).)
-3. Tap **ShortcutKeyboard.apk** to download it.
+3. Tap **quiKey.apk** to download it.
 4. Open the file when it has downloaded.
 5. Your phone may say it **cannot install apps from this source**.
    - Tap **Settings**.
@@ -48,7 +48,7 @@ Do these steps **on your phone**.
 7. Tap **Open**.
 
 **Getting a new version:** do the same steps again.
-Your saved quiKeys **stay safe**.
+Your saved quiKies **stay safe**.
 
 ---
 
@@ -146,8 +146,8 @@ The keyboard **remembers** your answers. New answers are added to the list for n
 
 - This keyboard has **no internet access**. The app does not ask for it.
 - What you type **stays on your phone**.
-- Your quiKeys are saved **only on your phone**.
-- To keep a copy, use **Back up quiKeys** in the app menu.
+- Your quiKies are saved **only on your phone**.
+- To keep a copy, use **Back up quiKies** in the app menu.
 
 ---
 
@@ -176,8 +176,8 @@ The APK is in `app/build/outputs/apk/debug/`.
 - Code lives in `app/src/main/java/io/github/selementpecher/shortcutkeyboard/`:
   - `template/` reads messages and fills in blanks (`{time+4h}`, `{name|h:mm a}`).
   - `fill/` steps through the blanks one at a time.
-  - `model/` has quiKeys, folders, and the folder rules (`Library`).
-  - `data/` saves quiKeys as JSON in app storage, and does backups.
+  - `model/` has quiKies, folders, and the folder rules (`Library`).
+  - `data/` saves quiKies as JSON in app storage, and does backups.
   - `look/` has the three looks (colours, shapes, text sizes) and the chosen one.
   - `ime/` is the tile keyboard (grid, drag, question screens). `ui/` is the app screens; `ui/editor/` is the quiKey editor.
   - All screens are built in code from the current look.

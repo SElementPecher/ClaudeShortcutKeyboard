@@ -57,31 +57,31 @@
     <string name="shortcut_deleted">Deleted</string>
 
     <!-- Backup and restore -->
-    <string name="backup_file_name" translatable="false">quiKeys-backup.json</string>
+    <string name="backup_file_name" translatable="false">quiKies-backup.json</string>
     <string name="backup_failed">Could not save the backup. Please try again.</string>
     <string name="no_file_app">Your phone has no app for picking files.</string>
     <string name="restore_failed">Could not open that file. Please try again.</string>
-    <string name="restore_bad_file">That file is not a quiKeys backup.</string>
-    <string name="restore_empty">There are no quiKeys in that file.</string>
-    <string name="restore_message">Add them to the quiKeys and folders you have now?\n\nOr replace everything you have now with them? This removes what you have now.</string>
-    <string name="restore_add">Add to my quiKeys</string>
+    <string name="restore_bad_file">That file is not a quiKies backup.</string>
+    <string name="restore_empty">There are no quiKies in that file.</string>
+    <string name="restore_message">Add them to the quiKies and folders you have now?\n\nOr replace everything you have now with them? This removes what you have now.</string>
+    <string name="restore_add">Add to my quiKies</string>
     <string name="restore_replace">Replace all</string>
     <string name="restore_save_failed">Could not restore. Please try again.</string>
     <plurals name="backup_saved">
         <item quantity="one">Saved %d quiKey to the backup.</item>
-        <item quantity="other">Saved %d quiKeys to the backup.</item>
+        <item quantity="other">Saved %d quiKies to the backup.</item>
     </plurals>
     <plurals name="restore_found">
         <item quantity="one">Found %d quiKey</item>
-        <item quantity="other">Found %d quiKeys</item>
+        <item quantity="other">Found %d quiKies</item>
     </plurals>
     <plurals name="restore_added">
         <item quantity="one">Added %d quiKey.</item>
-        <item quantity="other">Added %d quiKeys.</item>
+        <item quantity="other">Added %d quiKies.</item>
     </plurals>
     <plurals name="restore_replaced">
         <item quantity="one">You now have %d quiKey.</item>
-        <item quantity="other">You now have %d quiKeys.</item>
+        <item quantity="other">You now have %d quiKies.</item>
     </plurals>
 
     <!-- How blanks work -->
@@ -122,8 +122,8 @@
     <string name="look_preview_shortcut_2">Running late</string>
     <string name="look_preview_folder">Kids</string>
     <string name="settings_backup_title">Back up and restore</string>
-    <string name="settings_backup_help">Save your quiKeys in a file. You can get them back from it later.</string>
-    <string name="settings_backup_button">Back up my quiKeys</string>
+    <string name="settings_backup_help">Save your quiKies in a file. You can get them back from it later.</string>
+    <string name="settings_backup_button">Back up my quiKies</string>
     <string name="settings_restore_button">Restore from a backup</string>
     <string name="settings_try_title">Try the keyboard</string>
     <string name="settings_help_title">How it works</string>

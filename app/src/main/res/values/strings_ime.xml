@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Grid -->
-    <string name="kb_title">quiKeys</string>
+    <string name="kb_title">quiKies</string>
     <string name="kb_new">New</string>
     <string name="kb_abc">ABC</string>
     <string name="kb_new_big">Add a quiKey</string>

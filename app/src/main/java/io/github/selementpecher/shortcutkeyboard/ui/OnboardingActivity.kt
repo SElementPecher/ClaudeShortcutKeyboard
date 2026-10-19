@@ -26,6 +26,23 @@ internal object Onboarding {
         true
     }
 
+    private const val KEY_EXAMPLES_ASKED = "examples_asked"
+
+    /** True once the home screen has offered the example quiKeys (taken or turned down). */
+    fun examplesAsked(context: Context): Boolean = try {
+        context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_EXAMPLES_ASKED, false)
+    } catch (e: RuntimeException) {
+        true
+    }
+
+    fun setExamplesAsked(context: Context) {
+        try {
+            context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_EXAMPLES_ASKED, true).apply()
+        } catch (e: RuntimeException) {
+            // Being asked once more is harmless.
+        }
+    }
+
     fun setDone(context: Context) {
         try {
             context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_DONE, true).apply()

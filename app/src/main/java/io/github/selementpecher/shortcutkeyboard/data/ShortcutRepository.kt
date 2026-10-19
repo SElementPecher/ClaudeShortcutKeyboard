@@ -52,7 +52,7 @@ object ShortcutRepository {
 
     fun delete(context: Context, id: String) = update(context) { it.withoutShortcut(id) }
 
-    /** Adds the starter folders and quiKeys that are missing, without touching anything you have. */
+    /** Adds the starter folders and quiKies that are missing, without touching anything you have. */
     fun addExamples(context: Context) = update(context) { it.withExamples(SampleShortcuts.library) }
 
     /** Deletes several shortcuts and folders in one go (one save). */
