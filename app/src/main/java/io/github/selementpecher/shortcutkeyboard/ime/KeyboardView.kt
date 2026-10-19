@@ -280,6 +280,8 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
             top.addView(settings, iconParams(end = -padding))
             title.ellipsize = TextUtils.TruncateAt.START
             title.isSingleLine = true
+            // A little room so the first letter's edge is never clipped.
+            title.setPadding(theme.dp(2), 0, theme.dp(2), 0)
             root.addView(top, LinearLayout.LayoutParams(MATCH, topBarHeight))
 
             val (columns, rows) = KeyboardMetrics.gridShape(look, compact)
@@ -311,6 +313,8 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
             back.setHighlighted(model.backHighlighted)
             (title.layoutParams as LinearLayout.LayoutParams).marginStart = if (model.inFolder) -theme.dp(4) else 0
             title.text = if (model.inFolder) model.pathText else getString(R.string.kb_title)
+            // The breadcrumb keeps its end when it is long; the plain title never loses its first letter.
+            title.ellipsize = if (model.inFolder) TextUtils.TruncateAt.START else TextUtils.TruncateAt.END
             title.contentDescription = title.text
             val paged = model.pageCount > 1
 
