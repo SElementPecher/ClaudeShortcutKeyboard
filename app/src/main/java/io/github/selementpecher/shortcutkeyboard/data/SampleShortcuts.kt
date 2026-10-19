@@ -151,6 +151,15 @@ object SampleShortcuts {
             order = 5,
             icon = "📞",
         ),
+        // ---- Top level ----
+        Shortcut(
+            id = "sample-sick-day",
+            name = "Sick day",
+            template = "I'm off sick today, back on {date}.",
+            variables = listOf(VariableDef("date", VariableType.DATE)),
+            order = 2,
+            icon = "🤒",
+        ),
     )
 
     val library: Library = Library(folders, all)
