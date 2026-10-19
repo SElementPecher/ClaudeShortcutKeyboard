@@ -6,6 +6,7 @@ import android.text.Editable
 import android.text.InputFilter
 import android.text.InputType
 import android.text.TextWatcher
+import android.graphics.Color
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
@@ -409,8 +410,54 @@ internal class ChainPanel(
 
     /** A pill with no values to change (a clock time, a date, a number): nothing to type, just the extras below. */
     private fun questionLevel(flow: AddFlow) = with(ui) {
-        view.add(small(str(R.string.chain_nothing_to_change)))
+        view.addView(fixedPreview(flow), lp())
+        view.add(small(str(R.string.chain_fixed_note)), top = 12)
         typed = null
+    }
+
+    /**
+     * What the keyboard will ask for this part, drawn faded with a dashed outline so it is plainly a preview and
+     * not something to tap or edit.
+     */
+    private fun fixedPreview(flow: AddFlow): View = with(ui) {
+        val kind = flow.kind() ?: BlankKind.TIME
+        val name = flow.question.replace(BlankQuestions.UNIQUE_MARK, "").ifBlank { BlankQuestions.default(kind) }
+        val question = activity.getString(
+            when (kind) {
+                BlankKind.DATE -> R.string.kb_question_date
+                BlankKind.NUMBER -> R.string.kb_question_number
+                else -> R.string.kb_question_time
+            },
+            name,
+        )
+        val options: List<String> = when (kind) {
+            BlankKind.DATE -> listOf(R.string.kb_today, R.string.kb_yesterday, R.string.kb_tomorrow, R.string.kb_date_other).map { str(it) }
+            BlankKind.NUMBER -> listOf("1", "2", "3", "…", "OK")
+            else -> listOf(
+                activity.getString(R.string.kb_time_now, java.time.LocalTime.now().let { String.format("%02d:%02d", it.hour, it.minute) }).replace('\n', ' '),
+                str(R.string.kb_time_ago_15), str(R.string.kb_time_ago_30), str(R.string.kb_time_ago_60), str(R.string.kb_time_other),
+            )
+        }
+        val card = column().apply {
+            val r = look.shape.cardRadiusDp.coerceAtMost(20).toFloat()
+            background = shape(Color.TRANSPARENT, r, palette.inkSoft, 1.5f, dashed = true)
+            setPadding(dp(16), dp(14), dp(16), dp(16))
+            alpha = 0.7f
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+        }
+        card.add(label(str(R.string.chain_fixed_label)))
+        card.add(heading(question), top = 6)
+        val chips = flow(8)
+        for (o in options) {
+            chips.addView(chip(o).apply {
+                isClickable = false
+                isFocusable = false
+                background = shape(palette.surfaceAlt, 999f)
+            })
+        }
+        card.add(chips, top = 12)
+        card.contentDescription = str(R.string.chain_fixed_label) + ": " + question
+        card
     }
 
     private fun answersLevel(flow: AddFlow) = with(ui) {

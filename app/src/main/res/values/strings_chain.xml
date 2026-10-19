@@ -57,8 +57,7 @@
     <string name="chain_show_both">Both</string>
 
     <!-- The question and the answers -->
-    <string name="chain_title_question">Edit this part</string>
-    <string name="chain_nothing_to_change">Nothing to type here. The keyboard asks for it each time.</string>
+    <string name="chain_title_question">This part is set</string>
     <string name="chain_title_answers">What are the answers?</string>
     <string name="chain_title_values">Its answers</string>
     <string name="chain_answers_help">The keyboard shows them as buttons.</string>
@@ -73,4 +72,6 @@
     <string name="chain_name_label">Name (optional)</string>
     <string name="chain_name_hint">List</string>
     <string name="chain_show_current"> · now chosen</string>
+    <string name="chain_fixed_label">What the keyboard will ask</string>
+    <string name="chain_fixed_note">This is only a preview. This part is set, so there is nothing here to edit.</string>
 </resources>
