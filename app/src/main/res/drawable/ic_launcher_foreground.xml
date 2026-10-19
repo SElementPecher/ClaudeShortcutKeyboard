@@ -1,24 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A keyboard with a pair of curly brackets (the "blanks") above it. 108dp canvas, safe zone 66dp. -->
+<!-- The Calm look as an icon: a 2 x 3 grid of soft pastel tiles, like the keyboard. 108dp canvas, safe zone 66dp. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- keyboard body -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M32,52h44a5,5 0 0 1 5,5v15a5,5 0 0 1 -5,5h-44a5,5 0 0 1 -5,-5v-15a5,5 0 0 1 5,-5z" />
-    <!-- keys -->
+        android:fillColor="#CFE8DC"
+        android:pathData="M27,21h18a6,6 0 0 1 6,6v6a6,6 0 0 1 -6,6h-18a6,6 0 0 1 -6,-6v-6a6,6 0 0 1 6,-6z" />
     <path
-        android:fillColor="#2E5BD8"
-        android:pathData="M33,57h5v4h-5z M41,57h5v4h-5z M49,57h5v4h-5z M57,57h5v4h-5z M65,57h5v4h-5z M73,57h3v4h-3z M35,64h5v4h-5z M43,64h5v4h-5z M51,64h5v4h-5z M59,64h5v4h-5z M67,64h7v4h-7z M40,71h28v3h-28z" />
-    <!-- { } -->
+        android:fillColor="#CFE3F7"
+        android:pathData="M63,21h18a6,6 0 0 1 6,6v6a6,6 0 0 1 -6,6h-18a6,6 0 0 1 -6,-6v-6a6,6 0 0 1 6,-6z" />
     <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="3"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M46,30c-4,0 -5,2 -5,5v3c0,2 -1,3 -3,3c2,0 3,1 3,3v3c0,3 1,4 5,4 M62,30c4,0 5,2 5,5v3c0,2 1,3 3,3c-2,0 -3,1 -3,3v3c0,3 -1,4 -5,4" />
+        android:fillColor="#F9E6B0"
+        android:pathData="M27,45h18a6,6 0 0 1 6,6v6a6,6 0 0 1 -6,6h-18a6,6 0 0 1 -6,-6v-6a6,6 0 0 1 6,-6z" />
+    <path
+        android:fillColor="#F8D5D5"
+        android:pathData="M63,45h18a6,6 0 0 1 6,6v6a6,6 0 0 1 -6,6h-18a6,6 0 0 1 -6,-6v-6a6,6 0 0 1 6,-6z" />
+    <path
+        android:fillColor="#DDD6F5"
+        android:pathData="M27,69h18a6,6 0 0 1 6,6v6a6,6 0 0 1 -6,6h-18a6,6 0 0 1 -6,-6v-6a6,6 0 0 1 6,-6z" />
+    <path
+        android:fillColor="#FBDCC4"
+        android:pathData="M63,69h18a6,6 0 0 1 6,6v6a6,6 0 0 1 -6,6h-18a6,6 0 0 1 -6,-6v-6a6,6 0 0 1 6,-6z" />
 </vector>
