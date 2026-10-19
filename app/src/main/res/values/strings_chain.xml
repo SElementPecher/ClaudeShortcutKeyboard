@@ -70,4 +70,6 @@
     <!-- Changing something already there -->
     <string name="chain_make_plain">Make it plain words</string>
     <string name="chain_remove">Remove it</string>
+    <string name="chain_name_label">Name (optional)</string>
+    <string name="chain_name_hint">List</string>
 </resources>

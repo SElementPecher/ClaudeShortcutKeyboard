@@ -91,7 +91,7 @@ class AddFlowTest {
         f.advance()
         assertTrue(f.isDone)
         val spec = f.spec()
-        assertEquals("Which", spec.question)
+        assertEquals("List", spec.question)
         assertEquals(BlankKind.LIST, spec.kind)
         assertEquals(listOf("Sam", "Ben"), spec.answers)
         assertEquals("Sam", spec.example)
@@ -150,10 +150,24 @@ class AddFlowTest {
 
     @Test
     fun aListIsNamedByDefaultAndKeptApartFromSameNames() {
-        val f = flow(taken = setOf("Which"))
+        val f = flow(taken = setOf("List"))
         f.chooseKind(BlankKind.LIST)
         f.setAnswer(0, "x"); f.advance()
-        assertEquals("Which\u200B", f.spec().question)
+        assertEquals("List\u200B", f.spec().question)
+    }
+
+    @Test
+    fun aListKeepsTheNameItIsGivenAndIsCalledListWithout() {
+        val named = flow()
+        named.chooseKind(BlankKind.LIST)
+        named.setQuestion("  Medicine ")
+        named.setAnswer(0, "Calpol"); named.advance()
+        assertEquals("Medicine", named.spec().question)
+        val unnamed = flow()
+        unnamed.chooseKind(BlankKind.LIST)
+        unnamed.setQuestion("   ")
+        unnamed.setAnswer(0, "Calpol"); unnamed.advance()
+        assertEquals("List", unnamed.spec().question)
     }
 
     // ---- back and cancel ----

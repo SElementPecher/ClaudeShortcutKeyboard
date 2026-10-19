@@ -42,7 +42,8 @@ object BlankQuestions {
 
     /** Questions offered as one-tap suggestions for each kind. */
     fun suggestions(kind: BlankKind): List<String> = when (kind) {
-        BlankKind.LIST -> listOf("Which", "Who", "What", "How much", "Where")
+        // A list is not offered ready-made names: unnamed, it is simply called "List".
+        BlankKind.LIST -> listOf("List")
         BlankKind.TIME -> listOf("When", "What time")
         BlankKind.DATE -> listOf("Date", "What day")
         BlankKind.NUMBER -> listOf("How many", "How much")

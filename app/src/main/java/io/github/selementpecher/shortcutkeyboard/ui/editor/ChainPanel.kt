@@ -400,8 +400,22 @@ internal class ChainPanel(
     }
 
     private fun answersLevel(flow: AddFlow) = with(ui) {
+        // The list's name: optional, no suggestions. Left empty, it is called "List".
+        view.add(label(str(R.string.chain_name_label)), bottom = 6)
+        view.add(
+            field(str(R.string.chain_name_hint)).apply {
+                setText(flow.question.takeUnless { it == BlankQuestions.default(BlankKind.LIST) }.orEmpty())
+                imeOptions = EditorInfo.IME_ACTION_NEXT
+                addTextChangedListener(afterText { s ->
+                    flow.setQuestion(s)
+                    listener.onChanged()
+                })
+            },
+            bottom = 16,
+        )
         view.add(small(str(R.string.chain_answers_help)), bottom = 10)
         val rows = column()
+        val answerFields = ArrayList<EditText>()
         var firstField: EditText? = null
         flow.answers.forEachIndexed { index, answer ->
             val line = row()
@@ -416,6 +430,7 @@ internal class ChainPanel(
                 })
             }
             if (firstField == null) firstField = f
+            answerFields += f
             line.addView(f, lp(width = 0, weight = 1f))
             if (flow.answers.size > 1) {
                 line.addView(
@@ -437,7 +452,7 @@ internal class ChainPanel(
             top = 4,
         )
         // Start in the first empty row (or the first row).
-        typed = flow.answers.indexOfFirst { it.isBlank() }.let { i -> fieldsIn(view).getOrNull(max(i, 0)) } ?: firstField
+        typed = flow.answers.indexOfFirst { it.isBlank() }.let { i -> answerFields.getOrNull(max(i, 0)) } ?: firstField
     }
 
     private fun editExtras() = with(ui) {
