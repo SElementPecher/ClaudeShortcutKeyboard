@@ -89,6 +89,10 @@ No curly brackets to type. The app does that part for you.
 - Choose from **16 colours**, or leave it on **Automatic colour**.
 - For a folder: press and hold it, then tap **Rename**. For a shortcut: open it, on the first step.
 
+## Text size
+
+In **Settings → Text size** choose **Normal** or **Large**. It changes the app and the keyboard.
+
 ## Pick a look
 
 Open **Settings** (the ⚙ at the top of the app) and choose **Look**:

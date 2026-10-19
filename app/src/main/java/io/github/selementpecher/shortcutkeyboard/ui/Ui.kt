@@ -460,7 +460,7 @@ internal class Ui(val context: Context, baseLook: Look) {
                 layoutParams = lp(top = if (index == 0) 0 else gapDp)
             }
             for (i in 0 until columns) {
-                val cell = chunk.getOrNull(i) ?: View(context).apply { visibility = View.INVISIBLE }
+                val cell = chunk.getOrNull(i) ?: android.widget.Space(context)
                 (cell.parent as? ViewGroup)?.removeView(cell)
                 line.addView(cell, lp(width = 0, height = ViewGroup.LayoutParams.WRAP_CONTENT, start = if (i == 0) 0 else gapDp, weight = 1f))
             }
