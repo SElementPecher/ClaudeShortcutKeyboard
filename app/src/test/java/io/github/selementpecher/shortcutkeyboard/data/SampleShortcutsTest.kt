@@ -64,4 +64,19 @@ class SampleShortcutsTest {
         val session = FillSession(medicine, { now }, Locale.UK)
         assertEquals(listOf("child", "medicine", "dose", "time"), session.variables.map { it.name })
     }
+
+    @Test
+    fun `the running late samples print what the owner expects`() {
+        fun session(id: String) = FillSession(SampleShortcuts.all.first { it.id == id }, { now }, Locale.UK)
+        assertEquals("Running late, sorry! I'll be there in 10 mins (20:30).", session("sample-running-late").result())
+        val onMyWay = session("sample-on-my-way")
+        assertTrue(onMyWay.isEmpty)
+        assertEquals("On my way, I'll be there in 10 mins.", onMyWay.result())
+        val meet = session("sample-meet-you-there")
+        meet.setValue(meet.variables.first { it.name == "Place" }, "the station")
+        assertEquals("I'll meet you at the station at 20:20.", meet.result())
+        val train = session("sample-train-delay")
+        train.useDefaults()
+        assertEquals("My train is delayed by 10 mins. Now due at 20:20.", train.result())
+    }
 }
