@@ -464,8 +464,7 @@ class MainActivity : Activity() {
             line.addView(name.apply { layoutParams = lp(width = 0, weight = 1f) })
             dialog.body.add(line, top = 12)
             dialog.body.add(error, top = 8)
-            dialog.body.add(label(getString(R.string.color_label)), top = 18)
-            dialog.body.add(ColorPicker.view(ui, color) { color = it }, top = 8)
+            dialog.body.add(ColorPicker.collapsible(ui, color) { color = it }, top = 16)
             dialog.buttons(
                 listOf(
                     DialogButton(getString(if (existing == null) R.string.folder_create else R.string.folder_rename_save)) {

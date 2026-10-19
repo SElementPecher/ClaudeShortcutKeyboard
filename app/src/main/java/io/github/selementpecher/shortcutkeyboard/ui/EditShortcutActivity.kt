@@ -295,12 +295,11 @@ class EditShortcutActivity : Activity() {
             }
             val error = errorLine(R.string.editor_name_error, nameError)
             field.addTextChangedListener(watcher { name = it; if (nameError) { nameError = false; error.visibility = View.GONE } })
-            line.addView(pictureButton({ icon }, { name }) { icon = it }, lp(width = ViewGroup.LayoutParams.WRAP_CONTENT, end = 14))
+            line.addView(pictureButton({ icon }, { name }) { icon = it }, LinearLayout.LayoutParams(dp(Ui.MAIN_ACTION_DP), dp(Ui.MAIN_ACTION_DP)).apply { marginEnd = dp(14) })
             line.addView(field, lp(width = 0, weight = 1f))
             content.add(line, top = 24)
             content.add(error)
-            content.add(label(getString(R.string.color_label)), top = 24)
-            content.add(ColorPicker.view(ui, color) { color = it }, top = 8)
+            content.add(ColorPicker.collapsible(ui, color) { color = it }, top = 16)
 
             screen.bottomBar.addView(primaryButton(getString(R.string.editor_next)) { next() })
             if (isNew && name.isEmpty()) showKeyboardFor(field)
@@ -465,7 +464,7 @@ class EditShortcutActivity : Activity() {
                 contentDescription = name + ". " + getString(R.string.editor_name_row_hint)
                 setOnClickListener { editNameAndPicture() }
             }
-            nameCard.addView(pictureCircle(52, 26f), lp(width = ViewGroup.LayoutParams.WRAP_CONTENT, end = 14))
+            nameCard.addView(pictureCircle(52, 26f), LinearLayout.LayoutParams(dp(Ui.MAIN_ACTION_DP), dp(Ui.MAIN_ACTION_DP)).apply { marginEnd = dp(14) })
             val names = column()
             names.addView(heading(name.ifBlank { getString(R.string.editor_title_new) }).apply { maxLines = 2 })
             names.add(small(getString(R.string.editor_name_row_hint)), top = 2)
@@ -571,20 +570,17 @@ class EditShortcutActivity : Activity() {
 
     /** A round picture button: shows the chosen picture or a plus, and opens the picture grid. */
     private fun pictureButton(getIcon: () -> String, getName: () -> String, setIcon: (String) -> Unit): View = with(ui) {
-        val column = column().apply { gravity = Gravity.CENTER_HORIZONTAL }
         lateinit var circle: TextView
         fun refresh() {
             val chosen = getIcon()
-            circle.text = if (chosen.isBlank()) "＋" else glyphFor(chosen, getName())
+            circle.text = if (chosen.isBlank()) "+" else glyphFor(chosen, getName())
         }
-        circle = pictureCircle(64, 30f).also { it.contentDescription = getString(R.string.editor_picture_desc) }
+        circle = pictureCircle(Ui.MAIN_ACTION_DP, 26f).also { it.contentDescription = getString(R.string.editor_picture_desc) }
         circle.setOnClickListener {
             IconPicker.show(this@EditShortcutActivity, ui, getIcon()) { picked -> setIcon(picked); refresh() }
         }
         refresh()
-        column.addView(circle, LinearLayout.LayoutParams(dp(64), dp(64)))
-        column.add(small(getString(R.string.editor_picture)), top = 4)
-        column
+        circle
     }
 
     private fun pictureCircle(sizeDp: Int, sizeSp: Float): TextView = with(ui) {
@@ -608,7 +604,7 @@ class EditShortcutActivity : Activity() {
             val error = errorLine(R.string.editor_name_error, false)
             field.addTextChangedListener(watcher { newName = it })
             val line = row()
-            line.addView(pictureButton({ newIcon }, { newName }) { newIcon = it }, lp(width = ViewGroup.LayoutParams.WRAP_CONTENT, end = 14))
+            line.addView(pictureButton({ newIcon }, { newName }) { newIcon = it }, LinearLayout.LayoutParams(dp(Ui.MAIN_ACTION_DP), dp(Ui.MAIN_ACTION_DP)).apply { marginEnd = dp(14) })
             line.addView(field, lp(width = 0, weight = 1f))
             panel.body.add(line, top = 8)
             panel.body.add(error)

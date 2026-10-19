@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="color_label">Colour</string>
+    <string name="color_automatic">Automatic</string>
+    <string name="color_row_description">Colour: %1$s. Tap to change.</string>
     <string name="color_auto">Automatic colour</string>
     <string name="color_auto_chosen">✓ Automatic colour</string>
     <string name="color_chosen">%1$s, chosen</string>
