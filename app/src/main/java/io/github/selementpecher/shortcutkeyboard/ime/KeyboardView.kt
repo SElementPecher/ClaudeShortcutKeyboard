@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.view.WindowInsets
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -86,6 +87,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         val questionText = if (numberValue != null && compact) "${model.question}  $numberValue" else model.question
 
         column.addView(stepTopBar(model, if (compact) questionText else null), LinearLayout.LayoutParams(MATCH, topBarHeight))
+        if (model.preview.isNotEmpty()) column.addView(previewTile(model), LinearLayout.LayoutParams(MATCH, WRAP).apply { bottomMargin = gap / 2 })
         if (!compact) {
             val typed = numberBody?.relative?.typed
             val rowHeight = px(R.dimen.kb_question_height) + if (typed != null) theme.dp(14) else 0
@@ -99,6 +101,44 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         content.addView(column, LayoutParams(MATCH, MATCH))
         val page = (model.body as? StepBody.Tiles)?.page ?: 0
         reveal("step:${model.step}:${model.body::class.simpleName}:$page")
+    }
+
+    /** The whole message with the defaults filled in; pressing it types it straight away. */
+    private fun previewTile(model: StepModel): View {
+        val plain = model.preview.joinToString("") { it.text }
+        val message = TextView(context).apply {
+            text = ResultSpans.build(model.preview, palette.tiles, theme.dp(6).toFloat(), theme.dp(3).toFloat(), theme.dp(1).toFloat())
+            gravity = Gravity.START or Gravity.CENTER_VERTICAL
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, theme.sp(look.type.bodySp))
+            setTextColor(palette.ink)
+            typeface = theme.bodyTypeface
+            letterSpacing = KeyboardTheme.LETTER_SPACING
+            maxLines = if (compact) 2 else 3
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(theme.dp(16), theme.dp(10), theme.dp(8), theme.dp(10))
+        }
+        val check = ImageView(context).apply {
+            setImageDrawable(Icons.drawable(Icons.Kind.CHECK, palette.onAccent, theme.dp(22)))
+            scaleType = ImageView.ScaleType.CENTER
+            background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(palette.accent) }
+        }
+        val row = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = GradientDrawable().apply {
+                cornerRadius = theme.cardRadius
+                setColor(palette.surface)
+                if (theme.strokePx > 0) setStroke(theme.strokePx, palette.outline)
+            }
+            if (theme.elevationPx > 0f) elevation = theme.elevationPx
+            isClickable = true
+            isFocusable = true
+            contentDescription = getString(R.string.kb_desc_add_now, plain)
+            setOnClickListener { model.onAddNow() }
+            addView(message, LinearLayout.LayoutParams(0, WRAP, 1f))
+            addView(check, LinearLayout.LayoutParams(theme.dp(36), theme.dp(36)).apply { marginEnd = theme.dp(10) })
+        }
+        return row
     }
 
     fun showCheck(model: CheckModel) {

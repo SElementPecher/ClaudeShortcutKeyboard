@@ -45,6 +45,14 @@ class FillSession(
     val isFirst: Boolean get() = index <= 0
     val isLast: Boolean get() = index >= variables.size - 1
 
+    /** Gives every list that has no value yet its first answer, so the message can be typed straight away. */
+    fun useDefaults() {
+        for (variable in allVariables) {
+            if (variable.type != VariableType.CHOICE || values.containsKey(variable.key)) continue
+            variable.options.firstOrNull { it.isNotBlank() }?.let { values[variable.key] = it }
+        }
+    }
+
     fun valueOf(variable: VariableDef): String? = values[variable.key]
 
     fun setValue(variable: VariableDef, value: String) {

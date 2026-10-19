@@ -364,7 +364,7 @@ class ShortcutKeyboardService : InputMethodService() {
     // ---- Screen 2: one question at a time ----
 
     private fun openShortcut(shortcut: Shortcut) {
-        val fresh = FillSession(shortcut, locale = locale())
+        val fresh = FillSession(shortcut, locale = locale()).also { it.useDefaults() }
         session = fresh
         resetQuestionState()
         if (fresh.isEmpty) showCheck() else showQuestion()
@@ -399,6 +399,8 @@ class ShortcutKeyboardService : InputMethodService() {
                 onBack = ::stepBack,
                 onCancel = ::leaveFill,
                 body = body,
+                preview = ResultPieces.of(current, locale = locale()),
+                onAddNow = ::addToApp,
             ),
         )
     }

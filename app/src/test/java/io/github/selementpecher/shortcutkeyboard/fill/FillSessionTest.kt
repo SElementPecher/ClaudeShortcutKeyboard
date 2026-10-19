@@ -295,6 +295,16 @@ class FillSessionTest {
     }
 
     @Test
+    fun `useDefaults fills lists with their first answer and keeps chosen ones`() {
+        val s = session(medicine)
+        s.setValue(s.blank("child"), "Ben")
+        s.useDefaults()
+        assertEquals("Ben", s.valueOf(s.blank("child")))
+        assertEquals("Calpol", s.valueOf(s.blank("medicine")))
+        assertEquals("Ben, Calpol, 2.5ml, 20:20 next dose not before 00:20", s.result())
+    }
+
+    @Test
     fun `result builds the medicine example`() {
         val s = session(medicine)
         s.setValue(s.blank("child"), "Sam")

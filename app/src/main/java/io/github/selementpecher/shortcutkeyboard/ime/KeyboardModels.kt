@@ -28,6 +28,10 @@ internal class StepModel(
     val onBack: () -> Unit,
     val onCancel: () -> Unit,
     val body: StepBody,
+    /** The whole message as it would be typed right now (defaults filled in), shown as a tile at the top. */
+    val preview: List<ResultPiece> = emptyList(),
+    /** Pressing the preview tile types the message now. */
+    val onAddNow: () -> Unit = {},
 )
 
 internal sealed interface StepBody {

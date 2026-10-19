@@ -70,4 +70,5 @@
     <!-- OK and check -->
     <string name="kb_ok">OK</string>
     <string name="kb_add">Add</string>
+    <string name="kb_desc_add_now">Type this now: %1$s</string>
 </resources>
