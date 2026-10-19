@@ -1,5 +1,7 @@
 package io.github.selementpecher.shortcutkeyboard.data
 
+import io.github.selementpecher.shortcutkeyboard.model.Folder
+import io.github.selementpecher.shortcutkeyboard.model.Library
 import io.github.selementpecher.shortcutkeyboard.model.Shortcut
 import io.github.selementpecher.shortcutkeyboard.model.VariableDef
 import io.github.selementpecher.shortcutkeyboard.model.VariableType
@@ -25,7 +27,6 @@ class ShortcutJsonTest {
     private val full = Shortcut(
         id = "medicine",
         name = "Medicine given",
-        trigger = "/meds",
         template = "{child}, {medicine}, {dose}, {time} next dose not before {time+4h}",
         variables = listOf(
             VariableDef("child", VariableType.CHOICE, options = listOf("Sam", "Alex"), lastValue = "Sam"),
@@ -40,7 +41,6 @@ class ShortcutJsonTest {
     private val tricky = Shortcut(
         id = "tricky",
         name = "Quotes \"and\" slashes \\ / and émoji 🙂",
-        trigger = "",
         template = "Line one\nLine two\t{{literal}} {name|h:mm a} £5",
         variables = listOf(VariableDef("name", VariableType.CHOICE, options = listOf("O'Brien", "", "a,b"))),
     )
@@ -76,12 +76,11 @@ class ShortcutJsonTest {
     fun `output is an object with a version and the shortcuts`() {
         val json = JSONObject(ShortcutJson.toJson(listOf(full)))
         assertEquals(ShortcutJson.VERSION, json.getInt("version"))
-        assertEquals(1, json.getInt("version"))
+        assertEquals(2, json.getInt("version"))
         val shortcuts = json.getJSONArray("shortcuts")
         assertEquals(1, shortcuts.length())
         val first = shortcuts.getJSONObject(0)
         assertEquals("medicine", first.getString("id"))
-        assertEquals("/meds", first.getString("trigger"))
         val child = first.getJSONArray("variables").getJSONObject(0)
         assertEquals("choice", child.getString("type"))
         assertEquals("Sam", child.getString("lastValue"))
@@ -133,7 +132,6 @@ class ShortcutJsonTest {
         )
         val shortcut = list.single()
         assertEquals("", shortcut.name)
-        assertEquals("", shortcut.trigger)
         val child = shortcut.variables.single()
         assertEquals(VariableDef("child", VariableType.CHOICE, emptyList(), remember = true, lastValue = null), child)
     }
@@ -193,11 +191,49 @@ class ShortcutJsonTest {
 
     @Test
     fun `null text fields read as empty and a null id gets a new one`() {
-        val shortcut = ShortcutJson.fromJson("""[{"id":null,"name":null,"trigger":null,"template":"x"}]""").single()
+        val shortcut = ShortcutJson.fromJson("""[{"id":null,"name":null,"parentId":null,"template":"x"}]""").single()
         assertTrue(shortcut.id.isNotBlank())
         assertNotEquals("null", shortcut.id)
         assertEquals("", shortcut.name)
-        assertEquals("", shortcut.trigger)
+    }
+
+    // ---- Folders ----
+
+    private val library = Library(
+        folders = listOf(Folder("kids", "Kids", order = 0), Folder("meds", "Meds", parentId = "kids", order = 2)),
+        shortcuts = listOf(full.copy(parentId = "meds", order = 3), empty),
+    )
+
+    @Test
+    fun `a library with folders survives a round trip`() {
+        assertEquals(library, ShortcutJson.libraryFromJson(ShortcutJson.toJson(library)))
+    }
+
+    @Test
+    fun `an old file without folders loads at the top level`() {
+        val old = """{"version":1,"shortcuts":[{"id":"a","name":"A","trigger":"/a","template":"Hi"}]}"""
+        val loaded = ShortcutJson.libraryFromJson(old)
+        assertTrue(loaded.folders.isEmpty())
+        assertEquals(null, loaded.shortcuts.single().parentId)
+    }
+
+    @Test
+    fun `a tile pointing at a missing folder goes to the top level`() {
+        val text = """{"folders":[],"shortcuts":[{"id":"a","name":"A","template":"Hi","parentId":"gone"}]}"""
+        assertEquals(null, ShortcutJson.libraryFromJson(text).shortcuts.single().parentId)
+    }
+
+    @Test
+    fun `folders that point at each other are untangled`() {
+        val text = """{"folders":[{"id":"a","name":"A","parentId":"b"},{"id":"b","name":"B","parentId":"a"}],"shortcuts":[]}"""
+        val loaded = ShortcutJson.libraryFromJson(text)
+        assertTrue(loaded.folders.any { it.parentId == null })
+        for (folder in loaded.folders) assertTrue(loaded.path(folder.id).isNotEmpty())
+    }
+
+    @Test
+    fun `a bare list of shortcuts still loads as a library`() {
+        assertEquals(1, ShortcutJson.libraryFromJson("""[{"id":"a","template":"x"}]""").shortcuts.size)
     }
 
     // ---- Bad input ----

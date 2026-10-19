@@ -28,6 +28,12 @@
             android:parentActivityName=".ui.MainActivity"
             android:windowSoftInputMode="adjustResize" />
 
+        <activity
+            android:name=".ui.AddOptionActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:windowSoftInputMode="stateVisible|adjustResize" />
+
         <service
             android:name=".ime.ShortcutKeyboardService"
             android:exported="true"

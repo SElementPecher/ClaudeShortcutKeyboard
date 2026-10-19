@@ -45,7 +45,18 @@
             android:orientation="vertical"
             android:padding="@dimen/app_screen_padding">
 
-            <!-- Name, trigger word and message -->
+            <!-- Where it lives (only shown inside a folder) -->
+            <TextView
+                android:id="@+id/edit_folder"
+                style="@style/AppText.Help"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/app_gap"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:visibility="gone" />
+
+            <!-- Name and message -->
             <LinearLayout
                 style="@style/AppCard"
                 android:paddingTop="4dp">
@@ -69,36 +80,6 @@
 
                 <TextView
                     android:id="@+id/edit_name_error"
-                    style="@style/AppText.Error"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-
-                <TextView
-                    style="@style/AppText.Label"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:labelFor="@+id/edit_trigger"
-                    android:text="@string/edit_trigger_label" />
-
-                <EditText
-                    android:id="@+id/edit_trigger"
-                    style="@style/AppField"
-                    android:fontFamily="monospace"
-                    android:hint="@string/edit_trigger_hint"
-                    android:importantForAutofill="no"
-                    android:imeOptions="actionNext"
-                    android:inputType="text|textNoSuggestions"
-                    android:maxLines="1"
-                    android:saveEnabled="false" />
-
-                <TextView
-                    style="@style/AppText.Help"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/edit_trigger_help" />
-
-                <TextView
-                    android:id="@+id/edit_trigger_error"
                     style="@style/AppText.Error"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />

@@ -21,7 +21,6 @@ class FillSessionTest {
     private val medicine = Shortcut(
         id = "medicine",
         name = "Medicine given",
-        trigger = "/meds",
         template = "{child}, {medicine}, {dose}, {time} next dose not before {time+4h}",
         variables = listOf(
             VariableDef("child", VariableType.CHOICE, options = listOf("Sam")),
@@ -419,7 +418,7 @@ class FillSessionTest {
         val updated = s.updatedShortcut()
         assertEquals(medicine.id, updated.id)
         assertEquals(medicine.name, updated.name)
-        assertEquals(medicine.trigger, updated.trigger)
+        assertEquals(medicine.parentId, updated.parentId)
         assertEquals(medicine.template, updated.template)
         assertEquals(listOf("Sam"), medicine.def("child").options)
         assertNull(medicine.def("child").lastValue)

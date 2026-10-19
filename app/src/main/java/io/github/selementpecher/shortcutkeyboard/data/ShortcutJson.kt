@@ -1,5 +1,7 @@
 package io.github.selementpecher.shortcutkeyboard.data
 
+import io.github.selementpecher.shortcutkeyboard.model.Folder
+import io.github.selementpecher.shortcutkeyboard.model.Library
 import io.github.selementpecher.shortcutkeyboard.model.Shortcut
 import io.github.selementpecher.shortcutkeyboard.model.VariableDef
 import io.github.selementpecher.shortcutkeyboard.model.VariableType
@@ -10,15 +12,31 @@ import java.util.UUID
 
 /** Reads and writes shortcuts as JSON, for the save file and for backups. */
 object ShortcutJson {
-    const val VERSION = 1
+    const val VERSION = 2
 
-    fun toJson(shortcuts: List<Shortcut>): String {
+    fun toJson(library: Library): String {
         val list = JSONArray()
-        shortcuts.forEach { list.put(shortcutToJson(it)) }
+        library.shortcuts.forEach { list.put(shortcutToJson(it)) }
+        val folders = JSONArray()
+        library.folders.forEach { folders.put(folderToJson(it)) }
         return JSONObject()
             .put("version", VERSION)
+            .put("folders", folders)
             .put("shortcuts", list)
             .toString(2)
+    }
+
+    fun toJson(shortcuts: List<Shortcut>): String = toJson(Library(shortcuts = shortcuts))
+
+    /** Reads shortcuts and folders. Version 1 files (no folders) still load. Throws [JSONException] if invalid. */
+    fun libraryFromJson(text: String): Library {
+        val trimmed = text.trim()
+        val shortcuts = fromJson(trimmed)
+        val folders = if (trimmed.startsWith("[")) JSONArray() else JSONObject(trimmed).optJSONArray("folders") ?: JSONArray()
+        return Library(
+            folders = (0 until folders.length()).map { folderFromJson(folders.getJSONObject(it)) },
+            shortcuts = shortcuts,
+        ).repaired()
     }
 
     /** Accepts `{"shortcuts": [...]}` or a bare `[...]`. Throws [JSONException] if it isn't valid. */
@@ -28,15 +46,29 @@ object ShortcutJson {
         return (0 until list.length()).map { shortcutFromJson(list.getJSONObject(it)) }
     }
 
+    private fun folderToJson(folder: Folder): JSONObject = JSONObject()
+        .put("id", folder.id)
+        .put("name", folder.name)
+        .put("parentId", folder.parentId ?: JSONObject.NULL)
+        .put("order", folder.order)
+
+    private fun folderFromJson(json: JSONObject): Folder = Folder(
+        id = text(json, "id").ifBlank { UUID.randomUUID().toString() },
+        name = text(json, "name"),
+        parentId = text(json, "parentId").ifBlank { null },
+        order = json.optInt("order", 0),
+    )
+
     private fun shortcutToJson(shortcut: Shortcut): JSONObject {
         val variables = JSONArray()
         shortcut.variables.forEach { variables.put(variableToJson(it)) }
         return JSONObject()
             .put("id", shortcut.id)
             .put("name", shortcut.name)
-            .put("trigger", shortcut.trigger)
             .put("template", shortcut.template)
             .put("variables", variables)
+            .put("parentId", shortcut.parentId ?: JSONObject.NULL)
+            .put("order", shortcut.order)
     }
 
     private fun variableToJson(variable: VariableDef): JSONObject {
@@ -56,9 +88,10 @@ object ShortcutJson {
         return Shortcut(
             id = text(json, "id").ifBlank { UUID.randomUUID().toString() },
             name = text(json, "name"),
-            trigger = text(json, "trigger"),
             template = requiredText(json, "template"),
             variables = (0 until variables.length()).map { variableFromJson(variables.getJSONObject(it)) },
+            parentId = text(json, "parentId").ifBlank { null },
+            order = json.optInt("order", 0),
         )
     }
 

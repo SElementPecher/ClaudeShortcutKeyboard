@@ -43,7 +43,6 @@ class ActivitySmokeTest {
         val shortcut = Shortcut(
             id = "smoke-test",
             name = "Smoke test",
-            trigger = "/smoke",
             template = "{child} had {medicine} at {time}, next at {time+4h} on {today}",
             variables = listOf(
                 VariableDef("child", VariableType.CHOICE, options = listOf("Sam"), lastValue = "Sam"),

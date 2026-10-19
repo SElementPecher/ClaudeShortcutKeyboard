@@ -1,7 +1,6 @@
 package io.github.selementpecher.shortcutkeyboard.data
 
 import io.github.selementpecher.shortcutkeyboard.fill.FillSession
-import io.github.selementpecher.shortcutkeyboard.fill.TriggerDetector
 import io.github.selementpecher.shortcutkeyboard.template.Template
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -16,12 +15,20 @@ class SampleShortcutsTest {
     private val now: LocalDateTime = LocalDateTime.of(2026, 10, 16, 20, 20)
 
     @Test
-    fun `there are samples with unique ids and triggers`() {
+    fun `there are samples with unique ids`() {
         val samples = SampleShortcuts.all
         assertTrue(samples.isNotEmpty())
         assertEquals(samples.size, samples.map { it.id }.toSet().size)
-        val triggers = samples.map { it.trigger.lowercase() }.filter { it.isNotBlank() }
-        assertEquals(triggers.size, triggers.toSet().size)
+        val all = samples.map { it.id } + SampleShortcuts.folders.map { it.id }
+        assertEquals(all.size, all.toSet().size)
+    }
+
+    @Test
+    fun `the samples sit in folders that exist and need no repairs`() {
+        assertEquals(SampleShortcuts.library, SampleShortcuts.library.repaired())
+        val meds = SampleShortcuts.library.children("sample-folder-meds").map { it.id }
+        assertTrue("sample-medicine" in meds)
+        assertEquals(listOf("Kids", "Meds"), SampleShortcuts.library.path("sample-folder-meds").map { it.name })
     }
 
     @Test
@@ -34,19 +41,11 @@ class SampleShortcutsTest {
     }
 
     @Test
-    fun `sample triggers have no spaces`() {
-        for (sample in SampleShortcuts.all) {
-            assertTrue(sample.trigger.none { it.isWhitespace() })
-        }
-    }
-
-    @Test
-    fun `each sample trigger opens its own shortcut`() {
-        for (sample in SampleShortcuts.all.filter { it.trigger.isNotBlank() }) {
-            val match = TriggerDetector.find("Hi ${sample.trigger}", SampleShortcuts.all)
-            assertEquals(sample, match?.shortcut)
-            assertEquals(sample.trigger.length, match?.length)
-        }
+    fun `the fixed medicine sample only asks for the time`() {
+        val fixed = SampleShortcuts.all.first { it.id == "sample-sam-calpol" }
+        val session = FillSession(fixed, { now }, Locale.UK)
+        assertEquals(listOf("time"), session.variables.map { it.name })
+        assertEquals("Sam, Calpol, 5ml, 20:20 next dose not before 00:20", session.result())
     }
 
     @Test
