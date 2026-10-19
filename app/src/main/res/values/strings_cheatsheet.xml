@@ -5,7 +5,7 @@
     <string name="cheat_open_button">What each kind does</string>
     <string name="cheat_open_link">What can each kind do?</string>
     <string name="cheat_settings_title">Cheat sheet</string>
-    <string name="cheat_settings_help">What each kind of changing word can do.</string>
+    <string name="cheat_settings_help">What each kind of changing part can do.</string>
 
     <string name="cheat_label_keyboard">On the keyboard</string>
     <string name="cheat_label_good_for">Good for</string>
@@ -60,10 +60,10 @@
 
     <!-- Words that do not change -->
     <string name="cheat_plain_name">Words you type</string>
-    <string name="cheat_plain_text">Everything you type stays exactly as you wrote it, every time. Only the chips change.</string>
+    <string name="cheat_plain_text">Everything you type stays exactly as you wrote it, every time. Only the coloured parts change.</string>
 
     <string name="cheat_tips_title">Good to know</string>
     <string name="cheat_tip_1">The name you give a changing part is the question the keyboard asks. Keep it short, like “Who?” or “When?”.</string>
-    <string name="cheat_tip_2">You can change a quiKey any time. Open it and tap “Edit quiKey”.</string>
+    <string name="cheat_tip_2">You can edit a quiKey any time. Open it and tap “Edit quiKey”.</string>
     <string name="cheat_tip_3">Nothing to change in a message? That is fine. The keyboard just adds it.</string>
 </resources>

@@ -27,7 +27,7 @@
     <string name="folder_empty">This folder is empty. Add a quiKey to it.</string>
     <string name="shortcut_new">New quiKey</string>
     <string name="shortcut_no_name">(No name)</string>
-    <string name="shortcut_row_description">quiKey %1$s. %2$s. Tap to change it. Press and hold for more.</string>
+    <string name="shortcut_row_description">quiKey %1$s. %2$s. Tap to edit it. Press and hold for more.</string>
     <string name="folder_row_description">Folder %1$s. %2$s. Tap to open it. Press and hold for more.</string>
     <plurals name="folder_items">
         <item quantity="one">%d item</item>
@@ -109,7 +109,7 @@
     <string name="home_empty_title">Nothing here yet</string>
     <string name="row_edit">Edit</string>
     <string name="row_open">Open</string>
-    <string name="folder_picture_change">Change the picture</string>
+    <string name="folder_picture_change">Edit the picture</string>
     <string name="action_up_description">Back to %1$s</string>
 
     <!-- Settings -->
@@ -128,7 +128,7 @@
     <string name="settings_try_title">Try the keyboard</string>
     <string name="settings_help_title">How it works</string>
     <string name="settings_help_1">Make a quiKey for a message you send a lot.</string>
-    <string name="settings_help_2">Tap the words that change each time, like a name or a time.</string>
+    <string name="settings_help_2">Where a word is different each time, like a name or a time, add something that changes.</string>
     <string name="settings_help_3">To use it, tap the keyboard icon at the bottom of your screen and choose quiKey.</string>
     <string name="settings_help_4">Pick a quiKey. The keyboard asks you for the words that change, one at a time.</string>
     <string name="settings_help_5">Tap Add. Your message is typed for you.</string>

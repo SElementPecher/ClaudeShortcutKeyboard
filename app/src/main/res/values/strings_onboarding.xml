@@ -21,7 +21,7 @@
     <string name="tour_3_shortcut">Running late</string>
 
     <string name="tour_5_title">Start with some examples</string>
-    <string name="tour_5_text">A few ready-made quiKies to try, like Kids and Running late. You can change or delete them.</string>
+    <string name="tour_5_text">A few ready-made quiKies to try, like Kids and Running late. You can edit or delete them.</string>
     <string name="tour_5_added">Examples added</string>
     <string name="tour_5_later">You can add them later in Settings.</string>
 
@@ -45,7 +45,7 @@
     <string name="examples_none">You already have all the examples.</string>
 
     <string name="examples_offer_title">Want some example quiKies?</string>
-    <string name="examples_offer_help">A few ready-made ones to try: Kids, Running late and more. You can change or delete them.</string>
+    <string name="examples_offer_help">A few ready-made ones to try: Kids, Running late and more. You can edit or delete them.</string>
     <string name="examples_no">No thanks</string>
 
     <string name="again_title">Start again</string>
