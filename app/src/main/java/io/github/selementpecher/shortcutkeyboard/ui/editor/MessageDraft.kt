@@ -487,6 +487,11 @@ data class MessageDraft(
                 VariableType.TIME -> BlankSpec(id, question, BlankKind.TIME, example = def.lastValue.orEmpty(), lastValue = def.lastValue)
                 VariableType.DATE -> BlankSpec(id, question, BlankKind.DATE, example = def.lastValue.orEmpty(), lastValue = def.lastValue)
                 VariableType.NUMBER -> BlankSpec(id, question, BlankKind.NUMBER, example = def.lastValue.orEmpty(), lastValue = def.lastValue)
+                // Placeholder until the editor knows the "how long" kinds: shown as a list of the saved amounts.
+                VariableType.TIME_AHEAD, VariableType.TIME_AGO -> BlankSpec(
+                    id, question, BlankKind.LIST, ShortcutDraft.cleanOptions(def.options),
+                    example = def.options.firstOrNull().orEmpty(), lastValue = def.lastValue,
+                )
             }
         }
 

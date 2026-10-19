@@ -382,6 +382,8 @@ class ShortcutKeyboardService : InputMethodService() {
             VariableType.TIME -> if (otherOpen) timeAdjustBody(current, variable) else timeBody(current, variable)
             VariableType.DATE -> if (otherOpen) dateAdjustBody(current, variable) else dateBody(current, variable)
             VariableType.NUMBER -> numberBody(current, variable)
+            // Placeholder until the "how long" screens exist: show the saved amounts as a list.
+            VariableType.TIME_AHEAD, VariableType.TIME_AGO -> answersBody(current, variable)
         }
         view.showStep(
             StepModel(

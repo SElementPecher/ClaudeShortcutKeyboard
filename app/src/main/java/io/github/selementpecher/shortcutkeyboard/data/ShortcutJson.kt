@@ -2,6 +2,7 @@ package io.github.selementpecher.shortcutkeyboard.data
 
 import io.github.selementpecher.shortcutkeyboard.model.Folder
 import io.github.selementpecher.shortcutkeyboard.model.Library
+import io.github.selementpecher.shortcutkeyboard.model.RelativeShow
 import io.github.selementpecher.shortcutkeyboard.model.Shortcut
 import io.github.selementpecher.shortcutkeyboard.model.VariableDef
 import io.github.selementpecher.shortcutkeyboard.model.VariableType
@@ -86,6 +87,8 @@ object ShortcutJson {
             .put("options", options)
             .put("remember", variable.remember)
         variable.lastValue?.let { json.put("lastValue", it) }
+        if (variable.show != RelativeShow.AMOUNT) json.put("show", variable.show.id)
+        if (variable.fixed) json.put("fixed", true)
         return json
     }
 
@@ -111,6 +114,8 @@ object ShortcutJson {
             options = (0 until options.length()).map { options.getString(it) },
             remember = json.optBoolean("remember", true),
             lastValue = text(json, "lastValue").ifEmpty { null },
+            show = RelativeShow.fromId(json.optString("show")),
+            fixed = json.optBoolean("fixed", false),
         )
     }
 

@@ -15,10 +15,30 @@ enum class VariableType(val id: String) {
     TIME("time"),
 
     /** A calendar date, starts at "today". Supports {name+1d}. */
-    DATE("date");
+    DATE("date"),
+
+    /** A length of time ahead, printed like "in 5 mins". The keyboard asks for the amount. */
+    TIME_AHEAD("time_ahead"),
+
+    /** A length of time ago, printed like "5 mins ago". The keyboard asks for the amount. */
+    TIME_AGO("time_ago");
+
+    /** True for the two "how long" kinds. */
+    val isRelative: Boolean get() = this == TIME_AHEAD || this == TIME_AGO
 
     companion object {
         fun fromId(id: String?): VariableType = entries.firstOrNull { it.id == id } ?: CHOICE
+    }
+}
+
+/** What a "how long" blank prints: "10 mins", "20:35" (the time it works out to), or "10 mins (20:35)". */
+enum class RelativeShow(val id: String) {
+    AMOUNT("amount"),
+    CLOCK("clock"),
+    BOTH("both");
+
+    companion object {
+        fun fromId(id: String?): RelativeShow = entries.firstOrNull { it.id == id } ?: AMOUNT
     }
 }
 
@@ -35,6 +55,13 @@ data class VariableDef(
     val remember: Boolean = true,
     /** The value used last time, offered first next time. */
     val lastValue: String? = null,
+    /** For the two "how long" kinds: what is printed (the amount, the clock time it works out to, or both). */
+    val show: RelativeShow = RelativeShow.AMOUNT,
+    /**
+     * For the two "how long" kinds with a single amount in [options]: always use it and never ask.
+     * (A one-answer list of another kind is still asked, so this must be explicit.)
+     */
+    val fixed: Boolean = false,
 ) {
     val key: String get() = keyOf(name)
 

@@ -3,6 +3,7 @@ package io.github.selementpecher.shortcutkeyboard.fill
 import io.github.selementpecher.shortcutkeyboard.model.Shortcut
 import io.github.selementpecher.shortcutkeyboard.model.VariableDef
 import io.github.selementpecher.shortcutkeyboard.model.VariableType
+import io.github.selementpecher.shortcutkeyboard.template.RelativeAmount
 import io.github.selementpecher.shortcutkeyboard.template.Template
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -20,10 +21,13 @@ class FillSession(
 ) {
     val template: Template = Template.parse(shortcut.template)
 
-    /** The blanks to ask about, in the order they first appear in the message. */
-    val variables: List<VariableDef> = resolveVariables(shortcut, template)
+    /** Every blank in the message, including fixed ones that are never asked. */
+    private val allVariables: List<VariableDef> = resolveVariables(shortcut, template)
 
-    private val types: Map<String, VariableType> = variables.associate { it.key to it.type }
+    /** The blanks to ask about, in the order they first appear in the message. */
+    val variables: List<VariableDef> = allVariables.filterNot { isFixed(it) }
+
+    private val types: Map<String, VariableType> = allVariables.associate { it.key to it.type }
     private val values = LinkedHashMap<String, String>()
 
     var index: Int = 0
@@ -31,7 +35,7 @@ class FillSession(
 
     init {
         val start = now()
-        for (variable in variables) {
+        for (variable in allVariables) {
             initialValue(variable, start)?.let { values[variable.key] = it }
         }
     }
@@ -91,10 +95,27 @@ class FillSession(
     }
 
     /** The message so far, with unfilled blanks shown as [name]. */
-    fun preview(): String = template.render(values, types, now(), locale) { "[${it.name}]" }
+    fun preview(): String = now().let { t -> template.render(renderValues(t), types, t, locale) { "[${it.name}]" } }
 
     /** The finished message. Unfilled blanks become empty. */
-    fun result(): String = template.render(values, types, now(), locale) { "" }
+    fun result(): String = now().let { t -> template.render(renderValues(t), types, t, locale) { "" } }
+
+    /** The values as printed: "how long" blanks become "in 5 mins" / "5 mins ago" (with the clock if switched on). */
+    private fun renderValues(at: LocalDateTime): Map<String, String> {
+        if (allVariables.none { it.type.isRelative }) return values
+        val printed = LinkedHashMap(values)
+        for (variable in allVariables) {
+            if (!variable.type.isRelative) continue
+            val value = values[variable.key] ?: continue
+            printed[variable.key] = relativePhrase(variable, value, at)
+        }
+        return printed
+    }
+
+    private fun relativePhrase(variable: VariableDef, value: String, at: LocalDateTime): String {
+        val amount = RelativeAmount.parse(value) ?: return value
+        return amount.phrase(variable.type == VariableType.TIME_AHEAD, variable.show, at, locale)
+    }
 
     /** How a value is shown on screen, e.g. a DATE "2026-10-16" as "16 Oct 2026". */
     fun displayValue(variable: VariableDef): String {
@@ -102,6 +123,7 @@ class FillSession(
         return when (variable.type) {
             VariableType.DATE -> Template.parse("{d}")
                 .render(mapOf("d" to value), mapOf("d" to VariableType.DATE), now(), locale)
+            VariableType.TIME_AHEAD, VariableType.TIME_AGO -> if (value.isEmpty()) value else relativePhrase(variable, value, now())
             else -> value
         }
     }
@@ -111,10 +133,16 @@ class FillSession(
      * the user typed (when the blank is set to remember them).
      */
     fun updatedShortcut(): Shortcut {
-        val learned = variables.map { variable ->
+        val learned = allVariables.map { variable ->
+            if (isFixed(variable)) return@map variable
             val value = values[variable.key]?.trim().orEmpty()
             when (variable.type) {
                 VariableType.TIME, VariableType.DATE -> variable
+                VariableType.TIME_AHEAD, VariableType.TIME_AGO -> {
+                    // Remember the amount as it was typed in, not the printed phrase (the clock would be stale).
+                    val amount = RelativeAmount.parse(value) ?: return@map variable
+                    variable.copy(lastValue = amount.text())
+                }
                 VariableType.CHOICE -> {
                     if (value.isEmpty()) return@map variable
                     val known = variable.options.firstOrNull { it.equals(value, ignoreCase = true) }
@@ -137,9 +165,15 @@ class FillSession(
         VariableType.DATE -> start.toLocalDate().toString()
         VariableType.CHOICE, VariableType.NUMBER -> variable.lastValue?.takeIf { it.isNotBlank() }
         VariableType.TEXT -> null
+        VariableType.TIME_AHEAD, VariableType.TIME_AGO ->
+            (if (isFixed(variable)) variable.options.firstOrNull() else variable.lastValue)?.takeIf { RelativeAmount.parse(it) != null }
     }
 
     companion object {
+        /** A "how long" blank with one saved amount that is always used and never asked. */
+        fun isFixed(variable: VariableDef): Boolean =
+            variable.fixed && variable.type.isRelative && RelativeAmount.parse(variable.options.firstOrNull()) != null
+
         /**
          * The blanks a template asks for. Uses the saved settings for each blank where there are
          * some, and a guess from the blank's name otherwise.

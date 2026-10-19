@@ -24,7 +24,7 @@ class ShortcutTest {
     @Test
     fun `type ids are stable because backups use them`() {
         assertEquals(
-            listOf("choice", "text", "number", "time", "date"),
+            listOf("choice", "text", "number", "time", "date", "time_ahead", "time_ago"),
             VariableType.entries.map { it.id },
         )
     }
