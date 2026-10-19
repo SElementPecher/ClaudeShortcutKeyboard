@@ -61,7 +61,7 @@
     <string name="chain_title_quick">Quick choices</string>
     <string name="chain_quick_chosen">Your choices (%1$d of %2$d)</string>
     <string name="chain_quick_tap_remove">tap to take out</string>
-    <string name="chain_quick_first">The first one is picked first. Tap a choice to take it out.</string>
+    <string name="chain_quick_first">The green one is picked first: Now (or Today) if it is there, otherwise the earliest. Tap a choice to take it out.</string>
     <string name="chain_quick_add">Add another</string>
     <string name="chain_quick_max">That is the most: take one out to add another.</string>
     <string name="chain_quick_min">You need at least one choice.</string>

@@ -570,7 +570,7 @@ class ShortcutKeyboardService : InputMethodService() {
                 TileSpec(
                     label = text,
                     look = TileLook(
-                        if (GridPaging.globalIndex(answerPage, slot) == 0) TileLook.Kind.OK else TileLook.Kind.ANSWER,
+                        if (value == QuickChoices.default(choices)) TileLook.Kind.OK else TileLook.Kind.ANSWER,
                         colourIndex = colour(value),
                     ),
                     description = text.replace('\n', ' '),

@@ -9,13 +9,13 @@ import org.junit.Test
 class QuickChoicesTest {
     @Test
     fun noSavedOptionsMeansTheUsualOnes() {
-        assertEquals(listOf(0L, -15L, -30L, -60L), QuickChoices.parse(emptyList(), VariableType.TIME))
-        assertEquals(listOf(0L, -1L, 1L), QuickChoices.parse(listOf(""), VariableType.DATE))
+        assertEquals(listOf(-60L, -30L, -15L, 0L), QuickChoices.parse(emptyList(), VariableType.TIME))
+        assertEquals(listOf(-1L, 0L, 1L), QuickChoices.parse(listOf(""), VariableType.DATE))
     }
 
     @Test
     fun savedOptionsAreKeptInOrderWithoutRepeatsOrJunk() {
-        assertEquals(listOf(-30L, 0L), QuickChoices.parse(listOf("-30", "0", "-30", "abc", "99999"), VariableType.TIME))
+        assertEquals(listOf(-30L, 0L), QuickChoices.parse(listOf("0", "-30", "0", "abc", "99999"), VariableType.TIME))
     }
 
     @Test
@@ -27,10 +27,16 @@ class QuickChoicesTest {
     @Test
     fun toggleNeverEmptiesOrOverfills() {
         assertEquals(listOf(0L), QuickChoices.toggle(listOf(0L), 0L))
-        assertEquals(listOf(0L, -5L), QuickChoices.toggle(listOf(0L), -5L))
-        assertEquals(listOf(-5L), QuickChoices.toggle(listOf(0L, -5L), 0L))
-        val full = listOf(0L, -5L, -10L, -15L, -30L, -45L)
+        assertEquals(listOf(-5L, 0L), QuickChoices.toggle(listOf(0L), -5L))
+        assertEquals(listOf(-5L), QuickChoices.toggle(listOf(-5L, 0L), 0L))
+        val full = listOf(-45L, -30L, -15L, -10L, -5L, 0L)
         assertEquals(full, QuickChoices.toggle(full, -60L))
+    }
+
+    @Test
+    fun theDefaultIsNowOtherwiseTheEarliest() {
+        assertEquals(0L, QuickChoices.default(listOf(-30L, 0L, 15L)))
+        assertEquals(-30L, QuickChoices.default(listOf(-30L, 15L)))
     }
 
     @Test

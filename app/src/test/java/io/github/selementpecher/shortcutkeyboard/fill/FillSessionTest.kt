@@ -309,7 +309,7 @@ class FillSessionTest {
         val shortcut = Shortcut(
             "1", "x", "{when} {day}",
             listOf(
-                VariableDef("when", VariableType.TIME, listOf("-60", "0")),
+                VariableDef("when", VariableType.TIME, listOf("-60", "-30")),
                 VariableDef("day", VariableType.DATE, listOf("1")),
             ),
         )

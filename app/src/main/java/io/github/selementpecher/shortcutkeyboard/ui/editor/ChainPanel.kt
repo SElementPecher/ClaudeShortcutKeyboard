@@ -455,7 +455,7 @@ internal class ChainPanel(
         val odd = QuickChoices.firstIsWide(chosen.size)
         var rowView: LinearLayout? = null
         chosen.forEachIndexed { i, value ->
-            val pill = pill(name(value), "−", i == 0) {
+            val pill = pill(name(value), "−", value == QuickChoices.default(chosen)) {
                 if (chosen.size > 1) {
                     flow.toggleQuick(value)
                     render()

@@ -56,11 +56,11 @@ class FillSession(
                 // Times and dates start at now / today; the first ready-made answer is the default.
                 VariableType.TIME -> {
                     setTimeToNow(variable)
-                    adjustTime(variable, QuickChoices.of(variable).first())
+                    adjustTime(variable, QuickChoices.default(QuickChoices.of(variable)))
                 }
                 VariableType.DATE -> {
                     setDate(variable, now().toLocalDate())
-                    adjustDate(variable, QuickChoices.of(variable).first())
+                    adjustDate(variable, QuickChoices.default(QuickChoices.of(variable)))
                 }
                 else -> {}
             }

@@ -649,15 +649,15 @@ class AddFlowTest {
     @Test
     fun timeQuickChoicesCanBeChangedWithinOneToSix() {
         val f = AddFlow.edit(BlankSpec(1, "When", BlankKind.TIME), 0, emptySet(), now = now, locale = uk)
-        assertEquals(listOf(0L, -15L, -30L, -60L), f.quickChoices())
+        assertEquals(listOf(-60L, -30L, -15L, 0L), f.quickChoices())
         f.toggleQuick(0L)
         f.toggleQuick(-5L)
         f.toggleQuick(15L)
         f.toggleQuick(30L)
         f.toggleQuick(60L) // a seventh is refused
-        assertEquals(listOf(-15L, -30L, -60L, -5L, 15L, 30L), f.quickChoices())
+        assertEquals(listOf(-60L, -30L, -15L, -5L, 15L, 30L), f.quickChoices())
         f.advance()
-        assertEquals(listOf("-15", "-30", "-60", "-5", "15", "30"), f.spec().answers)
+        assertEquals(listOf("-60", "-30", "-15", "-5", "15", "30"), f.spec().answers)
     }
 
     @Test
@@ -668,7 +668,6 @@ class AddFlowTest {
         f.toggleQuick(-1L)
         f.toggleQuick(1L)
         f.advance()
-        assertEquals(listOf("0", "-1", "1"), f.spec().answers.ifEmpty { listOf("0", "-1", "1") })
         assertEquals(emptyList<String>(), f.spec().answers)
     }
 
