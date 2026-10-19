@@ -253,7 +253,8 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
 
     // ---- save and delete ----
 
-    private fun save() {
+    /** Saves. From the Name or Message step of an existing quiKey ([thenCheck]) it goes on to the Check screen instead of closing. */
+    private fun save(thenCheck: Boolean = false) {
         if (name.isBlank()) {
             nameError = true
             goTo(Step.NAME)
@@ -264,11 +265,19 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             goTo(Step.MESSAGE)
             return
         }
+        val shortcut = currentShortcut()
         try {
-            ShortcutRepository.save(this, currentShortcut())
+            ShortcutRepository.save(this, shortcut)
         } catch (e: Exception) {
             Log.w(TAG, "Could not save the shortcut", e)
             screen.snack(getString(R.string.editor_save_failed), error = true)
+            return
+        }
+        if (thenCheck) {
+            stored = shortcut
+            baseline = ShortcutDraft.normalise(shortcut)
+            goTo(Step.CHECK)
+            screen.snack(getString(R.string.editor_saved))
             return
         }
         // This screen closes at once, so the home screen says it.
@@ -359,7 +368,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             if (isNew) {
                 screen.bottomBar.addView(primaryButton(getString(R.string.editor_next)) { onNext() })
             } else {
-                screen.bottomBar.addView(primaryButton(getString(R.string.editor_save)) { save() })
+                screen.bottomBar.addView(primaryButton(getString(R.string.editor_save)) { save(thenCheck = true) })
                 screen.bottomBar.add(secondaryButton(getString(R.string.editor_next)) { onNext() }, top = 10)
             }
         }
