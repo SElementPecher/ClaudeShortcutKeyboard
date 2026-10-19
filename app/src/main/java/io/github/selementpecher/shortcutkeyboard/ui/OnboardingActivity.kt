@@ -112,8 +112,9 @@ class OnboardingActivity : Activity() {
             val view = when (page) {
                 0 -> pageOne()
                 1 -> pageTwo()
-                2 -> pageThree()
-                3 -> pageExamples()
+                2 -> pageSimpleOrComplex()
+                3 -> pageThree()
+                4 -> pageExamples()
                 else -> pageFour()
             }
             content.addView(view, lp())
@@ -150,13 +151,30 @@ class OnboardingActivity : Activity() {
 
     private fun pageOne(): View = with(ui) {
         val box = intro("👋", R.string.tour_1_title, R.string.tour_1_text)
+        // Short on purpose: the whole message fits on one line.
         val parts = listOf(
             // Android trims the space at the end of a string, so it is added here.
             ExampleParts.Part(getString(R.string.tour_1_fixed_start).trimEnd() + " ", ExampleParts.FIXED),
-            ExampleParts.Part("10 mins (18:40)", 0),
+            ExampleParts.Part("10 mins", 0),
             ExampleParts.Part(".", ExampleParts.FIXED),
         )
         box.add(exampleCard(parts), top = 24)
+        box
+    }
+
+    /** One plain quiKey and one with many changing parts: both are fine. */
+    private fun pageSimpleOrComplex(): View = with(ui) {
+        val box = intro("🎚️", R.string.tour_6_title, R.string.tour_6_text)
+        box.add(label(getString(R.string.tour_6_simple)), top = 24)
+        box.add(exampleCard(listOf(ExampleParts.Part(getString(R.string.tour_6_simple_text), ExampleParts.FIXED))), top = 6)
+        box.add(label(getString(R.string.tour_6_complex)), top = 20)
+        val parts = listOf(
+            ExampleParts.Part("Sam", 0), ExampleParts.Part(" " + getString(R.string.tour_6_complex_a).trim() + " ", ExampleParts.FIXED),
+            ExampleParts.Part("Mon 27 Oct", 1), ExampleParts.Part(". " + getString(R.string.tour_6_complex_b).trim() + " ", ExampleParts.FIXED),
+            ExampleParts.Part("15:30", 2), ExampleParts.Part(" " + getString(R.string.tour_6_complex_c).trim() + " ", ExampleParts.FIXED),
+            ExampleParts.Part("Alex", 3), ExampleParts.Part(".", ExampleParts.FIXED),
+        )
+        box.add(exampleCard(parts), top = 6)
         box
     }
 
@@ -302,7 +320,7 @@ class OnboardingActivity : Activity() {
 
     companion object {
         private const val STATE_PAGE = "page"
-        private const val LAST = 4
+        private const val LAST = 5
 
         fun open(context: Context) {
             context.startActivity(Intent(context, OnboardingActivity::class.java))

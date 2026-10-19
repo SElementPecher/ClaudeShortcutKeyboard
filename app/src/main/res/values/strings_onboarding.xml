@@ -8,7 +8,7 @@
 
     <string name="tour_1_title">Type a whole message with one tap</string>
     <string name="tour_1_text">Make a quiKey once. Then tap it on your keyboard and the message is typed for you.</string>
-    <string name="tour_1_fixed_start">Running late, sorry! I\'ll be there in </string>
+    <string name="tour_1_fixed_start">Running late, back in</string>
 
     <string name="tour_2_title">Some words change each time</string>
     <string name="tour_2_text">Add a time, a date, a number or a list. The keyboard asks you with big buttons.</string>
@@ -55,4 +55,13 @@
     <string name="again_confirm_message">Every quiKey and folder is deleted. This cannot be undone. Back up first if you want a copy.</string>
     <string name="again_confirm">Delete everything</string>
     <string name="again_done">Everything deleted.</string>
+
+    <string name="tour_6_title">As simple or as complex as you like</string>
+    <string name="tour_6_text">A quiKey can be plain words, or have as many changing parts as you need.</string>
+    <string name="tour_6_simple">Simple</string>
+    <string name="tour_6_simple_text">Sorry, I\'ll call you back later.</string>
+    <string name="tour_6_complex">Complex</string>
+    <string name="tour_6_complex_a">is off sick today. Back on</string>
+    <string name="tour_6_complex_b">Pick-up at</string>
+    <string name="tour_6_complex_c">by</string>
 </resources>
