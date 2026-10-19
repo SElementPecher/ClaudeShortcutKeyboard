@@ -52,6 +52,9 @@ object ShortcutRepository {
 
     fun delete(context: Context, id: String) = update(context) { it.withoutShortcut(id) }
 
+    /** Deletes several shortcuts and folders in one go (one save). */
+    fun deleteMany(context: Context, ids: Set<String>) = update(context) { it.withoutAll(ids) }
+
     /** Deletes a folder. What was inside moves up one level. */
     fun deleteFolder(context: Context, id: String) = update(context) { it.withoutFolder(id) }
 

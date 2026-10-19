@@ -13,14 +13,17 @@ import android.text.TextUtils
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.ImageView
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository
+import io.github.selementpecher.shortcutkeyboard.ime.DragPlanner
 import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.LookStore
 import io.github.selementpecher.shortcutkeyboard.look.typefaceOf
@@ -48,6 +51,17 @@ class MainActivity : Activity() {
     private val mainHandler = Handler(Looper.getMainLooper())
     private var panel: UiPanel? = null
 
+    private lateinit var selectButton: View
+    private lateinit var drag: TileDrag
+
+    /** The tiles on screen, in order (for picking one up and dropping it). */
+    private var shownTiles: List<Pair<String, View>> = emptyList()
+    private var shownFolderIds: Set<String> = emptySet()
+
+    /** Choosing several tiles to delete. */
+    private var selecting = false
+    private val selected = LinkedHashSet<String>()
+
     private val repositoryListener: () -> Unit = {
         // May be called from any thread, e.g. when the keyboard saves what it learned.
         mainHandler.post { if (!isDestroyed) render() }
@@ -68,13 +82,24 @@ class MainActivity : Activity() {
         val gear = ui.iconButton(Icons.Kind.GEAR, getString(R.string.settings_open)) {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
-        screen = ui.screen(getString(R.string.app_name), trailing = listOf(gear), large = true, withBottomBar = true)
-        with(ui) {
-            val newShortcut = primaryButton(getString(R.string.shortcut_new)) { openEditor(null) }
-            val newFolder = secondaryButton(getString(R.string.folder_new)) { askFolder(null) }
-            screen.bottomBar.addView(buttonRow(newShortcut, newFolder))
-        }
+        selectButton = ui.iconButton(Icons.Kind.CHECK, getString(R.string.select_open)) { startSelecting(null) }
+        screen = ui.screen(getString(R.string.app_name), trailing = listOf(selectButton, gear), large = true, withBottomBar = true)
         screen.install(this)
+        drag = TileDrag(this, ui, screen.scroll, object : TileDrag.Callbacks {
+            override fun tiles() = shownTiles
+            override fun folderIds() = shownFolderIds
+            override fun upLabel(): String? {
+                val library = ShortcutRepository.library(this@MainActivity)
+                val folder = library.folder(currentFolderId) ?: return null
+                val parent = library.folder(folder.parentId)?.name?.ifBlank { null } ?: getString(R.string.home_name)
+                return getString(R.string.drag_up, parent)
+            }
+            override fun onDrop(outcome: DragPlanner.Outcome) = applyDrop(outcome)
+            override fun onHold(id: String) {
+                val library = ShortcutRepository.library(this@MainActivity)
+                (library.folder(id) ?: library.shortcut(id))?.let { showActions(it) }
+            }
+        })
         ShortcutRepository.addListener(repositoryListener)
     }
 
@@ -99,10 +124,19 @@ class MainActivity : Activity() {
         }
     }
 
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        if (::drag.isInitialized && drag.handle(ev)) return true
+        return super.dispatchTouchEvent(ev)
+    }
+
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        // Back goes up a folder first, then leaves.
-        if (currentFolderId != null) goUp() else super.onBackPressed()
+        // Back stops choosing, then goes up a folder, then leaves.
+        when {
+            selecting -> stopSelecting()
+            currentFolderId != null -> goUp()
+            else -> super.onBackPressed()
+        }
     }
 
     override fun onResume() {
@@ -122,6 +156,7 @@ class MainActivity : Activity() {
     }
 
     override fun onStop() {
+        if (::drag.isInitialized) drag.cancel()
         contentResolver.unregisterContentObserver(keyboardSettingsObserver)
         super.onStop()
     }
@@ -145,27 +180,160 @@ class MainActivity : Activity() {
         val library = ShortcutRepository.library(this)
         // A folder deleted elsewhere (e.g. from the keyboard): fall back to the top level.
         currentFolderId = FolderLogic.existingFolder(library, currentFolderId)
+        // Tiles deleted elsewhere can no longer be chosen.
+        selected.retainAll { library.folder(it) != null || library.shortcut(it) != null }
         val content = screen.content
         content.removeAllViews()
         with(ui) {
             val enabled = KeyboardSetup.isEnabled(this@MainActivity)
             // One step only: once the keyboard is turned on, the whole box goes away.
-            if (!enabled) content.add(setupCard())
+            if (selecting) content.add(selectionHeader(library)) else if (!enabled) content.add(setupCard())
 
             val folder = library.folder(currentFolderId)
-            if (folder != null) content.add(folderHeader(library, folder), top = 16)
+            if (folder != null && !selecting) content.add(folderHeader(library, folder), top = 16)
 
             val children = library.children(currentFolderId)
+            if (children.isEmpty() && selecting) selecting = false
             screen.showBottomBar(children.isNotEmpty())
+            selectButton.visibility = if (children.isNotEmpty() && !selecting) View.VISIBLE else View.GONE
+            buildBottomBar()
             if (children.isEmpty()) {
+                shownTiles = emptyList()
+                shownFolderIds = emptySet()
                 content.add(emptyState(inFolder = folder != null), top = 16)
             } else {
                 val tiles = children.map { node -> tileFor(node, library).also { if (shownIds.isNotEmpty() && node.id !in shownIds) Motion.pop(it) } }
-                content.add(grid(columns, tiles), top = if (folder != null) 12 else 20)
-                content.add(small(getString(R.string.home_tip)).apply { gravity = Gravity.CENTER }, top = 20)
+                shownTiles = children.map { it.id }.zip(tiles)
+                shownFolderIds = children.filterIsInstance<Folder>().map { it.id }.toSet()
+                content.add(grid(columns, tiles), top = if (folder != null && !selecting) 12 else 20)
+                if (!selecting) content.add(small(getString(R.string.home_tip)).apply { gravity = Gravity.CENTER }, top = 20)
             }
             shownIds = children.map { it.id }.toSet()
         }
+    }
+
+    /** The two buttons at the bottom: make something new, or (while choosing) delete what is chosen. */
+    private fun buildBottomBar() {
+        screen.bottomBar.removeAllViews()
+        with(ui) {
+            if (selecting) {
+                val count = selected.size
+                val delete = dangerFilledButton(resources.getQuantityString(R.plurals.select_delete, count, count)) { confirmDeleteSelected() }
+                delete.isEnabled = count > 0
+                delete.alpha = if (count > 0) 1f else 0.4f
+                val cancel = secondaryButton(getString(R.string.dialog_cancel)) { stopSelecting() }
+                screen.bottomBar.addView(buttonRow(delete, cancel))
+            } else {
+                val newShortcut = primaryButton(getString(R.string.shortcut_new)) { openEditor(null) }
+                val newFolder = secondaryButton(getString(R.string.folder_new)) { askFolder(null) }
+                screen.bottomBar.addView(buttonRow(newShortcut, newFolder))
+            }
+        }
+    }
+
+    /** A red filled button for the one thing that deletes (only while choosing). */
+    private fun Ui.dangerFilledButton(text: CharSequence, onClick: () -> Unit): TextView {
+        val r = look.shape.buttonRadiusDp.toFloat()
+        return primaryButton(text, Icons.Kind.TRASH) { onClick() }.apply {
+            background = rippled(shape(palette.danger, r), r)
+            setTextColor(readableOn(palette.danger))
+            setCompoundDrawablesRelativeWithIntrinsicBounds(icon(Icons.Kind.TRASH, 22, readableOn(palette.danger)), null, null, null)
+        }
+    }
+
+    /** "3 selected" with Select all / Clear, shown at the top while choosing. */
+    private fun selectionHeader(library: Library): View = with(ui) {
+        val total = library.children(currentFolderId).size
+        val line = row()
+        line.addView(
+            text(resources.getQuantityString(R.plurals.select_count, selected.size, selected.size), look.type.headingSp, look.type.headingWeight, palette.ink).apply {
+                layoutParams = lp(width = 0, weight = 1f)
+            },
+        )
+        val allChosen = selected.size >= total
+        line.addView(
+            textButton(getString(if (allChosen) R.string.select_none else R.string.select_all)) {
+                val ids = library.children(currentFolderId).map { it.id }
+                if (allChosen) selected.removeAll(ids.toSet()) else selected.addAll(ids)
+                render()
+            }.apply { layoutParams = lp(width = ViewGroup.LayoutParams.WRAP_CONTENT) },
+        )
+        line
+    }
+
+    // ---------------------------------------------------------------- choosing several
+
+    private fun startSelecting(first: String?) {
+        selecting = true
+        selected.clear()
+        first?.let { selected.add(it) }
+        render()
+        screen.scroll.scrollTo(0, 0)
+    }
+
+    private fun stopSelecting() {
+        selecting = false
+        selected.clear()
+        render()
+    }
+
+    private fun toggle(id: String) {
+        if (!selected.remove(id)) selected.add(id)
+        val y = screen.scroll.scrollY
+        render()
+        screen.scroll.post { screen.scroll.scrollTo(0, y) }
+    }
+
+    private fun confirmDeleteSelected() {
+        if (selected.isEmpty()) return
+        val library = ShortcutRepository.library(this)
+        val count = selected.size
+        val hasFolder = selected.any { library.folder(it) != null }
+        show(
+            ui.confirm(
+                this,
+                title = resources.getQuantityString(R.plurals.delete_many_title, count, count),
+                message = getString(if (hasFolder) R.string.delete_many_message_folders else R.string.delete_many_message),
+                confirmText = getString(R.string.delete_confirm),
+                cancelText = getString(R.string.dialog_cancel),
+                danger = true,
+            ) { deleteSelected() },
+        )
+    }
+
+    private fun deleteSelected() {
+        val ids = selected.toSet()
+        try {
+            ShortcutRepository.deleteMany(this, ids)
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not delete", e)
+            screen.snack(getString(R.string.edit_save_failed), error = true)
+            return
+        }
+        selecting = false
+        selected.clear()
+        render()
+        screen.snack(resources.getQuantityString(R.plurals.deleted_many, ids.size, ids.size))
+    }
+
+    // ---------------------------------------------------------------- picking up and dropping
+
+    private fun applyDrop(outcome: DragPlanner.Outcome) {
+        val library = ShortcutRepository.library(this)
+        val id = drag.lastDraggedId ?: return
+        val moved = try {
+            when (outcome) {
+                is DragPlanner.Outcome.IntoFolder -> ShortcutRepository.move(this, id, outcome.folderId, Int.MAX_VALUE)
+                DragPlanner.Outcome.UpOneLevel -> ShortcutRepository.move(this, id, library.folder(currentFolderId)?.parentId, Int.MAX_VALUE)
+                is DragPlanner.Outcome.Reorder -> ShortcutRepository.move(this, id, currentFolderId, outcome.index)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not move", e)
+            false
+        }
+        render()
+        if (!moved) screen.snack(getString(R.string.move_failed), error = true)
+        else if (outcome !is DragPlanner.Outcome.Reorder) screen.snack(getString(R.string.move_done))
     }
 
     /** What was on screen the last time, so only a tile that was just added pops in. */
@@ -173,23 +341,45 @@ class MainActivity : Activity() {
 
     private fun tileFor(node: Node, library: Library): View {
         val name = node.name.ifBlank { getString(R.string.shortcut_no_name) }
-        return when (node) {
+        val chosen = node.id in selected
+        lateinit var view: View
+        view = when (node) {
             is Folder -> {
                 val count = FolderLogic.itemCount(library, node.id)
                 val items = if (count == 0) getString(R.string.folder_empty_row) else resources.getQuantityString(R.plurals.folder_items, count, count)
                 ui.tile(
                     name = name, icon = node.icon, kind = TileKind.FOLDER, colorKey = node.id, color = node.color, subtitle = items,
                     description = getString(R.string.folder_row_description, name, items),
-                    onClick = { openFolder(node.id) },
-                    onLongClick = { showActions(node) },
+                    onClick = { if (selecting) toggle(node.id) else openFolder(node.id) },
+                    onLongClick = { if (selecting) toggle(node.id) else drag.start(node.id, view) },
                 )
             }
             is Shortcut -> ui.tile(
                 name = name, icon = node.icon, kind = TileKind.SHORTCUT, colorKey = node.id, color = node.color,
                 description = getString(R.string.shortcut_row_description, name, ""),
-                onClick = { openEditor(node.id) },
-                onLongClick = { showActions(node) },
+                onClick = { if (selecting) toggle(node.id) else openEditor(node.id) },
+                onLongClick = { if (selecting) toggle(node.id) else drag.start(node.id, view) },
             )
+        }
+        if (selecting) {
+            view.contentDescription = getString(if (chosen) R.string.select_tile_chosen else R.string.select_tile_not_chosen, name)
+            (view as? FrameLayout)?.addView(selectBadge(chosen))
+        }
+        return view
+    }
+
+    /** The round tick in the corner of a tile while choosing: filled when chosen, an empty ring when not. */
+    private fun selectBadge(chosen: Boolean): View = with(ui) {
+        ImageView(this@MainActivity).apply {
+            scaleType = ImageView.ScaleType.CENTER
+            if (chosen) {
+                background = shape(palette.accent, 999f)
+                setImageDrawable(icon(Icons.Kind.CHECK, 18, palette.onAccent))
+            } else {
+                background = shape(withAlpha(palette.surface, 0xCC), 999f, palette.inkSoft, 2f)
+            }
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            layoutParams = FrameLayout.LayoutParams(dp(28), dp(28), Gravity.TOP or Gravity.END).apply { setMargins(0, dp(8), dp(8), 0) }
         }
     }
 
@@ -342,6 +532,7 @@ class MainActivity : Activity() {
             buttons += DialogButton(getString(R.string.row_edit), ButtonStyle.SECONDARY) { openEditor(node.id); true }
         }
         buttons += DialogButton(getString(R.string.row_move), ButtonStyle.SECONDARY) { showMove(node); true }
+        buttons += DialogButton(getString(R.string.row_select), ButtonStyle.SECONDARY) { startSelecting(node.id); true }
         buttons += DialogButton(getString(R.string.row_delete), ButtonStyle.DANGER) { confirmDelete(node); true }
         buttons += DialogButton(getString(R.string.dialog_cancel), ButtonStyle.TEXT)
         sheet.buttons(buttons)

@@ -153,4 +153,21 @@ class LibraryTest {
         assertEquals("💊", moved.shortcut("giddy")!!.icon)
         assertEquals(3, lib.moved("kids", "other", 0)?.folder("kids")?.color ?: 3)
     }
+
+    @Test
+    fun `withoutAll removes shortcuts and folders in one go`() {
+        val without = library.withoutAll(setOf("giddy", "other", "late", "nothing"))
+        assertEquals(listOf("zippy"), ids("calpol", without))
+        // "other" is gone and its shortcut moved up into Kids.
+        assertEquals(listOf("meds", "thinking"), ids("kids", without))
+        assertTrue(without.shortcut("late") == null)
+    }
+
+    @Test
+    fun `withoutAll takes a folder and everything chosen inside it`() {
+        val without = library.withoutAll(setOf("calpol", "giddy", "zippy"))
+        assertTrue(ids("meds", without).isEmpty())
+        assertNull(without.shortcut("giddy"))
+        assertNull(without.shortcut("zippy"))
+    }
 }

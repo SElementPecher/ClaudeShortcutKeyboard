@@ -105,7 +105,7 @@
     <!-- Home screen (v3) -->
     <string name="settings_open">Settings</string>
     <string name="setup_ready_text">Keyboard is ready</string>
-    <string name="home_tip">Press and hold a tile for more.</string>
+    <string name="home_tip">Press and hold a tile, then drag it to move it. Let go without moving for more.</string>
     <string name="home_empty_title">Nothing here yet</string>
     <string name="row_edit">Edit</string>
     <string name="row_open">Open</string>
@@ -135,4 +135,31 @@
     <string name="settings_about_title">About</string>
     <string name="settings_about_version">Version %1$s</string>
     <string name="settings_about_privacy">No internet. Nothing you type leaves your phone.</string>
+
+    <!-- Moving and choosing several -->
+    <string name="drag_up">Drop here to move up to %1$s</string>
+    <string name="row_select">Select several…</string>
+    <string name="select_open">Select several</string>
+    <plurals name="select_count">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <string name="select_all">Select all</string>
+    <string name="select_none">Clear</string>
+    <plurals name="select_delete">
+        <item quantity="one">Delete %d</item>
+        <item quantity="other">Delete %d</item>
+    </plurals>
+    <string name="select_tile_chosen">%1$s, selected. Tap to unselect.</string>
+    <string name="select_tile_not_chosen">%1$s, not selected. Tap to select.</string>
+    <plurals name="delete_many_title">
+        <item quantity="one">Delete %d item?</item>
+        <item quantity="other">Delete %d items?</item>
+    </plurals>
+    <string name="delete_many_message">This cannot be undone.</string>
+    <string name="delete_many_message_folders">This cannot be undone. Anything inside a deleted folder that you did not select moves up one level.</string>
+    <plurals name="deleted_many">
+        <item quantity="one">%d item deleted</item>
+        <item quantity="other">%d items deleted</item>
+    </plurals>
 </resources>

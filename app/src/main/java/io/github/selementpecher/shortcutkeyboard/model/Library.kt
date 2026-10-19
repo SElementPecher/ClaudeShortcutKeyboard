@@ -73,6 +73,10 @@ data class Library(
 
     fun withoutShortcut(id: String): Library = copy(shortcuts = shortcuts.filterNot { it.id == id })
 
+    /** Removes every shortcut and folder in [ids]. A folder's contents that are not in [ids] move up one level. */
+    fun withoutAll(ids: Set<String>): Library =
+        ids.fold(this) { lib, id -> if (lib.folder(id) != null) lib.withoutFolder(id) else lib.withoutShortcut(id) }
+
     /** Removes a folder. What was inside moves up into the folder's own parent, so nothing is lost. */
     fun withoutFolder(id: String): Library {
         val removed = folder(id) ?: return this
