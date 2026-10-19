@@ -137,7 +137,10 @@ internal class ChainPanel(
                 layoutParams = lp(width = 0, weight = 1f, start = if (flow.canGoBack) 2 else 0, end = 4)
             },
         )
-        line.addView(iconButton(Icons.Kind.CLOSE, str(R.string.chain_cancel)) { listener.onCancelled() }, LinearLayout.LayoutParams(dp(48), dp(48)).apply { marginEnd = -dp(12) })
+        // Changing an existing part has Done (and the back arrow), so no close button; making a new one keeps it.
+        if (!flow.isEditing) {
+            line.addView(iconButton(Icons.Kind.CLOSE, str(R.string.chain_cancel)) { listener.onCancelled() }, LinearLayout.LayoutParams(dp(48), dp(48)).apply { marginEnd = -dp(12) })
+        }
         box.addView(line, lp())
         val crumbs = flow.crumbs().joinToString(str(R.string.chain_crumb_separator)) { crumbText(it) }
         if (crumbs.isNotEmpty()) {
@@ -520,7 +523,7 @@ internal class ChainPanel(
     }
 
     private fun editExtras() = with(ui) {
-        view.add(textButton(str(R.string.chain_make_plain)) { listener.onMakePlain() }, top = 20)
+        view.add(textButton(str(R.string.chain_make_plain)) { listener.onMakePlain() }, top = 12)
         view.add(dangerButton(str(R.string.chain_remove)) { listener.onRemove() }, top = 0)
     }
 
