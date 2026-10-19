@@ -222,6 +222,8 @@ class AddFlow private constructor(
             FlowStep.LIST_QUESTION, FlowStep.QUESTION -> true
             FlowStep.LIST_ANSWERS -> typedAnswers.any { it.isNotBlank() } || (editing as? Editing.OfBlank)?.spec?.textType == true
             FlowStep.AMOUNTS -> chosenAmounts.isNotEmpty() || pendingAmount != null
+            // Changing an existing one: keep what it already shows without tapping it again.
+            FlowStep.SHOW -> isEditing
             FlowStep.AFTER_NUMBER -> pendingAmount != null
             else -> false
         }
@@ -347,7 +349,7 @@ class AddFlow private constructor(
         if (!canAdvance) return
         when (nav.step) {
             FlowStep.LIST_QUESTION -> go(nav.copy(step = FlowStep.LIST_ANSWERS))
-            FlowStep.LIST_ANSWERS, FlowStep.QUESTION, FlowStep.AFTER_NUMBER -> isDone = true
+            FlowStep.LIST_ANSWERS, FlowStep.QUESTION, FlowStep.AFTER_NUMBER, FlowStep.SHOW -> isDone = true
             FlowStep.AMOUNTS -> {
                 addAnotherAmount()
                 go(nav.copy(step = FlowStep.SHOW))

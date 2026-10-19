@@ -174,6 +174,7 @@ internal class ChainPanel(
         FlowStep.AMOUNTS -> str(R.string.chain_next)
         FlowStep.LIST_QUESTION -> str(if (flow.isEditing) R.string.chain_done else R.string.chain_next)
         FlowStep.LIST_ANSWERS, FlowStep.AFTER_NUMBER, FlowStep.QUESTION -> str(if (flow.isEditing) R.string.chain_done else R.string.chain_add)
+        FlowStep.SHOW -> if (flow.isEditing) str(R.string.chain_done) else null
         else -> null
     }
 
@@ -396,7 +397,9 @@ internal class ChainPanel(
             Triple(RelativeShow.BOTH, R.string.chain_show_both, 2),
         )
         val tiles = choices.map { (show, label, colour) ->
-            tile(colour + 1, null, examples.getValue(show), str(label), wide = true, bigTitle = true) {
+            // Changing an existing one: the choice it has now is marked, and Done keeps it.
+            val hint = str(label) + if (flow.isEditing && flow.show == show) str(R.string.chain_show_current) else ""
+            tile(colour + 1, null, examples.getValue(show), hint, wide = true, bigTitle = true) {
                 flow.chooseShow(show)
                 moved()
             }

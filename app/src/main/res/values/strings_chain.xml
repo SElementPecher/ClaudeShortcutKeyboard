@@ -72,4 +72,5 @@
     <string name="chain_remove">Remove it</string>
     <string name="chain_name_label">Name (optional)</string>
     <string name="chain_name_hint">List</string>
+    <string name="chain_show_current"> · now chosen</string>
 </resources>
