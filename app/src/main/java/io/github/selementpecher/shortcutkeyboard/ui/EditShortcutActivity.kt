@@ -487,7 +487,16 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
 
     /** A chip was tapped: change it. */
     private fun openEdit(index: Int) {
-        if (chain != null) return
+        chain?.let { open ->
+            // Tapping another pill while one is open: drop the unfinished one and open the tapped pill.
+            val current = if (open.adding) pendingChipIndex(open) else open.chipIndex
+            if (index == current) return
+            val target = if (open.adding && index > current) index - 1 else index
+            draft = open.original
+            openChipAfterDraw = target
+            closeChain(open.selStart, open.selEnd)
+            return
+        }
         val segment = draft.chips().getOrNull(index) ?: return
         val offset = draft.chipOffset(index)
         val ref = segment as? Segment.Ref

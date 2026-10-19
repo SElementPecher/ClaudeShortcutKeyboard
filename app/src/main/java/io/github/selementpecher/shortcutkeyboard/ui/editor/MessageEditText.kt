@@ -142,7 +142,17 @@ internal class MessageEditText(context: Context, private val ui: Ui) : EditText(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (locked) return true
+        if (locked) {
+            // Read-only, but a tap on a pill still counts so the owner can switch pills.
+            if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                downX = event.x
+                downY = event.y
+            } else if (event.actionMasked == MotionEvent.ACTION_UP && abs(event.x - downX) <= slop && abs(event.y - downY) <= slop) {
+                val tapped = chipAt(event.x, event.y)
+                if (tapped >= 0) onChipTap?.invoke(tapped)
+            }
+            return true
+        }
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 downX = event.x

@@ -149,8 +149,8 @@ class MainActivity : Activity() {
         content.removeAllViews()
         with(ui) {
             val enabled = KeyboardSetup.isEnabled(this@MainActivity)
-            val ready = enabled && KeyboardSetup.isSelected(this@MainActivity)
-            if (ready) content.add(readyLine()) else content.add(setupCard(enabled))
+            // One step only: once the keyboard is turned on, the whole box goes away.
+            if (!enabled) content.add(setupCard())
 
             val folder = library.folder(currentFolderId)
             if (folder != null) content.add(folderHeader(library, folder), top = 16)
@@ -193,16 +193,11 @@ class MainActivity : Activity() {
         }
     }
 
-    /** The two setup steps with a slim progress bar; only the step to do now has a button. */
-    private fun setupCard(enabled: Boolean): View = with(ui) {
-        val selected = enabled && KeyboardSetup.isSelected(this@MainActivity)
-        val done = (if (enabled) 1 else 0) + (if (selected) 1 else 0)
+    /** The one setup step. It disappears once the keyboard is turned on. */
+    private fun setupCard(): View = with(ui) {
         val card = card()
         card.add(heading(getString(R.string.setup_title)))
-        card.add(progressBar(done / 2f), top = 14)
-        card.add(small(getString(R.string.setup_progress, done, 2)), top = 8)
-        card.add(step(1, getString(R.string.setup_step1), getString(R.string.setup_step1_button), done = enabled, current = !enabled) { openKeyboardSettings() }, top = 20)
-        card.add(step(2, getString(R.string.setup_step2), getString(R.string.setup_step2_button), done = selected, current = enabled && !selected) { showKeyboardPicker() }, top = 20)
+        card.add(step(1, getString(R.string.setup_step1), getString(R.string.setup_step1_button), done = false, current = true) { openKeyboardSettings() }, top = 16)
         card.add(small(getString(R.string.setup_privacy)), top = 20)
         card
     }

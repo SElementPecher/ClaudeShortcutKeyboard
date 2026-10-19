@@ -417,6 +417,7 @@ internal class ChainPanel(
                 },
             )
         }
+        view.add(small(str(R.string.chain_question_help)), bottom = 10)
         view.addView(suggestions, lp())
         view.add(field, top = 12)
         typed = field

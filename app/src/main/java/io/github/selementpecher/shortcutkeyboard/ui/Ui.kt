@@ -284,7 +284,7 @@ internal class Ui(val context: Context, baseLook: Look) {
         setTextColor(color)
         setLineSpacing(0f, lineSpacing)
         letterSpacing = READING_LETTER_SPACING
-        textAlignment = View.TEXT_ALIGNMENT_VIEW_START
+        textAlignment = View.TEXT_ALIGNMENT_GRAVITY
         includeFontPadding = false
         layoutParams = lp()
     }
