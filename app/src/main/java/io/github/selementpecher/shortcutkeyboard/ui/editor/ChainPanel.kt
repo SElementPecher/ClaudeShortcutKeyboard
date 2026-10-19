@@ -157,7 +157,7 @@ internal class ChainPanel(
         FlowStep.AMOUNTS, FlowStep.AFTER_NUMBER -> str(R.string.chain_title_amount)
         FlowStep.SHOW -> str(R.string.chain_title_show)
         FlowStep.QUESTION, FlowStep.LIST_QUESTION -> str(R.string.chain_title_question)
-        FlowStep.LIST_ANSWERS -> str(R.string.chain_title_answers)
+        FlowStep.LIST_ANSWERS -> str(if (flow.isEditing) R.string.chain_title_values else R.string.chain_title_answers)
     }
 
     private fun primaryLabel(flow: AddFlow): String? = when (flow.step) {
@@ -424,6 +424,20 @@ internal class ChainPanel(
     }
 
     private fun answersLevel(flow: AddFlow) = with(ui) {
+        if (flow.isEditing) {
+            // Tapping a pill shows its values first; the name sits above them so it can still be changed.
+            view.add(label(str(R.string.chain_name_label)), bottom = 6)
+            view.add(
+                field(BlankQuestions.default(BlankKind.LIST)).apply {
+                    setText(flow.question)
+                    addTextChangedListener(afterText { s ->
+                        flow.setQuestion(s)
+                        listener.onChanged()
+                    })
+                },
+                bottom = 16,
+            )
+        }
         view.add(small(str(R.string.chain_answers_help)), bottom = 10)
         val rows = column()
         var firstField: EditText? = null

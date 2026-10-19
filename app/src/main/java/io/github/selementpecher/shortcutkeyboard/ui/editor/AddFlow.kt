@@ -544,7 +544,7 @@ class AddFlow private constructor(
             flow.amountUnit = spec.amounts.firstOrNull()?.unit ?: RelativeUnit.MINS
             flow.nav = Nav(
                 step = when {
-                    spec.kind == BlankKind.LIST -> FlowStep.LIST_QUESTION
+                    spec.kind == BlankKind.LIST -> FlowStep.LIST_ANSWERS
                     spec.kind.isRelative -> FlowStep.AMOUNTS
                     else -> FlowStep.QUESTION
                 },

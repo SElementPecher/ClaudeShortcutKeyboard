@@ -594,16 +594,15 @@ class AddFlowTest {
     // ---- editing a chip ----
 
     @Test
-    fun editingAListStartsAtItsQuestionFilledIn() {
+    fun editingAListStartsAtItsAnswersWithTheNameFilledIn() {
         val spec = BlankSpec(2, "Who", BlankKind.LIST, listOf("Sam", "Ben"), example = "Sam", lastValue = "Ben")
         val f = AddFlow.edit(spec, 0, taken = setOf("What"), now = now, locale = uk)
         assertTrue(f.isEditing)
-        assertEquals(FlowStep.LIST_QUESTION, f.step)
+        assertEquals(FlowStep.LIST_ANSWERS, f.step)
         assertEquals("Who", f.question)
         assertEquals(listOf("Sam", "Ben"), f.answers)
         assertTrue(f.crumbs().isEmpty())
         assertFalse(f.back())
-        f.advance()
         f.addAnswerRow(); f.setAnswer(2, "Lou")
         f.setQuestion("Child")
         f.advance()
