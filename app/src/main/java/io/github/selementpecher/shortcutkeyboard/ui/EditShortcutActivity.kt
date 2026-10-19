@@ -718,15 +718,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             val problem = errorLine(R.string.editor_message_error, draft.plainText().isBlank())
             content.add(problem)
 
-            val words = secondaryButton(getString(R.string.editor_change_words)) { goTo(Step.MESSAGE) }
-            if (asks.isEmpty()) {
-                content.add(words, top = 20)
-            } else {
-                content.add(
-                    buttonRow(words, secondaryButton(getString(R.string.editor_change_answers)) { editAnswers(asks.map { it.blankId }) }),
-                    top = 20,
-                )
-            }
+            content.add(secondaryButton(getString(R.string.editor_change_words)) { goTo(Step.MESSAGE) }, top = 20)
             if (!isNew) {
                 content.add(
                     dangerButton(getString(R.string.editor_delete), Icons.Kind.TRASH) { confirmDelete() },

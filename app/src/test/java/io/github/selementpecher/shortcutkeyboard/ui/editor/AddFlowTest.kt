@@ -75,15 +75,11 @@ class AddFlowTest {
     // ---- a list ----
 
     @Test
-    fun aListAsksTheQuestionThenTheAnswers() {
+    fun aListGoesStraightToItsAnswers() {
         val f = flow()
         f.chooseKind(BlankKind.LIST)
-        assertEquals(FlowStep.LIST_QUESTION, f.step)
-        assertEquals(listOf(Crumb.Kind(BlankKind.LIST)), f.crumbs())
-        f.setQuestion(" Who ")
-        assertTrue(f.canAdvance)
-        f.advance()
         assertEquals(FlowStep.LIST_ANSWERS, f.step)
+        assertEquals(listOf(Crumb.Kind(BlankKind.LIST)), f.crumbs())
         assertFalse(f.canAdvance)
         f.setAnswer(0, "Sam")
         f.addAnswerRow()
@@ -95,7 +91,7 @@ class AddFlowTest {
         f.advance()
         assertTrue(f.isDone)
         val spec = f.spec()
-        assertEquals("Who", spec.question)
+        assertEquals("Which", spec.question)
         assertEquals(BlankKind.LIST, spec.kind)
         assertEquals(listOf("Sam", "Ben"), spec.answers)
         assertEquals("Sam", spec.example)
@@ -153,17 +149,11 @@ class AddFlowTest {
     }
 
     @Test
-    fun theListQuestionFollowsWhatIsTypedAndIsMadeUnique() {
-        val f = flow(taken = setOf("Who"))
+    fun aListIsNamedByDefaultAndKeptApartFromSameNames() {
+        val f = flow(taken = setOf("Which"))
         f.chooseKind(BlankKind.LIST)
-        f.setQuestion("who")
-        assertTrue((f.preview() as ChipPreview.Blank).named)
-        f.advance(); f.setAnswer(0, "x"); f.advance()
-        assertEquals("who\u200B", f.spec().question)
-        val g = flow(taken = setOf("Who"))
-        g.chooseKind(BlankKind.LIST)
-        g.advance(); g.setAnswer(0, "x"); g.advance()
-        assertEquals("Who\u200B", g.spec().question)
+        f.setAnswer(0, "x"); f.advance()
+        assertEquals("Which\u200B", f.spec().question)
     }
 
     // ---- back and cancel ----
@@ -172,13 +162,7 @@ class AddFlowTest {
     fun backGoesOneLevelAndKeepsWhatWasTyped() {
         val f = flow()
         f.chooseKind(BlankKind.LIST)
-        f.setQuestion("Who")
-        f.advance()
         f.setAnswer(0, "Sam")
-        assertTrue(f.back())
-        assertEquals(FlowStep.LIST_QUESTION, f.step)
-        assertEquals("Who", f.question)
-        assertEquals(listOf("Sam"), f.answers)
         assertTrue(f.back())
         assertEquals(FlowStep.KIND, f.step)
         assertTrue(f.crumbs().isEmpty())

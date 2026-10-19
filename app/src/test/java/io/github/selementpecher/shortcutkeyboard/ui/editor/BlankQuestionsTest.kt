@@ -22,7 +22,7 @@ class BlankQuestionsTest {
 
     @Test
     fun anEmptyQuestionBecomesTheDefaultForTheKind() {
-        assertEquals("Who", clean(" "))
+        assertEquals("Which", clean(" "))
         assertEquals("When", clean("", BlankKind.TIME))
         assertEquals("Date", clean("{}", BlankKind.DATE))
         assertEquals("How many", clean("|", BlankKind.NUMBER))

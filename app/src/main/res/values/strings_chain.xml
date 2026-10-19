@@ -57,11 +57,10 @@
     <string name="chain_show_both">Both</string>
 
     <!-- The question and the answers -->
-    <string name="chain_title_question">Name this blank</string>
-    <string name="chain_question_help">When you use the shortcut, the keyboard asks you this. Pick a name or type your own.</string>
+    <string name="chain_title_question">Change this part</string>
+    <string name="chain_nothing_to_change">Nothing to type here. The keyboard asks for it each time.</string>
     <string name="chain_title_answers">What are the answers?</string>
     <string name="chain_title_values">Its answers</string>
-    <string name="chain_name_label">Name</string>
     <string name="chain_answers_help">The keyboard shows them as buttons.</string>
     <string name="chain_answer_hint">An answer</string>
     <string name="chain_answer_add">Add another answer</string>

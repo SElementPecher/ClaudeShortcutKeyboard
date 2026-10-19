@@ -219,7 +219,7 @@ class AddFlow private constructor(
             else -> Unit
         }
         go(Nav(top = kind, step = when (kind) {
-            BlankKind.LIST -> FlowStep.LIST_QUESTION
+            BlankKind.LIST -> FlowStep.LIST_ANSWERS
             BlankKind.TIME -> FlowStep.TIME_KIND
             else -> FlowStep.QUESTION
         }))

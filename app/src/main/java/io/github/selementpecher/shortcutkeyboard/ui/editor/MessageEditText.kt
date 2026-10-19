@@ -132,6 +132,13 @@ internal class MessageEditText(context: Context, private val ui: Ui) : EditText(
                 span.pop = it.animatedValue as Float
                 invalidate()
             }
+            // However it ends, the chip must be left fully drawn.
+            addListener(object : android.animation.AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: android.animation.Animator) {
+                    span.pop = 1f
+                    invalidate()
+                }
+            })
             start()
         }
     }

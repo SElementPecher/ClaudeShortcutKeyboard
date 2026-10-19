@@ -94,7 +94,7 @@ internal class ChipSpan(val segment: Segment, style: ChipStyle, private val metr
             val scale = 0.82f + 0.18f * pop
             canvas.scale(scale, scale, rect.centerX(), rect.centerY())
         }
-        val alpha = if (pop < 1f) (255 * pop).toInt().coerceIn(0, 255) else 255
+        val alpha = if (pop < 1f) (255 * (0.4f + 0.6f * pop)).toInt().coerceIn(0, 255) else 255
         if (style.dashed) {
             linePaint.color = style.foreground
             linePaint.strokeWidth = dp(1.5f)

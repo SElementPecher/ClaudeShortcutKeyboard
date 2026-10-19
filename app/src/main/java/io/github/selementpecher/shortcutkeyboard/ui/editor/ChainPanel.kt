@@ -393,51 +393,13 @@ internal class ChainPanel(
         view.addView(stack(tiles), lp())
     }
 
+    /** A pill with no values to change (a clock time, a date, a number): nothing to type, just the extras below. */
     private fun questionLevel(flow: AddFlow) = with(ui) {
-        val kind = flow.kind() ?: BlankKind.TIME
-        val field = field(BlankQuestions.default(kind)).apply {
-            setText(flow.question)
-            setSelection(text.length)
-            imeOptions = EditorInfo.IME_ACTION_DONE
-            addTextChangedListener(afterText { s ->
-                flow.setQuestion(s)
-                listener.onChanged()
-            })
-            setOnEditorActionListener { _, _, _ ->
-                if (flow.canAdvance) advance()
-                true
-            }
-        }
-        val suggestions = ui.flow(8)
-        for (q in BlankQuestions.suggestions(kind)) {
-            suggestions.addView(
-                chip(q, selected = q.equals(flow.question.trim(), ignoreCase = true)) {
-                    field.setText(q)
-                    field.setSelection(q.length)
-                },
-            )
-        }
-        view.add(small(str(R.string.chain_question_help)), bottom = 10)
-        view.addView(suggestions, lp())
-        view.add(field, top = 12)
-        typed = field
+        view.add(small(str(R.string.chain_nothing_to_change)))
+        typed = null
     }
 
     private fun answersLevel(flow: AddFlow) = with(ui) {
-        if (flow.isEditing) {
-            // Tapping a pill shows its values first; the name sits above them so it can still be changed.
-            view.add(label(str(R.string.chain_name_label)), bottom = 6)
-            view.add(
-                field(BlankQuestions.default(BlankKind.LIST)).apply {
-                    setText(flow.question)
-                    addTextChangedListener(afterText { s ->
-                        flow.setQuestion(s)
-                        listener.onChanged()
-                    })
-                },
-                bottom = 16,
-            )
-        }
         view.add(small(str(R.string.chain_answers_help)), bottom = 10)
         val rows = column()
         var firstField: EditText? = null
