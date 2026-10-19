@@ -26,8 +26,18 @@ internal class PillSpan(
     private val path = Path()
     private val rect = RectF()
 
-    override fun getSize(paint: Paint, text: CharSequence, start: Int, end: Int, fm: Paint.FontMetricsInt?): Int =
-        Math.ceil(paint.measureText(text, start, end) + startPad() + endPad().toDouble()).toInt()
+    override fun getSize(paint: Paint, text: CharSequence, start: Int, end: Int, fm: Paint.FontMetricsInt?): Int {
+        // Make the line tall enough for the pill's own padding, or its top and bottom are cut off.
+        if (fm != null) {
+            val m = paint.fontMetricsInt
+            val pad = Math.ceil(padY.toDouble()).toInt()
+            fm.ascent = m.ascent - pad
+            fm.top = fm.ascent
+            fm.descent = m.descent + pad
+            fm.bottom = fm.descent
+        }
+        return Math.ceil(paint.measureText(text, start, end) + startPad() + endPad().toDouble()).toInt()
+    }
 
     override fun draw(canvas: Canvas, text: CharSequence, start: Int, end: Int, x: Float, top: Int, y: Int, bottom: Int, paint: Paint) {
         val width = paint.measureText(text, start, end)

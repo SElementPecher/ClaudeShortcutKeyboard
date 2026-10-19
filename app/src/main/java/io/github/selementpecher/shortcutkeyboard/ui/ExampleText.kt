@@ -138,8 +138,18 @@ internal class RoundedHighlightSpan(
     private fun startPad() = if (roundStart) paddingPx else 0f
     private fun endPad() = if (roundEnd) paddingPx else 0f
 
-    override fun getSize(paint: Paint, text: CharSequence, start: Int, end: Int, fm: Paint.FontMetricsInt?): Int =
-        (paint.measureText(text, start, end) + startPad() + endPad() + 0.5f).toInt()
+    override fun getSize(paint: Paint, text: CharSequence, start: Int, end: Int, fm: Paint.FontMetricsInt?): Int {
+        // Make the line tall enough for the highlight's own padding, or its top and bottom are cut off.
+        if (fm != null) {
+            val m = paint.fontMetricsInt
+            val pad = Math.ceil(verticalPx.toDouble()).toInt()
+            fm.ascent = m.ascent - pad
+            fm.top = fm.ascent
+            fm.descent = m.descent + pad
+            fm.bottom = fm.descent
+        }
+        return (paint.measureText(text, start, end) + startPad() + endPad() + 0.5f).toInt()
+    }
 
     override fun draw(canvas: Canvas, text: CharSequence, start: Int, end: Int, x: Float, top: Int, y: Int, bottom: Int, paint: Paint) {
         val width = paint.measureText(text, start, end)
