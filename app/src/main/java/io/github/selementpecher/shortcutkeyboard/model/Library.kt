@@ -85,6 +85,46 @@ data class Library(
         return Library(folders + newFolders, shortcuts + newShortcuts).repaired()
     }
 
+    /**
+     * Copies every shortcut and folder in [ids]. Each copy sits right after its original and its name ends with
+     * [suffix]. A folder is copied with everything inside it. [newId] makes the ids of the copies.
+     */
+    fun withCopiesOf(ids: Set<String>, newId: () -> String, suffix: String): Library {
+        var lib = this
+        for (id in ids.sortedBy { orderOf(it) }) {
+            val folder = lib.folder(id)
+            val shortcut = lib.shortcut(id)
+            val parent: String?
+            val copyId: String
+            if (folder != null) {
+                parent = folder.parentId
+                copyId = newId()
+                val map = LinkedHashMap<String, String>().apply { put(folder.id, copyId) }
+                fun collect(folderId: String) {
+                    lib.folders.filter { it.parentId == folderId }.forEach { map[it.id] = newId(); collect(it.id) }
+                }
+                collect(folder.id)
+                val copiedFolders = lib.folders.filter { it.id in map }.map {
+                    if (it.id == folder.id) it.copy(id = copyId, name = it.name + suffix, order = lib.nextOrder(parent))
+                    else it.copy(id = map.getValue(it.id), parentId = map.getValue(it.parentId!!))
+                }
+                val copiedShortcuts = lib.shortcuts.filter { it.parentId in map }.map {
+                    it.copy(id = newId(), parentId = map.getValue(it.parentId!!))
+                }
+                lib = Library(lib.folders + copiedFolders, lib.shortcuts + copiedShortcuts)
+            } else if (shortcut != null) {
+                parent = shortcut.parentId
+                copyId = newId()
+                lib = lib.copy(shortcuts = lib.shortcuts + shortcut.copy(id = copyId, name = shortcut.name + suffix, order = lib.nextOrder(parent)))
+            } else continue
+            val at = lib.children(parent).indexOfFirst { it.id == id }
+            lib = lib.moved(copyId, parent, at + 1) ?: lib
+        }
+        return lib
+    }
+
+    private fun orderOf(id: String): Int = (folder(id)?.order ?: shortcut(id)?.order) ?: 0
+
     /** Removes every shortcut and folder in [ids]. A folder takes everything inside it with it. */
     fun withoutAll(ids: Set<String>): Library =
         ids.fold(this) { lib, id -> if (lib.folder(id) != null) lib.withoutFolder(id) else lib.withoutShortcut(id) }
@@ -146,7 +186,7 @@ data class Library(
         )
     }
 
-    private fun nextOrder(parentId: String?): Int = (children(parentId).maxOfOrNull { it.order } ?: -1) + 1
+    internal fun nextOrder(parentId: String?): Int = (children(parentId).maxOfOrNull { it.order } ?: -1) + 1
 
     /** Repairs a library read from disk: tiles pointing at a missing folder, or at a loop, go to the top level. */
     fun repaired(): Library {

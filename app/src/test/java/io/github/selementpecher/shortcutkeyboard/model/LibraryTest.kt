@@ -137,6 +137,28 @@ class LibraryTest {
     }
 
     @Test
+    fun `a copied shortcut sits right after its original with a new name`() {
+        var n = 0
+        val copied = library.withCopiesOf(setOf("late"), { "new${n++}" }, " copy")
+        assertEquals(listOf("kids", "late", "new0"), ids(null, copied))
+        assertEquals("late copy", copied.shortcut("new0")!!.name)
+        assertEquals("late", copied.shortcut("late")!!.name)
+    }
+
+    @Test
+    fun `a copied folder brings everything inside it, with new ids`() {
+        var n = 0
+        val copied = library.withCopiesOf(setOf("kids"), { "n${n++}" }, " copy")
+        assertEquals(listOf("kids", "n0", "late"), ids(null, copied))
+        assertEquals("Kids copy", copied.folder("n0")!!.name)
+        assertEquals(2, copied.children("n0").size)
+        assertEquals(library.folders.size + 4, copied.folders.size)
+        assertEquals(library.shortcuts.size + 3, copied.shortcuts.size)
+        // The original is untouched.
+        assertEquals(listOf("meds", "other"), ids("kids", copied))
+    }
+
+    @Test
     fun `deleting a shortcut only removes it`() {
         assertEquals(listOf("zippy"), ids("calpol", library.withoutShortcut("giddy")))
     }

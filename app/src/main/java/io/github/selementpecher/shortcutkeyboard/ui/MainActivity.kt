@@ -275,8 +275,12 @@ class MainActivity : Activity() {
                 val delete = dangerFilledButton(resources.getQuantityString(R.plurals.select_delete, count, count)) { confirmDeleteSelected() }
                 delete.isEnabled = count > 0
                 delete.alpha = if (count > 0) 1f else 0.4f
+                val copy = secondaryButton(getString(R.string.select_duplicate)) { duplicateSelected() }
+                copy.isEnabled = count > 0
+                copy.alpha = if (count > 0) 1f else 0.4f
                 val cancel = secondaryButton(getString(R.string.dialog_cancel)) { stopSelecting() }
-                screen.bottomBar.addView(buttonRow(delete, cancel))
+                screen.bottomBar.addView(buttonRow(delete, copy))
+                screen.bottomBar.addView(cancel)
             }
         }
     }
@@ -345,6 +349,22 @@ class MainActivity : Activity() {
         val y = screen.scroll.scrollY
         render()
         screen.scroll.post { screen.scroll.scrollTo(0, y) }
+    }
+
+    private fun duplicateSelected() {
+        if (selected.isEmpty()) return
+        val count = selected.size
+        try {
+            ShortcutRepository.duplicateMany(this, selected.toSet(), getString(R.string.copy_suffix))
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not copy", e)
+            screen.snack(getString(R.string.edit_save_failed), error = true)
+            return
+        }
+        selecting = false
+        selected.clear()
+        render()
+        screen.snack(resources.getQuantityString(R.plurals.select_copied, count, count))
     }
 
     private fun confirmDeleteSelected() {

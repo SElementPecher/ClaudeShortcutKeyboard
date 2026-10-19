@@ -144,6 +144,12 @@
         <item quantity="one">%d selected</item>
         <item quantity="other">%d selected</item>
     </plurals>
+    <string name="select_duplicate">Duplicate</string>
+    <string name="copy_suffix">" copy"</string>
+    <plurals name="select_copied">
+        <item quantity="one">Copied %d item</item>
+        <item quantity="other">Copied %d items</item>
+    </plurals>
     <string name="select_all">Select all</string>
     <string name="select_none">Clear</string>
     <plurals name="select_delete">

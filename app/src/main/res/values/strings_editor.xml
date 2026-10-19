@@ -66,6 +66,8 @@
     <string name="editor_edit_name_title">Name, picture and colour</string>
 
     <!-- Delete, saving, leaving -->
+    <string name="editor_duplicate">Duplicate this quiKey</string>
+    <string name="editor_copied">Copied</string>
     <string name="editor_delete">Delete this quiKey</string>
     <string name="editor_delete_title">Delete this quiKey?</string>
     <string name="editor_delete_message">“%s” will be gone for good.</string>

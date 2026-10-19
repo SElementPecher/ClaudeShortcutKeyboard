@@ -276,6 +276,19 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
         finish()
     }
 
+    /** Makes a copy of this quiKey as it is saved, then goes back to the home screen. */
+    private fun duplicate() {
+        try {
+            ShortcutRepository.duplicateMany(this, setOf(shortcutId), getString(R.string.copy_suffix))
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not copy the shortcut", e)
+            screen.snack(getString(R.string.editor_save_failed), error = true)
+            return
+        }
+        Snackbars.later(getString(R.string.editor_copied))
+        finish()
+    }
+
     private fun confirmDelete() {
         dialog?.dismiss()
         dialog = ui.confirm(
@@ -747,6 +760,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
 
             content.add(secondaryButton(getString(R.string.editor_change_words)) { goTo(Step.MESSAGE) }, top = 20)
             if (!isNew) {
+                content.add(secondaryButton(getString(R.string.editor_duplicate)) { duplicate() }, top = 12)
                 content.add(
                     dangerButton(getString(R.string.editor_delete), Icons.Kind.TRASH) { confirmDelete() },
                     top = 12,

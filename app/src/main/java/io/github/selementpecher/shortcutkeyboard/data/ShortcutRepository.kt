@@ -59,6 +59,10 @@ object ShortcutRepository {
     /** Deletes several shortcuts and folders in one go (one save). */
     fun deleteMany(context: Context, ids: Set<String>) = update(context) { it.withoutAll(ids) }
 
+    /** Copies quiKies and folders (a folder with everything inside it); each copy is named with [suffix] added. */
+    fun duplicateMany(context: Context, ids: Set<String>, suffix: String) =
+        update(context) { it.withCopiesOf(ids, ::newId, suffix) }
+
     /** Deletes a folder and everything inside it. */
     fun deleteFolder(context: Context, id: String) = update(context) { it.withoutFolder(id) }
 
