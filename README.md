@@ -1,7 +1,7 @@
 # Shortcut Keyboard
 
-A phone keyboard that types **whole messages for you**.
-You fill in a few **blanks**, and it does the rest.
+A phone keyboard made of **big tiles**. It types **whole messages for you**.
+There are **no letter keys**. You tap tiles, and it does the rest.
 
 ---
 
@@ -9,7 +9,8 @@ You fill in a few **blanks**, and it does the rest.
 
 - You save a **shortcut**. A shortcut is a message you send a lot.
 - The message has **blanks** in it, like `{child}` or `{time}`.
-- When you use the shortcut, the keyboard asks for **one blank at a time**.
+- Shortcuts live on **tiles**. Tiles can sit inside **folders**.
+- When you use a shortcut, the keyboard asks **one question at a time**.
 - Then it types the **whole message** for you.
 
 ### Example: "Medicine given"
@@ -20,7 +21,7 @@ The shortcut message is:
 {child}, {medicine}, {dose}, {time} next dose not before {time+4h}
 ```
 
-You tap **Sam**, then **Calpol**, then **5ml**. The time is filled in for you.
+You tap **Sam**, then **Calpol**, then **5ml**, then **Now**.
 
 The keyboard types:
 
@@ -63,8 +64,8 @@ Open the **Shortcut Keyboard** app. It shows you **2 steps**.
 
 When both steps are done, you see **✓ Keyboard is ready**.
 
-**Tip:** to swap back to your old keyboard, tap the **globe** key 🌐.
-Or **press and hold** the space bar.
+**How to use it:** tap the **keyboard icon** at the bottom of your screen.
+Choose **Shortcut Keyboard**. Your normal keyboard comes back by itself after you tap **Add**.
 
 ---
 
@@ -73,19 +74,33 @@ Or **press and hold** the space bar.
 1. Open the **Shortcut Keyboard** app.
 2. Tap **+ New shortcut**.
 3. **Name:** a short name, like **Medicine given**.
-4. **Trigger word** (you can skip this): a word like **/meds**.
-   Type the word, then a **space**, and the shortcut opens.
-5. **Message:** write your message.
+4. **Message:** write your message.
    Put blanks in **curly brackets**, like `{child}`.
-6. Tap **+ Add a blank** to add a blank without typing the brackets.
-7. Tap **Save**.
+5. Tap **+ Add a blank** to add a blank without typing the brackets.
+6. Tap **Save**.
+
+New names (like a new child) are added from the keyboard: tap **+ New**, type the name in the box, then go back to your message.
+
+### Folders
+
+- In the app, tap **+ New folder**. Folders can go **inside** folders.
+- Press and **hold** a row for **Rename**, **Move to…** or **Delete**.
+- Deleting a folder does **not** delete what is inside. It moves up one level.
 
 ### Use a shortcut
 
-- Tap its name in the **bar at the top of the keyboard**.
-- Or type its **trigger word** and then a **space**.
-- Answer each blank. Tap **Next**.
-- Tap **Insert** to type the message.
+1. Open the keyboard. You see **6 tiles** at a time. Use the arrows for more.
+2. Tap a **folder** to open it. Tap **◀** to go back.
+3. Tap a **shortcut**. Answer each question by tapping.
+4. Check the message. Tap **✓ Add**.
+
+### Move tiles around
+
+- **Press and hold** a tile, then **drag** it.
+- Drop it on **another tile's place** to reorder.
+- Drop it on the **middle of a folder** to put it inside.
+- Drop it on **◀** to move it up a folder.
+- Hold at the **edge** to go to the next page.
 
 The keyboard **remembers** your answers. New answers are added to the list for next time.
 
@@ -144,9 +159,10 @@ The APK is in `app/build/outputs/apk/debug/`.
 - No permissions at all, not even INTERNET.
 - Code lives in `app/src/main/java/io/github/selementpecher/shortcutkeyboard/`:
   - `template/` reads messages and fills in blanks (`{time+4h}`, `{name|h:mm a}`).
-  - `fill/` steps through the blanks one at a time, and spots trigger words.
+  - `fill/` steps through the blanks one at a time.
+  - `model/` has shortcuts, folders, and the folder rules (`Library`).
   - `data/` saves shortcuts as JSON in app storage, and does backups.
-  - `ime/` is the keyboard. `ui/` is the app screens.
+  - `ime/` is the tile keyboard (grid, drag, question screens). `ui/` is the app screens.
 - Unit tests are plain JVM tests (JUnit 4). Tests under `robolectric/` start the real screens and keyboard.
 - Every push builds the app on GitHub Actions (`.github/workflows/build.yml`).
   Pushes to the default branch (and to the owner's working branch) replace the **Latest build** release.

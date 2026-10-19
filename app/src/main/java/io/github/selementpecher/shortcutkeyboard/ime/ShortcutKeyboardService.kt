@@ -3,94 +3,72 @@ package io.github.selementpecher.shortcutkeyboard.ime
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
-import android.graphics.Typeface
 import android.inputmethodservice.InputMethodService
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.text.InputType
-import android.text.SpannableString
-import android.text.Spanned
-import android.text.style.ForegroundColorSpan
-import android.text.style.StyleSpan
-import android.text.style.UnderlineSpan
+import android.os.SystemClock
 import android.util.Log
 import android.view.KeyEvent
 import android.view.View
-import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
-import android.widget.LinearLayout
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository
 import io.github.selementpecher.shortcutkeyboard.fill.FillSession
-import io.github.selementpecher.shortcutkeyboard.fill.TriggerDetector
+import io.github.selementpecher.shortcutkeyboard.model.Folder
+import io.github.selementpecher.shortcutkeyboard.model.Library
+import io.github.selementpecher.shortcutkeyboard.model.Node
 import io.github.selementpecher.shortcutkeyboard.model.Shortcut
 import io.github.selementpecher.shortcutkeyboard.model.VariableDef
 import io.github.selementpecher.shortcutkeyboard.model.VariableType
 import io.github.selementpecher.shortcutkeyboard.template.Template
+import io.github.selementpecher.shortcutkeyboard.ui.AddOptionActivity
 import io.github.selementpecher.shortcutkeyboard.ui.MainActivity
 import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
+import java.time.LocalTime
 import java.util.Locale
 
 /**
- * The keyboard.
+ * The keyboard: a grid of six big tiles (folders and shortcuts), a one-question-at-a-time
+ * fill-in flow, and a check screen with an Add button. There are no letter keys; the person
+ * keeps their normal keyboard for typing and comes here to add a shortcut.
  *
- * From top to bottom: the shortcut bar, the fill-in panel (only while filling in a shortcut's
- * blanks) and the keys. While a blank is being typed, the keys type into the panel's box instead
- * of the app; everything else goes straight to the app's text field.
- *
- * All state lives here and in [KeyboardController]; the views are rebuilt from it whenever the
- * system asks for a new input view (for example after switching to dark mode).
+ * This class holds the state and decides what happens; [KeyboardView] draws it, and the paging
+ * and drag rules live in plain Kotlin ([GridPaging], [DragPlanner], ...).
  */
-class ShortcutKeyboardService :
-    InputMethodService(),
-    KeyView.Listener,
-    ShortcutBarView.Listener,
-    FillPanelView.Listener {
+class ShortcutKeyboardService : InputMethodService() {
+
+    private enum class Screen { GRID, QUESTION, CHECK }
 
     private val handler = Handler(Looper.getMainLooper())
-    private val keyboard = KeyboardController()
-    private var shortcuts: List<Shortcut> = emptyList()
     private var destroyed = false
-
-    // Views, made again by onCreateInputView.
-    private var bar: ShortcutBarView? = null
-    private var panel: FillPanelView? = null
-    private var keys: KeysView? = null
-    private var keyHeight = 0
-    private var barHeight = 0
+    private var ui: KeyboardView? = null
     private var compact = false
 
-    // The app's text field.
-    private var fieldPage = KeyboardPage.LETTERS
-    private var enterAction = EnterAction.ENTER_KEY
-    private var isPasswordField = false
-    private var showNextKeyboard = false
-    private var selectionStart = -1
-    private var selectionEnd = -1
-    private var swallowBackUp = false
+    // Where we are. Kept while the service lives, so the keyboard reopens in the same folder.
+    private var folderId: String? = null
+    private var page = 0
+    private var screen = Screen.GRID
 
     // Filling in a shortcut.
     private var session: FillSession? = null
+    private var answerPage = 0
+    private var otherOpen = false
+    private var number: NumberEntry? = null
+    private var pending: PendingFill? = null
+    private var swallowBackUp = false
 
-    /** The box being typed into, or null when the current blank is not being typed. */
-    private var typing: TextBuffer? = null
-    private var typingIsNumber = false
-    private var typingCapsAtStart = false
-    private var capsAtMessageStart = false
-
-    /** Blanks typed into during this fill-in, so going back to one does not select its text. */
-    private val typedKeys = HashSet<String>()
+    // Dragging a tile.
+    private var drag: DragPlanner? = null
+    private var dragNodes: Map<String, Node> = emptyMap()
+    private var dragSignature: Any? = null
 
     private val repositoryListener: () -> Unit = {
         // May be called from any thread; the views must only be touched on the main thread.
-        handler.post { if (!destroyed) onShortcutsChanged() }
+        handler.post { if (!destroyed && screen == Screen.GRID && drag == null) renderGrid() }
     }
 
     override fun onCreate() {
@@ -102,91 +80,58 @@ class ShortcutKeyboardService :
         destroyed = true
         ShortcutRepository.removeListener(repositoryListener)
         handler.removeCallbacksAndMessages(null)
-        keys?.stopAll()
         super.onDestroy()
     }
 
+    /** A full-screen keyboard in landscape would hide the app, and there is nothing to type into it. */
+    override fun onEvaluateFullscreenMode(): Boolean = false
+
     override fun onCreateInputView(): View {
-        keys?.stopAll()
+        // Called again after a change such as dark mode: the state stays, the views are rebuilt.
         val screenHeight = resources.configuration.screenHeightDp
         compact = screenHeight in 1 until COMPACT_SCREEN_HEIGHT_DP
-        keyHeight = px(if (compact) R.dimen.kb_key_height_compact else R.dimen.kb_key_height)
-        barHeight = px(if (compact) R.dimen.kb_bar_height_compact else R.dimen.kb_bar_height)
-
-        val newBar = ShortcutBarView(this, this)
-        val newPanel = FillPanelView(this, this)
-        val newKeys = KeysView(this, this)
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(getColor(R.color.kb_background))
-            addView(newBar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, barHeight))
-            addView(newPanel, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
-            addView(newKeys, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
-            setOnApplyWindowInsetsListener { view, insets -> applyInsets(view, insets) }
-        }
-        bar = newBar
-        panel = newPanel
-        keys = newKeys
+        val view = KeyboardView(this, compact)
+        view.gridDragCallbacks = dragCallbacks
+        ui = view
         styleNavigationBar()
-        shortcuts = loadShortcuts()
-        render()
-        return root
+        drag = null
+        renderCurrent()
+        return view
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        val inputType = info?.inputType ?: InputType.TYPE_NULL
-        selectionStart = info?.initialSelStart ?: -1
-        selectionEnd = info?.initialSelEnd ?: -1
-        fieldPage = EditorRules.startPage(inputType)
-        enterAction = EditorRules.enterAction(info?.imeOptions ?: 0, inputType)
-        isPasswordField = EditorRules.isPassword(inputType)
-        showNextKeyboard = offersNextKeyboard()
-        if (!restarting) {
-            // A new text field: start afresh.
+        val saved = pending
+        if (saved != null) {
+            if (info?.packageName == packageName) {
+                // Our own "add an answer" box has no letters here: hand over to the normal keyboard.
+                handler.post { switchBack(fromAbc = false) }
+                renderCurrent()
+                return
+            }
+            pending = null
+            if (saved.isFresh(SystemClock.elapsedRealtime()) && restorePending(saved)) return
+        } else if (!restarting) {
             session = null
-            typing = null
-            keyboard.reset(fieldPage)
+            screen = Screen.GRID
         }
-        shortcuts = loadShortcuts()
-        if (typing == null) updateAutoCaps()
-        render()
+        renderCurrent()
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
-        keys?.stopAll()
-        if (session != null) {
-            session = null
-            typing = null
-            keyboard.reset(fieldPage)
-            render()
-        }
+        cancelDrag()
+        // The fill-in is dropped unless we are leaving to add an answer (see [pending]).
+        session = null
+        screen = Screen.GRID
         super.onFinishInputView(finishingInput)
     }
 
-    override fun onUpdateSelection(
-        oldSelStart: Int,
-        oldSelEnd: Int,
-        newSelStart: Int,
-        newSelEnd: Int,
-        candidatesStart: Int,
-        candidatesEnd: Int,
-    ) {
-        super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
-        selectionStart = newSelStart
-        selectionEnd = newSelEnd
-        if (session == null) {
-            updateAutoCaps()
-            renderKeys()
-        }
-    }
-
-    /** The back button closes the fill-in panel first, instead of hiding the keyboard. */
+    /** The back button leaves the fill-in instead of hiding the keyboard. */
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             swallowBackUp = session != null && isInputViewShown
             if (swallowBackUp) {
-                if ((event?.repeatCount ?: 0) == 0) closeFill()
+                if ((event?.repeatCount ?: 0) == 0) leaveFill()
                 return true
             }
         }
@@ -201,444 +146,538 @@ class ShortcutKeyboardService :
         return super.onKeyUp(keyCode, event)
     }
 
-    // ---- Keys ----
+    // ---- Data ----
 
-    override fun onKey(key: Key, timeMillis: Long) {
-        val inBox = typing != null
-        when (val output = keyboard.onKey(key, timeMillis)) {
-            is KeyOutput.Type -> if (inBox) typeIntoBox(output.text) else typeIntoApp(output.text)
-            KeyOutput.Delete -> if (inBox) deleteInBox() else deleteInApp()
-            KeyOutput.Space -> if (inBox) typeIntoBox(" ") else spaceInApp()
-            KeyOutput.Enter -> if (inBox) onFillNext() else enterInApp()
-            KeyOutput.NextKeyboard -> switchToNextKeyboard()
-            KeyOutput.None -> Unit
+    private fun library(): Library = try {
+        ShortcutRepository.library(this)
+    } catch (e: Exception) {
+        Log.e(TAG, "Could not load shortcuts", e)
+        Library()
+    }
+
+    /** Falls back to the top level if the folder we were in has been deleted. */
+    private fun checkedFolder(library: Library): String? {
+        if (folderId != null && library.folder(folderId) == null) {
+            folderId = null
+            page = 0
         }
-        renderKeys()
+        return folderId
     }
 
-    override fun onSpaceLongPress() {
-        showKeyboardPicker()
-    }
+    // ---- Screen 1: the grid ----
 
-    private fun typeIntoApp(text: String) {
-        val ic = currentInputConnection ?: return
-        ic.commitText(text, 1)
-        updateAutoCaps()
-    }
-
-    /** Space opens a shortcut when the word before the cursor is its trigger word. */
-    private fun spaceInApp() {
-        val ic = currentInputConnection ?: return
-        if (!isPasswordField && selectionStart == selectionEnd) {
-            val match = TriggerDetector.find(ic.getTextBeforeCursor(TRIGGER_LOOKBACK, 0), shortcuts)
-            if (match != null) {
-                ic.deleteSurroundingText(match.length, 0)
-                openShortcut(match.shortcut)
-                return
-            }
-        }
-        ic.commitText(" ", 1)
-        updateAutoCaps()
-    }
-
-    private fun deleteInApp() {
-        val ic = currentInputConnection ?: return
-        if (selectionStart >= 0 && selectionEnd >= 0 && selectionStart != selectionEnd) {
-            ic.commitText("", 1)
-            // Until the app reports back, assume the selection is gone.
-            selectionStart = minOf(selectionStart, selectionEnd)
-            selectionEnd = selectionStart
-        } else {
-            sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
-        }
-        updateAutoCaps()
-    }
-
-    private fun enterInApp() {
-        val ic = currentInputConnection ?: return
+    private fun renderCurrent() {
+        val current = session
         when {
-            enterAction.isEditorAction -> ic.performEditorAction(enterAction.editorAction)
-            enterAction == EnterAction.NEW_LINE -> ic.commitText("\n", 1)
-            else -> sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)
-        }
-        updateAutoCaps()
-    }
-
-    /** Capital letter at the start of a sentence, as the text field (or the blank's place in the message) asks. */
-    private fun updateAutoCaps() {
-        val buffer = typing
-        val caps = if (buffer != null) {
-            !typingIsNumber && if (buffer.isEmpty || buffer.isAllSelected) typingCapsAtStart else buffer.isAfterSentenceEnd
-        } else {
-            appWantsCaps()
-        }
-        keyboard.shift.autoCapitalize(caps)
-    }
-
-    private fun appWantsCaps(): Boolean {
-        val ic = currentInputConnection ?: return false
-        val inputType = currentInputEditorInfo?.inputType ?: return false
-        if (inputType == InputType.TYPE_NULL) return false
-        return ic.getCursorCapsMode(inputType) != 0
-    }
-
-    private fun offersNextKeyboard(): Boolean = try {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            shouldOfferSwitchingToNextInputMethod()
-        } else {
-            val token = window?.window?.attributes?.token
-            @Suppress("DEPRECATION")
-            token != null && inputMethodManager()?.shouldOfferSwitchingToNextInputMethod(token) == true
-        }
-    } catch (e: RuntimeException) {
-        Log.w(TAG, "Could not check for other keyboards", e)
-        false
-    }
-
-    private fun switchToNextKeyboard() {
-        val switched = try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                switchToNextInputMethod(false)
-            } else {
-                val token = window?.window?.attributes?.token
-                @Suppress("DEPRECATION")
-                token != null && inputMethodManager()?.switchToNextInputMethod(token, false) == true
+            screen == Screen.QUESTION && current != null -> showQuestion()
+            screen == Screen.CHECK && current != null -> showCheck()
+            else -> {
+                screen = Screen.GRID
+                renderGrid()
             }
-        } catch (e: RuntimeException) {
-            Log.w(TAG, "Could not switch keyboard", e)
-            false
-        }
-        if (!switched) showKeyboardPicker()
-    }
-
-    private fun showKeyboardPicker() {
-        try {
-            inputMethodManager()?.showInputMethodPicker()
-        } catch (e: RuntimeException) {
-            Log.w(TAG, "Could not show the keyboard picker", e)
         }
     }
 
-    private fun inputMethodManager(): InputMethodManager? =
-        getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
-
-    // ---- Shortcut bar ----
-
-    override fun onShortcutChosen(shortcut: Shortcut) {
-        openShortcut(shortcut)
+    private fun renderGrid() {
+        val view = ui ?: return
+        val library = library()
+        val folder = checkedFolder(library)
+        val planner = drag
+        val ordered: List<Node> = if (planner != null) {
+            planner.order.mapNotNull { dragNodes[it] }
+        } else {
+            library.children(folder)
+        }
+        // The "+ New" tile is always the last one.
+        val entries: List<Node?> = ordered + null
+        page = GridPaging.clampPage(page, entries.size)
+        val tiles = GridPaging.pageItems(entries, page).map { node ->
+            when {
+                node == null -> newTile(getString(R.string.kb_new), getString(R.string.kb_desc_new_shortcut), ::openApp)
+                planner != null && node.id == planner.draggedId ->
+                    TileSpec("", TileLook(TileLook.Kind.EMPTY), getString(R.string.kb_desc_empty_slot))
+                else -> nodeTile(node, highlighted = planner?.dropFolderId == node.id)
+            }
+        }
+        view.showGrid(
+            GridModel(
+                inFolder = folder != null,
+                pathText = TileStyle.pathText(library.path(folder).map { it.name }),
+                page = page,
+                pageCount = GridPaging.pageCount(entries.size),
+                tiles = tiles,
+                backHighlighted = planner?.overBack == true,
+                onBack = ::goUpOneLevel,
+                onPrevious = { flipPage(-1) },
+                onNext = { flipPage(1) },
+                onAbc = { switchBack(fromAbc = true) },
+                onSettings = ::openApp,
+            ),
+        )
     }
 
-    override fun onOpenApp() {
+    private fun nodeTile(node: Node, highlighted: Boolean = false): TileSpec = when (node) {
+        is Folder -> TileSpec(
+            label = TileStyle.folderLabel(node.name),
+            look = TileLook(TileLook.Kind.FOLDER, highlighted = highlighted),
+            description = getString(R.string.kb_desc_folder, node.name),
+            draggable = true,
+            id = node.id,
+            onClick = { enterFolder(node.id) },
+        )
+        is Shortcut -> TileSpec(
+            label = node.name.ifBlank { getString(R.string.kb_untitled) },
+            look = TileLook(TileLook.Kind.SHORTCUT, colourIndex = TileStyle.colourIndex(node.id)),
+            description = getString(R.string.kb_desc_shortcut, node.name),
+            draggable = true,
+            id = node.id,
+            onClick = { openShortcut(node) },
+        )
+    }
+
+    private fun newTile(label: String, description: String, onClick: () -> Unit) =
+        TileSpec(label, TileLook(TileLook.Kind.NEW), description, onClick = onClick)
+
+    private fun enterFolder(id: String) {
+        folderId = id
+        page = 0
+        renderGrid()
+    }
+
+    private fun goUpOneLevel() {
+        folderId = library().folder(folderId)?.parentId
+        page = 0
+        renderGrid()
+    }
+
+    private fun flipPage(direction: Int) {
+        val count = (drag?.order?.size ?: library().children(folderId).size) + 1
+        page = GridPaging.clampPage(page + direction, count)
+        renderGrid()
+    }
+
+    /** Opens the app showing the folder we are in. */
+    private fun openApp() {
         try {
-            startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            val intent = Intent(this, MainActivity::class.java)
+                .putExtra(MainActivity.EXTRA_FOLDER_ID, folderId)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
         } catch (e: RuntimeException) {
             Log.w(TAG, "Could not open the app", e)
         }
     }
 
-    private fun onShortcutsChanged() {
-        shortcuts = loadShortcuts()
-        bar?.setShortcuts(shortcuts)
+    // ---- Dragging ----
+
+    private val dragCallbacks = object : TileGrid.DragCallbacks {
+        override fun onDragStart(slot: Int, rawX: Float, rawY: Float): Boolean {
+            val view = ui ?: return false
+            val library = library()
+            val ordered = library.children(checkedFolder(library))
+            val node = GridPaging.pageItems(ordered + null, page).getOrNull(slot) ?: return false
+            val tile = view.gridTile(slot) ?: return false
+            drag = DragPlanner(
+                ids = ordered.map { it.id },
+                draggedId = node.id,
+                folderIds = ordered.filterIsInstance<Folder>().map { it.id }.toSet(),
+            )
+            dragNodes = ordered.associateBy { it.id }
+            dragSignature = null
+            val spec = nodeTile(node)
+            view.showGhost(TileSpec(spec.label, spec.look, spec.description), tile.width, tile.height, rawX, rawY)
+            renderGrid()
+            return true
+        }
+
+        override fun onDragMove(target: DragTarget, rawX: Float, rawY: Float) {
+            val planner = drag ?: return
+            ui?.moveGhost(rawX, rawY)
+            planner.update(page, target)
+            val signature = Triple(planner.order, planner.dropFolderId, planner.overBack)
+            if (signature != dragSignature) {
+                dragSignature = signature
+                renderGrid()
+            }
+        }
+
+        override fun onEdgeFlip(direction: Int) {
+            if (drag != null) flipPage(direction)
+        }
+
+        override fun canFlip(direction: Int): Boolean {
+            val count = (drag?.order?.size ?: return false) + 1
+            return if (direction < 0) GridPaging.hasPrevious(page) else GridPaging.hasNext(page, count)
+        }
+
+        override fun onDragEnd(cancelled: Boolean) {
+            val planner = drag ?: return
+            ui?.hideGhost()
+            drag = null
+            dragSignature = null
+            if (!cancelled && !planner.isUnchanged()) applyDrop(planner)
+            renderGrid()
+        }
     }
 
-    private fun loadShortcuts(): List<Shortcut> = try {
-        ShortcutRepository.all(this)
-    } catch (e: Exception) {
-        Log.e(TAG, "Could not load shortcuts", e)
-        emptyList()
+    private fun applyDrop(planner: DragPlanner) {
+        try {
+            val id = planner.draggedId
+            // A refused move (such as a folder into itself) just leaves everything as it was.
+            when (val outcome = planner.outcome()) {
+                is DragPlanner.Outcome.IntoFolder -> ShortcutRepository.move(this, id, outcome.folderId, Int.MAX_VALUE)
+                DragPlanner.Outcome.UpOneLevel -> {
+                    val parent = ShortcutRepository.findFolder(this, folderId ?: return)?.parentId
+                    ShortcutRepository.move(this, id, parent, Int.MAX_VALUE)
+                }
+                is DragPlanner.Outcome.Reorder -> ShortcutRepository.move(this, id, folderId, outcome.index)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not move the tile", e)
+        }
     }
 
-    // ---- Filling in ----
+    private fun cancelDrag() {
+        if (drag == null) return
+        drag = null
+        dragSignature = null
+        ui?.hideGhost()
+    }
 
-    /** Inserts a shortcut with no blanks straight away, otherwise opens the fill-in panel. */
+    // ---- Screen 2: one question at a time ----
+
     private fun openShortcut(shortcut: Shortcut) {
-        val ic = currentInputConnection ?: return
-        val newSession = FillSession(shortcut, locale = locale())
-        if (newSession.isEmpty) {
-            ic.commitText(newSession.result(), 1)
-            updateAutoCaps()
-            renderKeys()
+        val fresh = FillSession(shortcut, locale = locale())
+        session = fresh
+        resetQuestionState()
+        if (fresh.isEmpty) showCheck() else showQuestion()
+    }
+
+    private fun resetQuestionState() {
+        answerPage = 0
+        otherOpen = false
+        number = null
+    }
+
+    private fun showQuestion() {
+        val view = ui ?: return
+        val current = session ?: return renderGrid()
+        val variable = current.current ?: return showCheck()
+        screen = Screen.QUESTION
+        val body = when (variable.type) {
+            VariableType.CHOICE, VariableType.TEXT -> answersBody(current, variable)
+            VariableType.TIME -> if (otherOpen) timeAdjustBody(current, variable) else timeBody(current, variable)
+            VariableType.DATE -> if (otherOpen) dateAdjustBody(current, variable) else dateBody(current, variable)
+            VariableType.NUMBER -> numberBody(current, variable)
+        }
+        view.showStep(
+            StepModel(
+                shortcutName = current.shortcut.name.ifBlank { getString(R.string.kb_untitled) },
+                step = current.index,
+                steps = current.variables.size,
+                question = questionText(variable),
+                onBack = ::stepBack,
+                onCancel = ::leaveFill,
+                body = body,
+            ),
+        )
+    }
+
+    private fun questionText(variable: VariableDef): String {
+        val name = variable.name.trim().replaceFirstChar { it.titlecase(locale()) }
+        return getString(
+            when (variable.type) {
+                VariableType.TIME -> R.string.kb_question_time
+                VariableType.DATE -> R.string.kb_question_date
+                VariableType.NUMBER -> R.string.kb_question_number
+                else -> R.string.kb_question
+            },
+            name,
+        )
+    }
+
+    private fun answersBody(current: FillSession, variable: VariableDef): StepBody {
+        val answers = AnswerList.build(variable)
+        val entries: List<Answer?> = answers + null
+        answerPage = GridPaging.clampPage(answerPage, entries.size)
+        val tiles = GridPaging.pageItems(entries, answerPage).map { answer ->
+            if (answer == null) {
+                newTile(getString(R.string.kb_new), getString(R.string.kb_desc_new_answer), ::addNewAnswer)
+            } else {
+                TileSpec(
+                    label = if (answer.isLast) getString(R.string.kb_last_answer, answer.text) else answer.text,
+                    look = TileLook(TileLook.Kind.ANSWER),
+                    description = if (answer.isLast) getString(R.string.kb_desc_last_answer, answer.text) else answer.text,
+                    onClick = {
+                        current.setValue(variable, answer.text)
+                        advance()
+                    },
+                )
+            }
+        }
+        return StepBody.Tiles(
+            tiles = tiles,
+            page = answerPage,
+            pageCount = GridPaging.pageCount(entries.size),
+            hint = if (answers.isEmpty()) getString(R.string.kb_add_first_answer) else null,
+            onPrevious = { flipAnswerPage(-1) },
+            onNext = { flipAnswerPage(1) },
+        )
+    }
+
+    private fun flipAnswerPage(direction: Int) {
+        answerPage += direction
+        showQuestion()
+    }
+
+    private fun timeBody(current: FillSession, variable: VariableDef): StepBody {
+        fun choice(minutesAgo: Long, label: String, kind: TileLook.Kind) = TileSpec(
+            label = label,
+            look = TileLook(kind),
+            description = label.replace('\n', ' '),
+            onClick = {
+                TimeChoices.pick(current, variable, minutesAgo)
+                advance()
+            },
+        )
+        val now = Template.formatTimeValue(LocalTime.now())
+        val tiles = listOf(
+            choice(0, getString(R.string.kb_time_now, now), TileLook.Kind.OK),
+            choice(15, getString(R.string.kb_time_ago_15), TileLook.Kind.ANSWER),
+            choice(30, getString(R.string.kb_time_ago_30), TileLook.Kind.ANSWER),
+            choice(60, getString(R.string.kb_time_ago_60), TileLook.Kind.ANSWER),
+            TileSpec(
+                getString(R.string.kb_time_other),
+                TileLook(TileLook.Kind.SPECIAL),
+                onClick = { otherOpen = true; showQuestion() },
+            ),
+        )
+        return StepBody.Tiles(tiles, 0, 1, null, {}, {})
+    }
+
+    private fun timeAdjustBody(current: FillSession, variable: VariableDef): StepBody {
+        fun nudge(label: Int, minutes: Long) = TileSpec(
+            getString(label),
+            TileLook(TileLook.Kind.ANSWER),
+            textSizeRes = R.dimen.kb_small_tile_text_size,
+            onClick = { current.adjustTime(variable, minutes); showQuestion() },
+        )
+        val value = current.valueOf(variable).orEmpty()
+        val later = TimeChoices.laterText(current.template, variable, value)
+        return StepBody.Adjust(
+            value = value,
+            later = later?.let { getString(R.string.kb_later, it) },
+            buttons = listOf(
+                nudge(R.string.kb_hour_earlier, -60),
+                nudge(R.string.kb_minutes_earlier, -5),
+                nudge(R.string.kb_minutes_later, 5),
+                nudge(R.string.kb_hour_later, 60),
+            ),
+            ok = okTile(),
+        )
+    }
+
+    private fun dateBody(current: FillSession, variable: VariableDef): StepBody {
+        fun choice(label: Int, days: Long) = TileSpec(
+            getString(label),
+            TileLook(if (days == 0L) TileLook.Kind.OK else TileLook.Kind.ANSWER),
+            onClick = {
+                DateChoices.pick(current, variable, LocalDate.now(), days)
+                advance()
+            },
+        )
+        val tiles = listOf(
+            choice(R.string.kb_today, 0),
+            choice(R.string.kb_yesterday, -1),
+            choice(R.string.kb_tomorrow, 1),
+            TileSpec(
+                getString(R.string.kb_date_other),
+                TileLook(TileLook.Kind.SPECIAL),
+                onClick = { otherOpen = true; showQuestion() },
+            ),
+        )
+        return StepBody.Tiles(tiles, 0, 1, null, {}, {})
+    }
+
+    private fun dateAdjustBody(current: FillSession, variable: VariableDef): StepBody {
+        fun nudge(label: Int, days: Long) = TileSpec(
+            getString(label),
+            TileLook(TileLook.Kind.ANSWER),
+            onClick = { current.adjustDate(variable, days); showQuestion() },
+        )
+        return StepBody.Adjust(
+            value = current.displayValue(variable),
+            later = null,
+            buttons = listOf(nudge(R.string.kb_day_earlier, -1), nudge(R.string.kb_day_later, 1)),
+            ok = okTile(),
+        )
+    }
+
+    private fun okTile() = TileSpec(
+        getString(R.string.kb_ok),
+        TileLook(TileLook.Kind.OK),
+        textSizeRes = R.dimen.kb_pad_text_size,
+        onClick = { otherOpen = false; advance() },
+    )
+
+    private fun numberBody(current: FillSession, variable: VariableDef): StepBody {
+        val entry = number ?: NumberEntry(current.valueOf(variable)).also { number = it }
+        return StepBody.Number(
+            value = entry.text,
+            onKey = { key -> entry.press(key); showQuestion() },
+            onBackspace = { entry.backspace(); showQuestion() },
+            onOk = {
+                if (entry.text.isEmpty()) current.clearValue(variable) else current.setValue(variable, entry.text)
+                advance()
+            },
+        )
+    }
+
+    /** Goes on to the next question, or to the check after the last one. */
+    private fun advance() {
+        val current = session ?: return
+        resetQuestionState()
+        if (current.isLast) showCheck() else {
+            current.next()
+            showQuestion()
+        }
+    }
+
+    private fun stepBack() {
+        val current = session ?: return renderGrid()
+        if (otherOpen) {
+            otherOpen = false
+            showQuestion()
             return
         }
-        keys?.stopAll()
-        capsAtMessageStart = appWantsCaps()
-        typedKeys.clear()
-        session = newSession
-        enterStep()
-    }
-
-    /** Shows the current blank: typing for text and numbers, a list, or the time/date buttons. */
-    private fun enterStep() {
-        val session = session ?: return
-        val variable = session.current ?: return closeFill()
-        typing = null
-        when (variable.type) {
-            VariableType.TEXT, VariableType.NUMBER -> startTyping(variable, session.valueOf(variable))
-            VariableType.CHOICE -> {
-                // Nothing to pick from yet: go straight to typing.
-                if (variable.options.none { it.isNotBlank() } && session.valueOf(variable).isNullOrBlank()) {
-                    startTyping(variable, null)
-                }
-            }
-            VariableType.TIME, VariableType.DATE -> Unit
+        resetQuestionState()
+        if (current.isFirst) leaveFill() else {
+            current.back()
+            showQuestion()
         }
-        render()
     }
 
-    private fun startTyping(variable: VariableDef, prefill: String?) {
-        val session = session ?: return
-        // A remembered value starts selected, so typing replaces it; text typed this time does not.
-        typing = TextBuffer(prefill.orEmpty(), selectAll = !prefill.isNullOrEmpty() && variable.key !in typedKeys)
-        typingIsNumber = variable.type == VariableType.NUMBER
-        typingCapsAtStart = !typingIsNumber && when (FillPreview.positionOf(session.template, variable.key)) {
-            FillPreview.BlankPosition.MESSAGE_START -> capsAtMessageStart
-            FillPreview.BlankPosition.SENTENCE_START -> true
-            FillPreview.BlankPosition.MID_SENTENCE -> false
-        }
-        keyboard.reset(if (typingIsNumber) KeyboardPage.SYMBOLS else KeyboardPage.LETTERS)
-        updateAutoCaps()
+    /** Drops the fill-in and shows the grid, in the folder of the shortcut. */
+    private fun leaveFill() {
+        session?.let { folderId = it.shortcut.parentId }
+        session = null
+        resetQuestionState()
+        screen = Screen.GRID
+        renderGrid()
     }
 
-    private fun typeIntoBox(text: String) {
-        val session = session ?: return
-        val variable = session.current ?: return
-        val buffer = typing ?: return
-        buffer.insert(text)
-        session.setValue(variable, buffer.text)
-        typedKeys += variable.key
-        updateAutoCaps()
-        render()
+    // ---- Screen 3: check ----
+
+    private fun showCheck() {
+        val view = ui ?: return
+        val current = session ?: return renderGrid()
+        screen = Screen.CHECK
+        view.showCheck(
+            CheckModel(
+                shortcutName = current.shortcut.name.ifBlank { getString(R.string.kb_untitled) },
+                text = current.result(),
+                onBack = {
+                    if (current.isEmpty) {
+                        leaveFill()
+                    } else {
+                        current.goTo(current.variables.size - 1)
+                        resetQuestionState()
+                        showQuestion()
+                    }
+                },
+                onCancel = ::leaveFill,
+                onAdd = ::addToApp,
+            ),
+        )
     }
 
-    private fun deleteInBox() {
-        val session = session ?: return
-        val variable = session.current ?: return
-        val buffer = typing ?: return
-        if (buffer.deleteBackward()) {
-            session.setValue(variable, buffer.text)
-            typedKeys += variable.key
-        }
-        updateAutoCaps()
-        render()
-    }
-
-    private fun insertFill() {
-        val session = session ?: return
+    private fun addToApp() {
+        val current = session ?: return
         val ic = currentInputConnection
         if (ic != null) {
-            ic.commitText(session.result(), 1)
-            rememberValues(session)
+            ic.commitText(current.result(), 1)
+            rememberValues(current)
         }
-        closeFill()
+        leaveFill()
+        switchBack(fromAbc = false)
     }
 
-    /** Saves the values used (and new list options) so they are offered first next time. */
-    private fun rememberValues(session: FillSession) {
+    /** Saves the values used (and new answers) so they are offered first next time. */
+    private fun rememberValues(current: FillSession) {
         try {
-            val saved = ShortcutRepository.find(this, session.shortcut.id) ?: return
-            // Changed in the app while the panel was open: keep those changes instead.
-            if (saved != session.shortcut) return
-            val updated = session.updatedShortcut()
+            val saved = ShortcutRepository.find(this, current.shortcut.id) ?: return
+            // Changed in the app while we were filling in: keep those changes instead.
+            if (saved != current.shortcut) return
+            val updated = current.updatedShortcut()
             if (updated != saved) ShortcutRepository.save(this, updated)
         } catch (e: Exception) {
             Log.w(TAG, "Could not remember the values used", e)
         }
     }
 
-    private fun closeFill() {
-        session = null
-        typing = null
-        keys?.stopAll()
-        keyboard.reset(fieldPage)
-        updateAutoCaps()
-        render()
-    }
+    // ---- "+ New" answer: leave to the app and come back ----
 
-    override fun onFillCancel() = closeFill()
-
-    override fun onFillInsert() = insertFill()
-
-    override fun onFillBack() {
-        val session = session ?: return
-        if (session.back()) enterStep()
-    }
-
-    override fun onFillNext() {
-        val session = session ?: return
-        if (session.isLast) {
-            insertFill()
-        } else {
-            session.next()
-            enterStep()
+    private fun addNewAnswer() {
+        val current = session ?: return
+        val variable = current.current ?: return
+        pending = PendingFill.capture(current, variable.key, variable.options, SystemClock.elapsedRealtime())
+        try {
+            startActivity(AddOptionActivity.intent(this, current.shortcut.id, variable.name))
+        } catch (e: RuntimeException) {
+            Log.w(TAG, "Could not open the add-answer screen", e)
+            pending = null
+            return
         }
+        // That screen has a text box, and this keyboard has no letters: hand over.
+        handler.post { switchBack(fromAbc = false) }
     }
 
-    override fun onChoicePicked(value: String) {
-        val session = session ?: return
-        val variable = session.current ?: return
-        session.setValue(variable, value)
-        if (!session.isLast) session.next()
-        enterStep()
+    /** Puts a fill-in back after the app was open. Returns false if the shortcut is gone. */
+    private fun restorePending(saved: PendingFill): Boolean {
+        val latest = try {
+            ShortcutRepository.find(this, saved.shortcutId)
+        } catch (e: Exception) {
+            null
+        } ?: return false
+        val restored = saved.restore(latest, locale())
+        session = restored.session
+        resetQuestionState()
+        if (restored.finished) showCheck() else showQuestion()
+        return true
     }
 
-    override fun onTypeNew() {
-        val variable = session?.current ?: return
-        startTyping(variable, null)
-        render()
-    }
+    // ---- Switching keyboards ----
 
-    override fun onShowList() {
-        typing = null
-        render()
-    }
-
-    override fun onTimeAdjust(minutes: Long) {
-        val session = session ?: return
-        session.current?.let { session.adjustTime(it, minutes) }
-        render()
-    }
-
-    override fun onTimeNow() {
-        val session = session ?: return
-        session.current?.let { session.setTimeToNow(it) }
-        render()
-    }
-
-    override fun onDateAdjust(days: Long) {
-        val session = session ?: return
-        session.current?.let { session.adjustDate(it, days) }
-        render()
-    }
-
-    override fun onDatePicked(daysFromToday: Long) {
-        val session = session ?: return
-        session.current?.let { session.setDate(it, LocalDate.now().plusDays(daysFromToday)) }
-        render()
-    }
-
-    // ---- Drawing ----
-
-    private fun render() {
-        val session = session
-        val filling = session?.current != null
-        bar?.let {
-            it.setShortcuts(shortcuts)
-            it.visibility = if (filling) View.GONE else View.VISIBLE
-        }
-        panel?.let { view ->
-            if (session != null && filling) {
-                view.visibility = View.VISIBLE
-                // Without the keys, keep the keyboard the same height so it does not jump about.
-                val fixedHeight = if (typing == null) barHeight + (keys?.heightFor(keyHeight) ?: 0) else null
-                view.render(fillUi(session), fixedHeight)
+    /**
+     * Goes back to the keyboard used before this one. If that is not possible, and the person
+     * tapped "ABC" themselves, shows the keyboard picker instead.
+     */
+    private fun switchBack(fromAbc: Boolean) {
+        val switched = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                switchToPreviousInputMethod()
             } else {
-                view.visibility = View.GONE
+                val token = window?.window?.attributes?.token
+                @Suppress("DEPRECATION")
+                token != null && inputMethodManager()?.switchToLastInputMethod(token) == true
+            }
+        } catch (e: RuntimeException) {
+            Log.w(TAG, "Could not switch keyboard", e)
+            false
+        }
+        if (!switched && fromAbc) {
+            try {
+                inputMethodManager()?.showInputMethodPicker()
+            } catch (e: RuntimeException) {
+                Log.w(TAG, "Could not show the keyboard picker", e)
             }
         }
-        keys?.visibility = if (!filling || typing != null) View.VISIBLE else View.GONE
-        renderKeys()
     }
 
-    private fun renderKeys() {
-        keys?.render(keyboard.page, keyboard.shift.mode, keyboard::labelFor, enterLook(), showNextKeyboard, keyHeight)
-    }
-
-    private fun enterLook(): KeysView.EnterLook {
-        val session = session
-        if (session != null && typing != null) {
-            val label = getString(if (session.isLast) R.string.kb_insert else R.string.kb_action_next)
-            return KeysView.EnterLook(label, 0, label)
-        }
-        val labelRes = when (enterAction) {
-            EnterAction.GO -> R.string.kb_action_go
-            EnterAction.SEARCH -> R.string.kb_action_search
-            EnterAction.SEND -> R.string.kb_action_send
-            EnterAction.NEXT -> R.string.kb_action_next
-            EnterAction.DONE -> R.string.kb_action_done
-            EnterAction.PREVIOUS -> R.string.kb_action_previous
-            EnterAction.NEW_LINE, EnterAction.ENTER_KEY -> 0
-        }
-        return if (labelRes != 0) {
-            val label = getString(labelRes)
-            KeysView.EnterLook(label, 0, label)
-        } else {
-            KeysView.EnterLook(null, R.drawable.kb_ic_enter, getString(R.string.kb_desc_enter))
-        }
-    }
-
-    private fun fillUi(session: FillSession): FillPanelView.Ui {
-        val variable = checkNotNull(session.current)
-        val locale = locale()
-        val buffer = typing
-        val body = when {
-            buffer != null -> FillPanelView.Body.Typing(
-                text = buffer.text,
-                allSelected = buffer.isAllSelected,
-                canShowList = variable.type == VariableType.CHOICE && variable.options.any { it.isNotBlank() },
-            )
-            variable.type == VariableType.TIME -> FillPanelView.Body.Time(session.displayValue(variable))
-            variable.type == VariableType.DATE -> {
-                val date = Template.parseDate(session.valueOf(variable).orEmpty())
-                FillPanelView.Body.Date(
-                    value = session.displayValue(variable),
-                    weekday = date?.format(DateTimeFormatter.ofPattern("EEEE", locale)),
-                    quickDay = date?.let { ChronoUnit.DAYS.between(LocalDate.now(), it) }?.takeIf { it in -1L..1L },
-                )
-            }
-            else -> {
-                val options = choiceOptions(session, variable)
-                val value = session.valueOf(variable)
-                FillPanelView.Body.Choice(options, options.firstOrNull { it.equals(value, ignoreCase = true) })
-            }
-        }
-        val name = session.shortcut.name.ifBlank { getString(R.string.kb_untitled) }
-        return FillPanelView.Ui(
-            title = getString(R.string.kb_fill_title, name, session.index + 1, session.variables.size),
-            preview = preview(session, variable, locale),
-            question = variable.name.replaceFirstChar { it.titlecase(locale) },
-            stepKey = Pair(session, session.index),
-            isFirst = session.isFirst,
-            isLast = session.isLast,
-            compact = compact,
-            body = body,
-        )
-    }
-
-    /** The saved options, with the current value first if it is a new one (typed, or remembered). */
-    private fun choiceOptions(session: FillSession, variable: VariableDef): List<String> {
-        val options = variable.options.filter { it.isNotBlank() }
-        val value = session.valueOf(variable)?.takeIf { it.isNotBlank() }
-        val all = if (value != null && options.none { it.equals(value, ignoreCase = true) }) listOf(value) + options else options
-        return all.distinctBy { it.lowercase(Locale.ROOT) }
-    }
-
-    /** The message so far, with the blank being filled in shown in bold and underlined. */
-    private fun preview(session: FillSession, variable: VariableDef, locale: Locale): CharSequence {
-        val result = FillPreview.build(session, variable.key, LocalDateTime.now(), locale)
-        val text = SpannableString(result.text)
-        val strong = getColor(R.color.kb_key_text)
-        for (range in result.highlights) {
-            val end = range.last + 1
-            text.setSpan(StyleSpan(Typeface.BOLD), range.first, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            text.setSpan(UnderlineSpan(), range.first, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            text.setSpan(ForegroundColorSpan(strong), range.first, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        }
-        return text
-    }
+    private fun inputMethodManager(): InputMethodManager? =
+        getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
 
     // ---- Window ----
-
-    /** Keeps the keys clear of the navigation bar when the keyboard is drawn behind it. */
-    private fun applyInsets(view: View, insets: WindowInsets): WindowInsets {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val nav = insets.getInsets(WindowInsets.Type.navigationBars())
-            view.setPadding(nav.left, 0, nav.right, nav.bottom)
-        } else {
-            @Suppress("DEPRECATION")
-            view.setPadding(insets.systemWindowInsetLeft, 0, insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
-        }
-        return insets
-    }
 
     /** Navigation bar in the keyboard's colour, with dark buttons in light mode so they stay visible. */
     private fun styleNavigationBar() {
@@ -677,10 +716,7 @@ class ShortcutKeyboardService :
     companion object {
         private const val TAG = "ShortcutKeyboard"
 
-        /** Characters before the cursor to look at for a trigger word. */
-        private const val TRIGGER_LOOKBACK = 64
-
-        /** Screens shorter than this (phones in landscape) get smaller keys. */
+        /** Screens shorter than this (phones in landscape) get the 3 x 2 layout and smaller bars. */
         private const val COMPACT_SCREEN_HEIGHT_DP = 480
 
         /** Android 15, where apps (and keyboards) are always drawn edge to edge. */

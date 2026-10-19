@@ -77,7 +77,6 @@ internal class TileGrid(context: Context) : ViewGroup(context) {
                 tile.visibility = INVISIBLE
                 tile.isClickable = false
                 tile.contentDescription = null
-                importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_AUTO
                 tile.importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
             } else {
                 tile.visibility = VISIBLE
