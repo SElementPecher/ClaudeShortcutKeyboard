@@ -113,6 +113,7 @@ class OnboardingActivity : Activity() {
                 0 -> pageOne()
                 1 -> pageTwo()
                 2 -> pageThree()
+                3 -> pageExamples()
                 else -> pageFour()
             }
             content.addView(view, lp())
@@ -179,6 +180,50 @@ class OnboardingActivity : Activity() {
         )
         val shortcut = tile(name = getString(R.string.tour_3_shortcut), icon = "⏰", kind = TileKind.SHORTCUT)
         box.add(grid(2, listOf(folder, shortcut)), top = 24)
+        box
+    }
+
+    /** Offers the example quiKies; a tick shows once they are added. */
+    private fun pageExamples(): View = with(ui) {
+        val box = intro("✨", R.string.tour_5_title, R.string.tour_5_text)
+        val library = io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository.library(this@OnboardingActivity)
+        val added = io.github.selementpecher.shortcutkeyboard.data.SampleShortcuts.all.any { library.shortcut(it.id) != null }
+        if (added) {
+            box.add(
+                row().apply {
+                    gravity = Gravity.CENTER_VERTICAL
+                    background = shape(blend(palette.bg, palette.success, 0.12f), 16f)
+                    setPadding(dp(16), dp(14), dp(16), dp(14))
+                    addView(
+                        TextView(this@OnboardingActivity).apply {
+                            text = "✓"
+                            gravity = Gravity.CENTER
+                            setTextColor(readableOn(palette.success))
+                            textSize = 16f
+                            includeFontPadding = false
+                            background = shape(palette.success, 999f)
+                            layoutParams = lp(width = dp(28), height = dp(28))
+                        },
+                    )
+                    addView(text(getString(R.string.tour_5_added), look.type.bodySp, 700, palette.ink).apply { layoutParams = lp(width = 0, weight = 1f, start = 12) })
+                },
+                top = 24,
+            )
+        } else {
+            box.add(
+                primaryButton(getString(R.string.examples_button)) {
+                    try {
+                        io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository.addExamples(this@OnboardingActivity)
+                        Onboarding.setExamplesAsked(this@OnboardingActivity)
+                    } catch (e: Exception) {
+                        screen.snack(getString(R.string.edit_save_failed), error = true)
+                    }
+                    render()
+                },
+                top = 24,
+            )
+            box.add(small(getString(R.string.tour_5_later)), top = 12)
+        }
         box
     }
 
@@ -256,7 +301,7 @@ class OnboardingActivity : Activity() {
 
     companion object {
         private const val STATE_PAGE = "page"
-        private const val LAST = 3
+        private const val LAST = 4
 
         fun open(context: Context) {
             context.startActivity(Intent(context, OnboardingActivity::class.java))

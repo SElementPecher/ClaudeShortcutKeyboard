@@ -113,9 +113,9 @@ object ShortcutRepository {
     private fun load(context: Context): Library {
         val file = file(context)
         if (!file.baseFile.exists()) {
-            // If this write fails (e.g. a full disk) the samples are still shown and saved on the next change.
-            runCatching { write(context, SampleShortcuts.library) }.onFailure { Log.e(TAG, "Could not save samples", it) }
-            return SampleShortcuts.library
+            // A new install starts empty. The tour (or the home screen) offers the example quiKies.
+            runCatching { write(context, Library()) }.onFailure { Log.e(TAG, "Could not create the file", it) }
+            return Library()
         }
         return try {
             ShortcutJson.libraryFromJson(String(file.readFully(), Charsets.UTF_8))

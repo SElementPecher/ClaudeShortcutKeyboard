@@ -38,15 +38,6 @@ object SampleShortcuts {
             order = 0,
             icon = "💊",
         ),
-        Shortcut(
-            id = "sample-sam-calpol",
-            name = "Sam: Calpol 5ml",
-            template = "Sam, Calpol, 5ml, {time} next dose not before {time+4h}",
-            variables = listOf(VariableDef("time", VariableType.TIME)),
-            parentId = MEDS,
-            order = 1,
-            icon = "🌡️",
-        ),
         // ---- Kids ----
         Shortcut(
             id = "sample-temperature",

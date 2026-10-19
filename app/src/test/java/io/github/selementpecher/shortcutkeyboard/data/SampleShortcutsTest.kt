@@ -41,14 +41,6 @@ class SampleShortcutsTest {
     }
 
     @Test
-    fun `the fixed medicine sample only asks for the time`() {
-        val fixed = SampleShortcuts.all.first { it.id == "sample-sam-calpol" }
-        val session = FillSession(fixed, { now }, Locale.UK)
-        assertEquals(listOf("time"), session.variables.map { it.name })
-        assertEquals("Sam, Calpol, 5ml, 20:20 next dose not before 00:20", session.result())
-    }
-
-    @Test
     fun `the medicine sample makes the example message`() {
         val medicine = SampleShortcuts.all.first { it.id == "sample-medicine" }
         val session = FillSession(medicine, { now }, Locale.UK)

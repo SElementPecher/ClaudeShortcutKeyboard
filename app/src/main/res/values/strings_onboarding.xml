@@ -20,6 +20,11 @@
     <string name="tour_3_folder_items">3 items</string>
     <string name="tour_3_shortcut">Running late</string>
 
+    <string name="tour_5_title">Start with some examples</string>
+    <string name="tour_5_text">A few ready-made quiKies to try, like Kids and Running late. You can change or delete them.</string>
+    <string name="tour_5_added">Examples added</string>
+    <string name="tour_5_later">You can add them later in Settings.</string>
+
     <string name="tour_4_title">Turn on your keyboard</string>
     <string name="tour_4_text">One quick step in your phone\'s settings.</string>
     <string name="tour_4_turn_on">Turn on quiKey</string>
