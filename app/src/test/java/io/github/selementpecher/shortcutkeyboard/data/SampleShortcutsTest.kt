@@ -66,9 +66,17 @@ class SampleShortcutsTest {
         assertEquals("On my way, I'll be there in 10 mins.", onMyWay.result())
         val meet = session("sample-meet-you-there")
         meet.setValue(meet.variables.first { it.name == "Place" }, "the station")
-        assertEquals("I'll meet you at the station at 20:20.", meet.result())
+        assertEquals("I'll meet you at the station at 20:30.", meet.result())
+        // Times in the future are picked as "in how long", never as "15 min ago".
+        for (id in listOf("sample-pickup", "sample-be-there-by", "sample-call-back", "sample-meet-you-there")) {
+            val s = session(id)
+            assertTrue(id, s.variables.any { it.type == io.github.selementpecher.shortcutkeyboard.model.VariableType.TIME_AHEAD })
+            assertTrue(id, s.variables.none { it.type == io.github.selementpecher.shortcutkeyboard.model.VariableType.TIME })
+        }
+        assertEquals("I'll be there by 20:30.", session("sample-be-there-by").result())
+        assertEquals("Can't talk now, I'll call you back at 20:30.", session("sample-call-back").result())
         val train = session("sample-train-delay")
         train.useDefaults()
-        assertEquals("My train is delayed by 10 mins. Now due at 20:20.", train.result())
+        assertEquals("My train is delayed. It is now due in 10 mins (20:30).", train.result())
     }
 }

@@ -16,6 +16,11 @@ object SampleShortcuts {
     private val children = listOf("Sam", "Alex")
     private val minutes = listOf("10 mins", "15 mins", "30 mins", "1 hour")
 
+    /** A time in the future, picked as "in how long" and printed as the clock time (20:30). */
+    private fun clockAhead(name: String = "How long") = VariableDef(
+        name, VariableType.TIME_AHEAD, options = minutes, lastValue = minutes.first(), show = RelativeShow.CLOCK,
+    )
+
     val folders: List<Folder> = listOf(
         Folder(id = KIDS, name = "Kids", order = 0, icon = "🧒"),
         Folder(id = MEDS, name = "Meds", parentId = KIDS, order = 0, icon = "💊"),
@@ -67,10 +72,10 @@ object SampleShortcuts {
         Shortcut(
             id = "sample-pickup",
             name = "Pick-up",
-            template = "I'll pick up {child} at {time}.",
+            template = "I'll pick up {child} at {How long}.",
             variables = listOf(
                 VariableDef("child", VariableType.CHOICE, options = children),
-                VariableDef("time", VariableType.TIME),
+                clockAhead(),
             ),
             parentId = KIDS,
             order = 3,
@@ -102,10 +107,10 @@ object SampleShortcuts {
         Shortcut(
             id = "sample-meet-you-there",
             name = "Meet you there",
-            template = "I'll meet you at {Place} at {When}.",
+            template = "I'll meet you at {Place} at {How long}.",
             variables = listOf(
                 VariableDef("Place", VariableType.CHOICE, options = listOf("the station", "the school gate", "the café")),
-                VariableDef("When", VariableType.TIME),
+                clockAhead(),
             ),
             parentId = LATE,
             order = 2,
@@ -114,11 +119,10 @@ object SampleShortcuts {
         Shortcut(
             id = "sample-train-delay",
             name = "Train or bus delay",
-            template = "My {Which} is delayed by {How long}. Now due at {When}.",
+            template = "My {Which} is delayed. It is now due in {How long}.",
             variables = listOf(
                 VariableDef("Which", VariableType.CHOICE, options = listOf("train", "bus")),
-                VariableDef("How long", VariableType.TIME_AHEAD, options = listOf("10 mins", "20 mins", "30 mins"), lastValue = "10 mins"),
-                VariableDef("When", VariableType.TIME),
+                VariableDef("How long", VariableType.TIME_AHEAD, options = minutes, lastValue = minutes.first(), show = RelativeShow.BOTH),
             ),
             parentId = LATE,
             order = 3,
@@ -127,8 +131,8 @@ object SampleShortcuts {
         Shortcut(
             id = "sample-be-there-by",
             name = "Be there by",
-            template = "I'll be there by {When}.",
-            variables = listOf(VariableDef("When", VariableType.TIME)),
+            template = "I'll be there by {How long}.",
+            variables = listOf(clockAhead()),
             parentId = LATE,
             order = 4,
             icon = "🕒",
@@ -136,8 +140,8 @@ object SampleShortcuts {
         Shortcut(
             id = "sample-call-back",
             name = "Call back",
-            template = "Can't talk now, I'll call you back at {When}.",
-            variables = listOf(VariableDef("When", VariableType.TIME)),
+            template = "Can't talk now, I'll call you back at {How long}.",
+            variables = listOf(clockAhead()),
             parentId = LATE,
             order = 5,
             icon = "📞",
