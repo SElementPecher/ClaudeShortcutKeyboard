@@ -6,7 +6,6 @@ import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.ViewGroup
-import io.github.selementpecher.shortcutkeyboard.R
 
 /**
  * Six tiles in a fixed grid (2 x 3, or 3 x 2 on short screens). It never scrolls.
@@ -15,7 +14,7 @@ import io.github.selementpecher.shortcutkeyboard.R
  * out what the finger is over (see [DragGeometry]) and tells the callbacks; the callbacks
  * decide what that means. A plain tap still reaches the tile as a normal click.
  */
-internal class TileGrid(context: Context) : ViewGroup(context) {
+internal class TileGrid(context: Context, private val theme: KeyboardTheme) : ViewGroup(context) {
 
     interface DragCallbacks {
         /** A long press on [slot]. Return false to refuse (nothing is picked up). */
@@ -38,9 +37,8 @@ internal class TileGrid(context: Context) : ViewGroup(context) {
 
     private var cols = 2
     private var rows = 3
-    private val gap = resources.getDimensionPixelSize(R.dimen.kb_tile_gap)
-    private var textSizeRes = R.dimen.kb_tile_text_size
-    private val tiles = List(GridPaging.PER_PAGE) { TileView(context).also { v -> addView(v) } }
+    private val gap = theme.dp(TILE_GAP_DP)
+    private val tiles = List(GridPaging.PER_PAGE) { TileView(context, theme).also { v -> addView(v) } }
     private var specs: List<TileSpec?> = emptyList()
 
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
@@ -62,10 +60,15 @@ internal class TileGrid(context: Context) : ViewGroup(context) {
         }
     }
 
-    fun setLayoutShape(columns: Int, rowCount: Int, textSize: Int) {
+    init {
+        // Shadows (the Calm Look) are drawn just outside the tiles.
+        clipChildren = false
+        clipToPadding = false
+    }
+
+    fun setLayoutShape(columns: Int, rowCount: Int) {
         cols = columns
         rows = rowCount
-        textSizeRes = textSize
         requestLayout()
     }
 
@@ -81,7 +84,7 @@ internal class TileGrid(context: Context) : ViewGroup(context) {
             } else {
                 tile.visibility = VISIBLE
                 tile.importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
-                tile.bind(spec, textSizeRes)
+                tile.bind(spec)
             }
         }
     }
@@ -189,6 +192,7 @@ internal class TileGrid(context: Context) : ViewGroup(context) {
     }
 
     companion object {
+        const val TILE_GAP_DP = 8
         private const val LONG_PRESS_MS = 350L
         private const val EDGE_TICK_MS = 100L
     }

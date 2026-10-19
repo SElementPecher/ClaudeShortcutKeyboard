@@ -4,6 +4,9 @@
     <string name="kb_title">Shortcuts</string>
     <string name="kb_new">+ New</string>
     <string name="kb_abc">⌨ ABC</string>
+    <string name="kb_new_big">+ Add a shortcut</string>
+    <string name="kb_empty_title">Nothing here yet</string>
+    <string name="kb_empty_hint">Make your first shortcut in the app.</string>
     <string name="kb_untitled">Shortcut</string>
     <string name="kb_page_indicator">%1$d / %2$d</string>
 
@@ -13,7 +16,7 @@
     <string name="kb_desc_abc">Back to my normal keyboard</string>
     <string name="kb_desc_prev_page">Previous page</string>
     <string name="kb_desc_next_page">Next page</string>
-    <string name="kb_desc_open_app">Open Shortcut Keyboard app</string>
+    <string name="kb_desc_open_app">Settings</string>
     <string name="kb_desc_close">Stop</string>
     <string name="kb_desc_folder">Folder %1$s</string>
     <string name="kb_desc_shortcut">Shortcut %1$s</string>
@@ -31,7 +34,6 @@
     <string name="kb_question_date">📅 %1$s?</string>
     <string name="kb_question_number">🔢 %1$s?</string>
     <string name="kb_add_first_answer">Add your first answer</string>
-    <string name="kb_last_answer">★ %1$s</string>
 
     <!-- Time -->
     <string name="kb_time_now">Now\n%1$s</string>

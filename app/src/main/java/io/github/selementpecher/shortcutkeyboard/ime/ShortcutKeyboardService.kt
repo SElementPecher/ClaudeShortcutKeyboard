@@ -2,7 +2,6 @@ package io.github.selementpecher.shortcutkeyboard.ime
 
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.inputmethodservice.InputMethodService
 import android.os.Build
 import android.os.Handler
@@ -18,6 +17,7 @@ import android.view.inputmethod.InputMethodManager
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository
 import io.github.selementpecher.shortcutkeyboard.fill.FillSession
+import io.github.selementpecher.shortcutkeyboard.look.LookStore
 import io.github.selementpecher.shortcutkeyboard.model.Folder
 import io.github.selementpecher.shortcutkeyboard.model.Library
 import io.github.selementpecher.shortcutkeyboard.model.Node
@@ -71,14 +71,21 @@ class ShortcutKeyboardService : InputMethodService() {
         handler.post { if (!destroyed && screen == Screen.GRID && drag == null) renderGrid() }
     }
 
+    // The owner can change the Look in the app while the keyboard is alive: rebuild the view.
+    private val lookListener: () -> Unit = {
+        handler.post { if (!destroyed && ui != null) setInputView(onCreateInputView()) }
+    }
+
     override fun onCreate() {
         super.onCreate()
         ShortcutRepository.addListener(repositoryListener)
+        LookStore.addListener(lookListener)
     }
 
     override fun onDestroy() {
         destroyed = true
         ShortcutRepository.removeListener(repositoryListener)
+        LookStore.removeListener(lookListener)
         handler.removeCallbacksAndMessages(null)
         super.onDestroy()
     }
@@ -89,12 +96,12 @@ class ShortcutKeyboardService : InputMethodService() {
     override fun onCreateInputView(): View {
         // Called again after a change such as dark mode: the state stays, the views are rebuilt.
         val screenHeight = resources.configuration.screenHeightDp
-        compact = screenHeight in 1 until COMPACT_SCREEN_HEIGHT_DP
-        val view = KeyboardView(this, compact)
+        compact = KeyboardMetrics.isCompact(screenHeight)
+        val view = KeyboardView(this, compact, LookStore.current(this))
         view.gridDragCallbacks = dragCallbacks
         ui = view
         styleNavigationBar()
-        drag = null
+        cancelDrag()
         renderCurrent()
         return view
     }
@@ -206,6 +213,7 @@ class ShortcutKeyboardService : InputMethodService() {
                 page = page,
                 pageCount = GridPaging.pageCount(entries.size),
                 tiles = tiles,
+                isEmpty = entries.size == 1 && planner == null,
                 backHighlighted = planner?.overBack == true,
                 onBack = ::goUpOneLevel,
                 onPrevious = { flipPage(-1) },
@@ -218,8 +226,10 @@ class ShortcutKeyboardService : InputMethodService() {
 
     private fun nodeTile(node: Node, highlighted: Boolean = false): TileSpec = when (node) {
         is Folder -> TileSpec(
-            label = TileStyle.folderLabel(node.name),
+            label = node.name.ifBlank { getString(R.string.kb_untitled) },
             look = TileLook(TileLook.Kind.FOLDER, highlighted = highlighted),
+            glyph = TileStyle.glyphFor(node.icon, node.name, isFolder = true),
+            badge = TileStyle.folderBadge(TileStyle.glyphFor(node.icon, node.name, isFolder = true)),
             description = getString(R.string.kb_desc_folder, node.name),
             draggable = true,
             id = node.id,
@@ -227,7 +237,8 @@ class ShortcutKeyboardService : InputMethodService() {
         )
         is Shortcut -> TileSpec(
             label = node.name.ifBlank { getString(R.string.kb_untitled) },
-            look = TileLook(TileLook.Kind.SHORTCUT, colourIndex = TileStyle.colourIndex(node.id)),
+            look = TileLook(TileLook.Kind.SHORTCUT, colourKey = node.id),
+            glyph = TileStyle.glyphFor(node.icon, node.name, isFolder = false),
             description = getString(R.string.kb_desc_shortcut, node.name),
             draggable = true,
             id = node.id,
@@ -285,7 +296,7 @@ class ShortcutKeyboardService : InputMethodService() {
             dragNodes = ordered.associateBy { it.id }
             dragSignature = null
             val spec = nodeTile(node)
-            view.showGhost(TileSpec(spec.label, spec.look, spec.description), tile.width, tile.height, rawX, rawY)
+            view.showGhost(TileSpec(spec.label, spec.look, spec.description, spec.glyph, spec.badge), tile.width, tile.height, rawX, rawY)
             renderGrid()
             return true
         }
@@ -400,13 +411,15 @@ class ShortcutKeyboardService : InputMethodService() {
         val answers = AnswerList.build(variable)
         val entries: List<Answer?> = answers + null
         answerPage = GridPaging.clampPage(answerPage, entries.size)
-        val tiles = GridPaging.pageItems(entries, answerPage).map { answer ->
+        val firstOnPage = GridPaging.globalIndex(answerPage, 0)
+        val tiles = GridPaging.pageItems(entries, answerPage).mapIndexed { slot, answer ->
             if (answer == null) {
                 newTile(getString(R.string.kb_new), getString(R.string.kb_desc_new_answer), ::addNewAnswer)
             } else {
                 TileSpec(
-                    label = if (answer.isLast) getString(R.string.kb_last_answer, answer.text) else answer.text,
-                    look = TileLook(TileLook.Kind.ANSWER),
+                    label = answer.text,
+                    look = TileLook(TileLook.Kind.ANSWER, colourIndex = firstOnPage + slot, selected = answer.isLast),
+                    glyph = if (answer.isLast) LAST_ANSWER_GLYPH else null,
                     description = if (answer.isLast) getString(R.string.kb_desc_last_answer, answer.text) else answer.text,
                     onClick = {
                         current.setValue(variable, answer.text)
@@ -433,7 +446,7 @@ class ShortcutKeyboardService : InputMethodService() {
     private fun timeBody(current: FillSession, variable: VariableDef): StepBody {
         fun choice(minutesAgo: Long, label: String, kind: TileLook.Kind) = TileSpec(
             label = label,
-            look = TileLook(kind),
+            look = TileLook(kind, colourIndex = (minutesAgo / 15).toInt()),
             description = label.replace('\n', ' '),
             onClick = {
                 TimeChoices.pick(current, variable, minutesAgo)
@@ -458,8 +471,7 @@ class ShortcutKeyboardService : InputMethodService() {
     private fun timeAdjustBody(current: FillSession, variable: VariableDef): StepBody {
         fun nudge(label: Int, minutes: Long) = TileSpec(
             getString(label),
-            TileLook(TileLook.Kind.ANSWER),
-            textSizeRes = R.dimen.kb_small_tile_text_size,
+            TileLook(TileLook.Kind.ANSWER, colourIndex = if (minutes < 0) 1 else 0),
             onClick = { current.adjustTime(variable, minutes); showQuestion() },
         )
         val value = current.valueOf(variable).orEmpty()
@@ -480,7 +492,7 @@ class ShortcutKeyboardService : InputMethodService() {
     private fun dateBody(current: FillSession, variable: VariableDef): StepBody {
         fun choice(label: Int, days: Long) = TileSpec(
             getString(label),
-            TileLook(if (days == 0L) TileLook.Kind.OK else TileLook.Kind.ANSWER),
+            TileLook(if (days == 0L) TileLook.Kind.OK else TileLook.Kind.ANSWER, colourIndex = if (days < 0) 1 else 0),
             onClick = {
                 DateChoices.pick(current, variable, LocalDate.now(), days)
                 advance()
@@ -502,7 +514,7 @@ class ShortcutKeyboardService : InputMethodService() {
     private fun dateAdjustBody(current: FillSession, variable: VariableDef): StepBody {
         fun nudge(label: Int, days: Long) = TileSpec(
             getString(label),
-            TileLook(TileLook.Kind.ANSWER),
+            TileLook(TileLook.Kind.ANSWER, colourIndex = if (days < 0) 1 else 0),
             onClick = { current.adjustDate(variable, days); showQuestion() },
         )
         return StepBody.Adjust(
@@ -516,7 +528,7 @@ class ShortcutKeyboardService : InputMethodService() {
     private fun okTile() = TileSpec(
         getString(R.string.kb_ok),
         TileLook(TileLook.Kind.OK),
-        textSizeRes = R.dimen.kb_pad_text_size,
+        textSp = 26f,
         onClick = { otherOpen = false; advance() },
     )
 
@@ -682,12 +694,14 @@ class ShortcutKeyboardService : InputMethodService() {
     /** Navigation bar in the keyboard's colour, with dark buttons in light mode so they stay visible. */
     private fun styleNavigationBar() {
         val imeWindow = window?.window ?: return
-        val night = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        // The colour behind the buttons is the Look's panel colour; dark buttons only when that is light.
+        val panel = LookStore.current(this).palette(this).bg
+        val night = TileStyle.luminance(panel) < 0.5f
         try {
             if (Build.VERSION.SDK_INT < VERSION_EDGE_TO_EDGE) {
                 imeWindow.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
                 @Suppress("DEPRECATION")
-                imeWindow.navigationBarColor = getColor(R.color.kb_background)
+                imeWindow.navigationBarColor = panel
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 imeWindow.insetsController?.setSystemBarsAppearance(
@@ -716,8 +730,7 @@ class ShortcutKeyboardService : InputMethodService() {
     companion object {
         private const val TAG = "ShortcutKeyboard"
 
-        /** Screens shorter than this (phones in landscape) get the 3 x 2 layout and smaller bars. */
-        private const val COMPACT_SCREEN_HEIGHT_DP = 480
+        private const val LAST_ANSWER_GLYPH = "★"
 
         /** Android 15, where apps (and keyboards) are always drawn edge to edge. */
         private const val VERSION_EDGE_TO_EDGE = 35

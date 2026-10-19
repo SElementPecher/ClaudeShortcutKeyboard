@@ -11,6 +11,7 @@ import android.widget.TextView
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository
 import io.github.selementpecher.shortcutkeyboard.fill.FillSession
+import io.github.selementpecher.shortcutkeyboard.look.LookStore
 import io.github.selementpecher.shortcutkeyboard.model.VariableDef
 
 /**
@@ -21,6 +22,7 @@ import io.github.selementpecher.shortcutkeyboard.model.VariableDef
  */
 class AddOptionActivity : Activity() {
 
+    private lateinit var ui: Ui
     private lateinit var field: EditText
     private lateinit var error: TextView
     private var shortcutId: String? = null
@@ -28,20 +30,38 @@ class AddOptionActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_add_option)
-        EdgeToEdge.apply(this, findViewById(R.id.add_option_root), findViewById(R.id.add_option_top_bar))
-
         shortcutId = intent?.getStringExtra(EXTRA_SHORTCUT_ID)
         blankName = intent?.getStringExtra(EXTRA_BLANK_NAME).orEmpty()
-        field = findViewById(R.id.add_option_field)
-        error = findViewById(R.id.add_option_error)
+        ui = Ui(this, LookStore.current(this))
 
-        findViewById<TextView>(R.id.add_option_title).text = getString(R.string.add_option_title, blankName)
-        findViewById<View>(R.id.add_option_save).setOnClickListener { save() }
-        findViewById<View>(R.id.add_option_cancel).setOnClickListener { finish() }
-        field.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_DONE) { save(); true } else false
+        val screen = ui.screen(getString(R.string.add_option_title, blankName), onBack = { finish() }, withBottomBar = true)
+        with(ui) {
+            field = field(getString(R.string.add_option_hint)).apply {
+                imeOptions = EditorInfo.IME_ACTION_DONE
+                contentDescription = getString(R.string.add_option_title, blankName)
+                setOnEditorActionListener { _, actionId, _ ->
+                    if (actionId == EditorInfo.IME_ACTION_DONE) { save(); true } else false
+                }
+                addTextChangedListener(object : android.text.TextWatcher {
+                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+                    override fun afterTextChanged(s: android.text.Editable?) {
+                        this@AddOptionActivity.error.visibility = View.GONE
+                    }
+                })
+            }
+            error = small(getString(R.string.add_option_error_empty)).apply {
+                setTextColor(palette.danger)
+                visibility = View.GONE
+            }
+            screen.content.add(field, top = 12)
+            screen.content.add(error, top = 8)
+            screen.content.add(small(getString(R.string.add_option_help)), top = 16)
+            screen.bottomBar.add(primaryButton(getString(R.string.add_option_save)) { save() })
+            screen.bottomBar.add(textButton(getString(R.string.add_option_cancel)) { finish() }, top = 4)
         }
+        screen.install(this)
+        field.requestFocus()
     }
 
     private fun save() {

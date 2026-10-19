@@ -2,20 +2,12 @@
 <resources>
     <!-- Shared -->
     <string name="dialog_cancel">Cancel</string>
-    <string name="dialog_add">Add</string>
-    <string name="dialog_got_it">Got it</string>
     <string name="action_back">Back</string>
 
     <!-- Main screen: menu -->
-    <string name="menu_backup">Back up shortcuts</string>
-    <string name="menu_restore">Restore from backup</string>
-    <string name="menu_help">How blanks work</string>
 
     <!-- Main screen: setup -->
     <string name="setup_title">Set up your keyboard</string>
-    <string name="setup_step1_number" translatable="false">1</string>
-    <string name="setup_step2_number" translatable="false">2</string>
-    <string name="setup_tick" translatable="false">✓</string>
     <string name="setup_step1">Turn on Shortcut Keyboard</string>
     <string name="setup_step1_button">Turn it on</string>
     <string name="setup_step2">Pick it as your keyboard</string>
@@ -24,24 +16,19 @@
     <string name="setup_step_todo">To do: %1$s</string>
     <string name="setup_how_to">To type a shortcut: tap the keyboard icon at the bottom of your screen, then choose Shortcut Keyboard.</string>
     <string name="setup_privacy">This keyboard has no internet access. What you type stays on your phone.</string>
-    <string name="setup_ready">✓ Keyboard is ready</string>
     <string name="setup_no_settings">Could not open settings. Go to Settings, then System, then Keyboard.</string>
 
     <!-- Main screen: try it -->
-    <string name="try_title">Try it</string>
     <string name="try_hint">Tap here to try your keyboard</string>
     <string name="try_tip">Tap the keyboard icon at the bottom of your screen and choose Shortcut Keyboard. Pick a shortcut. It is typed here.</string>
 
     <!-- Main screen: list -->
-    <string name="shortcuts_title">Your shortcuts</string>
     <string name="shortcuts_empty">No shortcuts yet. Tap “New shortcut” to make one.</string>
     <string name="folder_empty">This folder is empty.</string>
-    <string name="shortcuts_tip">In the keyboard, press and hold a tile, then drag it to move it.</string>
     <string name="shortcut_new">+ New shortcut</string>
     <string name="shortcut_no_name">(No name)</string>
     <string name="shortcut_row_description">Shortcut %1$s. %2$s. Tap to change it. Press and hold for more.</string>
     <string name="folder_row_description">Folder %1$s. %2$s. Tap to open it. Press and hold for more.</string>
-    <string name="folder_row_name">📁 %1$s</string>
     <plurals name="folder_items">
         <item quantity="one">%d item</item>
         <item quantity="other">%d items</item>
@@ -50,12 +37,9 @@
 
     <!-- Folders -->
     <string name="home_name">Home</string>
-    <string name="folder_back">◀ %1$s</string>
-    <string name="folder_back_description">Back to %1$s</string>
     <string name="folder_new">+ New folder</string>
     <string name="folder_new_title">New folder</string>
     <string name="folder_rename_title">Rename folder</string>
-    <string name="folder_name_label">Folder name</string>
     <string name="folder_name_hint">For example: Kids</string>
     <string name="folder_name_required">Please give it a name.</string>
     <string name="folder_create">Make folder</string>
@@ -101,92 +85,54 @@
     </plurals>
 
     <!-- How blanks work -->
-    <string name="help_title">How blanks work</string>
-    <string name="help_intro">A blank is a word in curly brackets. When you use the shortcut, the keyboard asks you to fill it in, one question at a time.</string>
-    <string name="help_choice_code" translatable="false">{child}</string>
-    <string name="help_choice">You pick it from a list or type it. Like Sam.</string>
-    <string name="help_time_code" translatable="false">{time}</string>
-    <string name="help_time">A time. It starts at the time now. Like 20:20.</string>
-    <string name="help_later_code" translatable="false">{time+4h}</string>
-    <string name="help_later">4 hours after {time}. Like 00:20.</string>
-    <string name="help_minutes_code" translatable="false">{time+30m}</string>
-    <string name="help_minutes">30 minutes after {time}.</string>
-    <string name="help_today_code" translatable="false">{today}</string>
-    <string name="help_today">Today’s date. It fills in by itself.</string>
 
     <!-- Edit screen -->
-    <string name="edit_title_new">New shortcut</string>
-    <string name="edit_title">Change shortcut</string>
-    <string name="edit_save">Save</string>
-    <string name="edit_save_button">Save shortcut</string>
-    <string name="edit_delete">Delete</string>
-    <string name="edit_name_label">Name</string>
-    <string name="edit_name_hint">For example: Medicine given</string>
-    <string name="edit_in_folder">In: %1$s</string>
-    <string name="edit_message_label">Message</string>
-    <string name="edit_message_hint">For example: {child} had {medicine} at {time}</string>
-    <string name="edit_message_help">Put blanks in curly brackets, like {child}. For a time later, use {time+4h}.</string>
-    <string name="edit_add_blank">+ Add a blank</string>
-    <string name="edit_add_time_later">+ Add a time later</string>
-    <string name="edit_help_link">How do blanks work?</string>
-    <string name="edit_blanks_title">Blanks</string>
-    <string name="edit_blanks_help">The keyboard asks you for these, one at a time.</string>
-    <string name="edit_no_blanks">No blanks yet. Tap “+ Add a blank” to add one.</string>
-    <string name="edit_built_in_note">{now} and {today} fill in by themselves. They are the time now and today’s date.</string>
-    <string name="edit_preview_title">Preview</string>
-    <string name="edit_preview_help">How the message will look.</string>
-    <string name="edit_preview_empty">Your message will show here.</string>
-    <string name="edit_saved">Saved</string>
     <string name="edit_save_failed">Could not save. Please try again.</string>
-    <string name="edit_deleted">Deleted</string>
 
     <!-- Edit screen: problems -->
-    <string name="error_name_required">Please give it a name.</string>
-    <string name="error_message_required">Please type the message.</string>
 
     <!-- Edit screen: dialogs -->
-    <string name="unsaved_title">Save changes?</string>
-    <string name="unsaved_message">You changed this shortcut.</string>
-    <string name="unsaved_save">Save</string>
-    <string name="unsaved_discard">Discard</string>
     <string name="delete_title">Delete “%1$s”?</string>
-    <string name="delete_title_no_name">Delete this shortcut?</string>
     <string name="delete_message">You can’t undo this.</string>
     <string name="delete_confirm">Delete</string>
 
     <!-- Blank card -->
-    <string name="blank_label">{%1$s}</string>
-    <string name="blank_type_label">How do you fill it in?</string>
-    <string name="blank_type_choice">Pick from a list</string>
-    <string name="blank_type_text">Type it in</string>
-    <string name="blank_type_number">Number</string>
-    <string name="blank_type_time">Time</string>
-    <string name="blank_type_date">Date</string>
-    <string name="blank_hint_choice">You tap one from the list. Or type a new one.</string>
-    <string name="blank_hint_text">You type it each time.</string>
-    <string name="blank_hint_number">You type a number each time.</string>
-    <string name="blank_hint_time">It starts at the time now. You can change it.</string>
-    <string name="blank_hint_date">It starts at today. You can change it.</string>
-    <string name="blank_options_label">Options, one per line</string>
-    <string name="blank_options_hint">For example:\nSam\nAlex</string>
-    <string name="blank_remember">Remember new options I type</string>
-    <string name="blank_offset_warning">Adding time, like +4h, only works for Time or Date.</string>
 
     <!-- Add a blank dialog -->
-    <string name="add_blank_title">Add a blank</string>
-    <string name="add_blank_name_label">Name of the blank</string>
-    <string name="add_blank_name_hint">For example: child</string>
-    <string name="add_blank_type_label">How do you fill it in?</string>
-    <string name="error_blank_name_required">Please type a name.</string>
-    <string name="error_blank_name_invalid">That name will not work. Please use letters and numbers.</string>
-    <string name="error_blank_name_built_in">“now” and “today” fill in by themselves. Please pick another name.</string>
 
     <!-- Add a time later dialog -->
-    <string name="time_later_title">Add a time later</string>
-    <string name="time_later_which">Which time?</string>
-    <string name="time_later_how_much">How much later?</string>
-    <string name="time_later_hours">Hours</string>
-    <string name="time_later_minutes">Minutes</string>
-    <string name="time_later_result">This adds %1$s</string>
-    <string name="time_later_error">Please pick how much later.</string>
+
+    <!-- Home screen (v3) -->
+    <string name="settings_open">Settings</string>
+    <string name="setup_ready_text">Keyboard is ready</string>
+    <string name="home_tip">Press and hold a tile for more.</string>
+    <string name="home_empty_title">Nothing here yet</string>
+    <string name="row_edit">Edit</string>
+    <string name="row_open">Open</string>
+    <string name="folder_picture_change">Change the picture</string>
+    <string name="action_up_description">Back to %1$s</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_look_title">Look</string>
+    <string name="settings_look_help">Pick how the app and the keyboard look. It changes straight away.</string>
+    <string name="look_chosen">%1$s. This one is chosen.</string>
+    <string name="look_choose">%1$s. Tap to use this look.</string>
+    <string name="look_preview_shortcut_1">Medicine</string>
+    <string name="look_preview_shortcut_2">Running late</string>
+    <string name="look_preview_folder">Kids</string>
+    <string name="settings_backup_title">Back up and restore</string>
+    <string name="settings_backup_help">Save your shortcuts in a file. You can get them back from it later.</string>
+    <string name="settings_backup_button">Back up my shortcuts</string>
+    <string name="settings_restore_button">Restore from a backup</string>
+    <string name="settings_try_title">Try the keyboard</string>
+    <string name="settings_help_title">How it works</string>
+    <string name="settings_help_1">Make a shortcut for a message you send a lot.</string>
+    <string name="settings_help_2">Tap the words that change each time, like a name or a time.</string>
+    <string name="settings_help_3">To use it, tap the keyboard icon at the bottom of your screen and choose Shortcut Keyboard.</string>
+    <string name="settings_help_4">Pick a shortcut. The keyboard asks you for the words that change, one at a time.</string>
+    <string name="settings_help_5">Tap Add. Your message is typed for you.</string>
+    <string name="settings_about_title">About</string>
+    <string name="settings_about_version">Version %1$s</string>
+    <string name="settings_about_privacy">No internet. Nothing you type leaves your phone.</string>
 </resources>

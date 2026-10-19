@@ -7,6 +7,8 @@ internal class GridModel(
     val page: Int,
     val pageCount: Int,
     val tiles: List<TileSpec?>,
+    /** Nothing in this folder yet: a friendly message and one big "+ New" tile instead of the grid. */
+    val isEmpty: Boolean,
     val backHighlighted: Boolean,
     val onBack: () -> Unit,
     val onPrevious: () -> Unit,

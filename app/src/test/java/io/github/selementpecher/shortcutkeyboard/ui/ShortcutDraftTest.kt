@@ -1,5 +1,6 @@
 package io.github.selementpecher.shortcutkeyboard.ui
 
+import io.github.selementpecher.shortcutkeyboard.data.SampleShortcuts
 import io.github.selementpecher.shortcutkeyboard.model.Shortcut
 import io.github.selementpecher.shortcutkeyboard.model.VariableDef
 import io.github.selementpecher.shortcutkeyboard.model.VariableType
@@ -10,39 +11,41 @@ import org.junit.Test
 class ShortcutDraftTest {
 
     @Test
-    fun buildKeepsFolderAndPosition() {
-        val built = ShortcutDraft.build("id", "  Meds ", "{child} at {time}", parentId = "kids", order = 3) { VariableDef(it) }
-        assertEquals("Meds", built.name)
-        assertEquals("kids", built.parentId)
-        assertEquals(3, built.order)
-        assertEquals(listOf("child", "time"), built.variables.map { it.name })
+    fun optionsAreCleaned() {
+        assertEquals(listOf("Sam", "Ben"), ShortcutDraft.cleanOptions(listOf(" Sam ", "", "sam", "Ben", "  ")))
     }
 
     @Test
-    fun buildDefaultsToTheTopLevel() {
-        val built = ShortcutDraft.build("id", "A", "hi") { VariableDef(it) }
-        assertNull(built.parentId)
-        assertEquals(0, built.order)
-    }
-
-    @Test
-    fun normaliseKeepsFolderAndPositionAndIsStable() {
+    fun normaliseKeepsFolderPositionAndPictureAndIsStable() {
         val stored = Shortcut(
             "id", "Meds", "{child} at {time}",
             listOf(VariableDef("child", options = listOf("Sam", " ", "sam")), VariableDef("time", VariableType.TIME)),
-            parentId = "kids", order = 2,
+            parentId = "kids", order = 2, icon = "💊",
         )
         val normal = ShortcutDraft.normalise(stored)
         assertEquals("kids", normal.parentId)
         assertEquals(2, normal.order)
+        assertEquals("💊", normal.icon)
         assertEquals(listOf("Sam"), normal.variables.first().options)
         assertEquals(normal, ShortcutDraft.normalise(normal))
+    }
+
+    @Test
+    fun normaliseKeepsTheSampleShortcutsAsTheyAre() {
+        for (sample in SampleShortcuts.all) {
+            val normal = ShortcutDraft.normalise(sample)
+            assertEquals(sample.template, normal.template)
+            assertEquals(sample.variables.map { it.name to it.type }, normal.variables.map { it.name to it.type })
+        }
     }
 
     @Test
     fun blankNamesAreChecked() {
         assertEquals(ShortcutDraft.NameProblem.EMPTY, ShortcutDraft.checkBlankName(" "))
         assertEquals(ShortcutDraft.NameProblem.BUILT_IN, ShortcutDraft.checkBlankName("today"))
-        assertNull(ShortcutDraft.checkBlankName("child"))
+        assertEquals(ShortcutDraft.NameProblem.INVALID, ShortcutDraft.checkBlankName("a{b"))
+        assertEquals(ShortcutDraft.NameProblem.INVALID, ShortcutDraft.checkBlankName("time+4h"))
+        assertEquals(ShortcutDraft.NameProblem.INVALID, ShortcutDraft.checkBlankName("a|b"))
+        assertNull(ShortcutDraft.checkBlankName("How much"))
     }
 }

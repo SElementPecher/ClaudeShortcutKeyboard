@@ -1,418 +1,605 @@
 package io.github.selementpecher.shortcutkeyboard.ui
 
 import android.app.Activity
-import android.app.AlertDialog
-import android.app.Dialog
-import android.os.Build
+import android.content.Context
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
+import android.util.TypedValue
+import android.view.Gravity
 import android.view.View
-import android.view.WindowManager
+import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import android.widget.Toolbar
-import android.window.OnBackInvokedCallback
-import android.window.OnBackInvokedDispatcher
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository
 import io.github.selementpecher.shortcutkeyboard.model.Shortcut
-import io.github.selementpecher.shortcutkeyboard.model.VariableDef
-import io.github.selementpecher.shortcutkeyboard.model.VariableType
-import io.github.selementpecher.shortcutkeyboard.template.Template
+import io.github.selementpecher.shortcutkeyboard.look.tileColorsFor
+import io.github.selementpecher.shortcutkeyboard.look.typefaceOf
+import io.github.selementpecher.shortcutkeyboard.ui.editor.BlankKind
+import io.github.selementpecher.shortcutkeyboard.ui.editor.EditorText
+import io.github.selementpecher.shortcutkeyboard.ui.editor.MessageDraft
+import io.github.selementpecher.shortcutkeyboard.ui.editor.Piece
+import io.github.selementpecher.shortcutkeyboard.ui.editor.WordFlow
+import io.github.selementpecher.shortcutkeyboard.ui.editor.WordSheets
+import kotlin.math.max
 
 /**
- * Makes a new shortcut or changes one: its name, message and the settings of each
- * blank, with a live preview.
+ * Makes or changes a shortcut, one small step at a time:
+ * name, message, tap the words that change, check and save.
  *
- * Start with [EXTRA_ID] to change a saved shortcut; without it (or if it no longer exists) a new
- * one is made.
+ * Nothing on screen shows curly brackets: the message is written in plain words and the words that
+ * change are tapped. [MessageDraft] turns that into the stored template.
+ *
+ * Start with [EXTRA_ID] to change a saved shortcut (it opens on the check step); without it, or if
+ * it no longer exists, a new shortcut is made.
  */
 class EditShortcutActivity : Activity() {
 
-    private lateinit var nameField: EditText
-    private lateinit var messageField: EditText
-    private lateinit var nameError: TextView
-    private lateinit var messageError: TextView
-    private lateinit var blanksContainer: LinearLayout
-    private lateinit var noBlanksText: View
-    private lateinit var builtInNote: View
-    private lateinit var previewText: TextView
+    private enum class Step { NAME, MESSAGE, WORDS, CHECK }
 
+    private lateinit var ui: Ui
+    private lateinit var screen: UiScreen
+    private lateinit var sheets: WordSheets
+
+    private var step = Step.NAME
+    private var stored: Shortcut? = null
+    private var baseline: Shortcut? = null
     private lateinit var shortcutId: String
-    private var isNew = true
-
-    /** The folder this shortcut sits in (null = top level) and its place there. */
     private var parentId: String? = null
     private var position = 0
 
-    /** The shortcut as it was when the screen opened (empty for a new one). */
-    private lateinit var original: Shortcut
+    private var name = ""
+    private var icon = ""
+    private var messageText = ""
+    private var draft = MessageDraft(emptyList())
 
-    /** [original] as the editor would save it untouched; anything else means unsaved changes. */
-    private lateinit var unchanged: Shortcut
+    /** How many changing words the last re-typing could not find again. */
+    private var lost = 0
+    private var nameError = false
+    private var messageError = false
 
-    /**
-     * One card per blank name (by key), including blanks no longer in the message, so their
-     * settings come back if the blank is typed again.
-     */
-    private val cards = HashMap<String, BlankCard>()
-    private var shownKeys: List<String> = emptyList()
-    private var template: Template = Template.parse("")
-
-    /** Card state saved before a rotation, used as each card is made again. */
-    private var restoredCards: Bundle? = null
-    private var filling = false
-    private var dialog: Dialog? = null
-    private var backCallback: Any? = null
+    private var dialog: UiPanel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_edit_shortcut)
-        EdgeToEdge.apply(this, findViewById(R.id.edit_root), findViewById(R.id.edit_top_bar))
-
-        nameField = findViewById(R.id.edit_name)
-        messageField = findViewById(R.id.edit_message)
-        nameError = findViewById(R.id.edit_name_error)
-        messageError = findViewById(R.id.edit_message_error)
-        blanksContainer = findViewById(R.id.edit_blanks)
-        noBlanksText = findViewById(R.id.edit_no_blanks)
-        builtInNote = findViewById(R.id.edit_built_in_note)
-        previewText = findViewById(R.id.edit_preview)
+        ui = Ui.of(this)
 
         val requestedId = intent?.getStringExtra(EXTRA_ID)
-        val stored = requestedId?.let { ShortcutRepository.find(this, it) }
-        isNew = stored == null
-        shortcutId = stored?.id ?: savedInstanceState?.getString(STATE_ID) ?: ShortcutRepository.newId()
-        val library = ShortcutRepository.library(this)
-        parentId = if (stored != null) stored.parentId else FolderLogic.existingFolder(library, intent?.getStringExtra(EXTRA_PARENT_ID))
-        position = stored?.order ?: 0
-        original = stored ?: Shortcut(id = shortcutId, name = "", template = "", parentId = parentId)
-        unchanged = ShortcutDraft.normalise(original)
-
-        setActionBar(findViewById<Toolbar>(R.id.edit_toolbar))
-        actionBar?.apply {
-            setDisplayHomeAsUpEnabled(true)
-            setHomeAsUpIndicator(R.drawable.app_ic_back)
-            setHomeActionContentDescription(R.string.action_back)
-            setTitle(if (isNew) R.string.edit_title_new else R.string.edit_title)
-        }
-
-        findViewById<TextView>(R.id.edit_folder).apply {
-            val line = FolderLogic.folderLine(library, parentId, getString(R.string.shortcut_no_name))
-            if (line != null) {
-                text = getString(R.string.edit_in_folder, line)
-                visibility = View.VISIBLE
-            }
-        }
-
-        findViewById<View>(R.id.edit_toolbar_save).setOnClickListener { save() }
-        findViewById<View>(R.id.edit_save_button).setOnClickListener { save() }
-        findViewById<View>(R.id.edit_add_blank).setOnClickListener { showAddBlank() }
-        findViewById<View>(R.id.edit_add_time_later).setOnClickListener { showAddTimeLater() }
-        findViewById<View>(R.id.edit_help).setOnClickListener { showDialog(HelpDialog.create(this)) }
-
-        nameField.onTextChanged { nameError.visibility = View.GONE }
-        messageField.onTextChanged {
-            if (filling) return@onTextChanged
-            messageError.visibility = View.GONE
-            onMessageChanged()
-        }
-
-        if (savedInstanceState != null) {
-            restoreDraft(savedInstanceState)
+        stored = requestedId?.let { runCatching { ShortcutRepository.find(this, it) }.getOrNull() }
+        val existing = stored
+        shortcutId = existing?.id ?: savedInstanceState?.getString(STATE_ID) ?: ShortcutRepository.newId()
+        parentId = if (existing != null) {
+            existing.parentId
         } else {
-            fillFields(original.name, original.template)
-            if (isNew) {
-                // A new shortcut starts with the keyboard open on "Name".
-                nameField.requestFocus()
-                val mode = window.attributes.softInputMode and WindowManager.LayoutParams.SOFT_INPUT_MASK_STATE.inv()
-                window.setSoftInputMode(mode or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
-            }
+            val wanted = intent?.getStringExtra(EXTRA_PARENT_ID)
+            wanted?.let { id -> runCatching { ShortcutRepository.findFolder(this, id) }.getOrNull()?.id }
         }
+        position = existing?.order ?: 0
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) registerBackCallback()
+        if (existing != null) {
+            baseline = ShortcutDraft.normalise(existing)
+            name = existing.name
+            icon = existing.icon
+            draft = MessageDraft.fromShortcut(existing)
+            step = Step.CHECK
+        }
+        if (savedInstanceState != null) restore(savedInstanceState)
+
+        screen = ui.screen(
+            title = getString(if (existing == null) R.string.editor_title_new else R.string.editor_title_change),
+            onBack = { goBack() },
+            withBottomBar = true,
+        )
+        screen.install(this)
+        sheets = WordSheets(this, ui, { draft }, { changed -> draft = changed; lost = 0; render() })
+        render()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (ui.isStale()) recreate()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString(STATE_ID, shortcutId)
-        outState.putString(STATE_NAME, nameField.text.toString())
-        outState.putString(STATE_MESSAGE, messageField.text.toString())
-        outState.putInt(STATE_SELECTION_START, messageField.selectionStart)
-        outState.putInt(STATE_SELECTION_END, messageField.selectionEnd)
-        outState.putBundle(STATE_CARDS, Bundle().apply { cards.forEach { (key, card) -> putBundle(key, card.saveState()) } })
+        outState.putString(STATE_STEP, step.name)
+        outState.putString(STATE_NAME, name)
+        outState.putString(STATE_ICON, icon)
+        outState.putString(STATE_MESSAGE, messageText)
+        outState.putString(STATE_DRAFT, draft.toJson())
+        outState.putInt(STATE_LOST, lost)
+    }
+
+    private fun restore(state: Bundle) {
+        step = Step.entries.firstOrNull { it.name == state.getString(STATE_STEP) } ?: step
+        name = state.getString(STATE_NAME, name)
+        icon = state.getString(STATE_ICON, icon)
+        messageText = state.getString(STATE_MESSAGE, messageText)
+        state.getString(STATE_DRAFT)?.let { json -> MessageDraft.fromJson(json)?.let { draft = it } }
+        lost = state.getInt(STATE_LOST)
     }
 
     override fun onDestroy() {
         dialog?.dismiss()
-        dialog = null
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) unregisterBackCallback()
+        sheets.dismiss()
         super.onDestroy()
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_edit_shortcut, menu)
-        menu.findItem(R.id.menu_delete)?.isVisible = !isNew
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
-        android.R.id.home -> {
-            leave()
-            true
-        }
-        R.id.menu_delete -> {
-            confirmDelete()
-            true
-        }
-        else -> super.onOptionsItemSelected(item)
     }
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        leave()
+        goBack()
     }
 
-    // Back
+    // ---- moving between steps ----
 
-    /** Back and the top-left arrow: ask first if there are unsaved changes. */
+    private val isNew: Boolean get() = stored == null
+
+    private fun goTo(next: Step) {
+        step = next
+        render()
+    }
+
+    private fun goBack() {
+        when (step) {
+            Step.NAME -> leave()
+            Step.MESSAGE -> if (isNew) goTo(Step.NAME) else { applyTypedMessage(); goTo(Step.CHECK) }
+            Step.WORDS -> goTo(Step.MESSAGE.also { messageText = draft.plainText() })
+            Step.CHECK -> if (isNew) goTo(Step.WORDS) else leave()
+        }
+    }
+
+    /** Leaves the screen, asking first when there is something that would be lost. */
     private fun leave() {
-        if (currentDraft() == unchanged) {
+        if (!hasChanges()) {
             finish()
             return
         }
-        showDialog(
-            AlertDialog.Builder(this)
-                .setTitle(R.string.unsaved_title)
-                .setMessage(R.string.unsaved_message)
-                .setPositiveButton(R.string.unsaved_save) { _, _ -> save() }
-                .setNegativeButton(R.string.unsaved_discard) { _, _ -> finish() }
-                .setNeutralButton(R.string.dialog_cancel, null)
-                .create(),
-        )
-    }
-
-    /**
-     * Only used when the app opts in to the newer back handling (android:enableOnBackInvokedCallback);
-     * otherwise Android ignores this and calls onBackPressed().
-     */
-    private fun registerBackCallback() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-        val callback = OnBackInvokedCallback { leave() }
-        onBackInvokedDispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, callback)
-        backCallback = callback
-    }
-
-    private fun unregisterBackCallback() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-        (backCallback as? OnBackInvokedCallback)?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }
-        backCallback = null
-    }
-
-    // Filling the screen
-
-    private fun fillFields(name: String, message: String) {
-        filling = true
-        nameField.setText(name)
-        messageField.setText(message)
-        filling = false
-        onMessageChanged()
-    }
-
-    private fun restoreDraft(state: Bundle) {
-        restoredCards = state.getBundle(STATE_CARDS)
-        fillFields(
-            state.getString(STATE_NAME).orEmpty(),
-            state.getString(STATE_MESSAGE).orEmpty(),
-        )
-        val length = messageField.length()
-        val start = state.getInt(STATE_SELECTION_START, length).coerceIn(0, length)
-        val end = state.getInt(STATE_SELECTION_END, start).coerceIn(0, length)
-        messageField.setSelection(start, end)
-        // Keep the cards of blanks taken out of the message too, for another rotation.
-        restoredCards?.let { saved ->
-            for (key in saved.keySet()) {
-                if (cards.containsKey(key)) continue
-                val cardState = saved.getBundle(key) ?: continue
-                BlankCard.fromState(this, blanksContainer, cardState, ::onBlankChanged)?.let { cards[key] = it }
-            }
-        }
-        restoredCards = null
-    }
-
-    // Blanks
-
-    /** Rebuilds the blank cards when the set of blanks changes, and updates the preview. */
-    private fun onMessageChanged() {
-        template = Template.parse(messageField.text.toString())
-        val names = template.variableNames
-        val keys = names.map { VariableDef.keyOf(it) }
-        for (name in names) {
-            val card = cardFor(name)
-            card.rename(name)
-            card.setUsesOffset(template.usesOffset(name))
-        }
-        if (keys != shownKeys) {
-            blanksContainer.removeAllViews()
-            for (key in keys) cards[key]?.let { blanksContainer.addView(it.view) }
-            shownKeys = keys
-        }
-        noBlanksText.visibility = if (keys.isEmpty()) View.VISIBLE else View.GONE
-        val usesBuiltIn = template.parts.any { it is Template.Part.Ref && Template.isBuiltIn(it.name) }
-        builtInNote.visibility = if (usesBuiltIn) View.VISIBLE else View.GONE
-        updatePreview()
-    }
-
-    private fun onBlankChanged() = updatePreview()
-
-    /** The card for [name], made from saved settings or a guess the first time it is needed. */
-    private fun cardFor(name: String): BlankCard {
-        val key = VariableDef.keyOf(name)
-        cards[key]?.let { return it }
-        val card = restoredCards?.getBundle(key)?.let { BlankCard.fromState(this, blanksContainer, it, ::onBlankChanged) }
-            ?: original.variable(name)?.let { BlankCard(this, blanksContainer, it, typeChosen = true, onChanged = ::onBlankChanged) }
-            ?: BlankCard(
-                this,
-                blanksContainer,
-                VariableDef(name.trim(), Template.guessType(name, template.usesOffset(name))),
-                typeChosen = false,
-                onChanged = ::onBlankChanged,
-            )
-        cards[key] = card
-        return card
-    }
-
-    private fun shownCards(): List<BlankCard> = shownKeys.mapNotNull { cards[it] }
-
-    private fun updatePreview() {
-        if (messageField.text.isNullOrBlank()) {
-            previewText.setText(R.string.edit_preview_empty)
-            previewText.setTextColor(getColor(R.color.text_secondary))
-            return
-        }
-        previewText.text = ShortcutPreview.render(template, shownCards().map { it.toVariableDef() })
-        previewText.setTextColor(getColor(R.color.text_primary))
-    }
-
-    private fun showAddBlank() {
-        val dialog = AddBlankDialogs.addBlank(
+        dialog?.dismiss()
+        dialog = ui.ask(
             this,
-            typeOf = { name -> cards[VariableDef.keyOf(name)]?.takeIf { it.view.parent != null }?.type },
-        ) { name, type ->
-            cardFor(name).setType(type, chosen = true)
-            insertIntoMessage(ShortcutDraft.blankToken(name))
-        }
-        showDialog(dialog)
+            getString(R.string.editor_unsaved_title),
+            null,
+            listOf(
+                DialogButton(getString(R.string.editor_unsaved_save)) { save(); true },
+                DialogButton(getString(R.string.editor_unsaved_discard), ButtonStyle.DANGER) { finish(); true },
+                DialogButton(getString(R.string.editor_unsaved_keep), ButtonStyle.TEXT),
+            ),
+        ).show()
     }
 
-    private fun showAddTimeLater() {
-        val timeNames = shownCards().filter { it.type == VariableType.TIME }.map { it.name }
-        showDialog(AddBlankDialogs.addTimeLater(this, timeNames) { token -> insertIntoMessage(token) })
+    private fun currentShortcut(): Shortcut = draft.toShortcut(shortcutId, name, parentId, position, icon)
+
+    private fun hasChanges(): Boolean {
+        val typedElsewhere = step == Step.MESSAGE && messageText != draft.plainText()
+        val before = baseline ?: return name.isNotBlank() || icon.isNotBlank() || messageText.isNotBlank() ||
+            draft.segments.isNotEmpty()
+        return typedElsewhere || currentShortcut() != before
     }
 
-    /** Puts [token] at the cursor in the message, or at the end if the message isn't being typed in. */
-    private fun insertIntoMessage(token: String) {
-        val text = messageField.text
-        val length = text.length
-        val atCursor = messageField.hasFocus() && messageField.selectionStart >= 0
-        val start = if (atCursor) minOf(messageField.selectionStart, messageField.selectionEnd).coerceIn(0, length) else length
-        val end = if (atCursor) maxOf(messageField.selectionStart, messageField.selectionEnd).coerceIn(0, length) else length
-        val insert = ShortcutDraft.spaced(token, text.getOrNull(start - 1), text.getOrNull(end))
-        text.replace(start, end, insert)
-        messageField.requestFocus()
-        messageField.setSelection((start + insert.length).coerceAtMost(messageField.length()))
+    /** Takes what is typed in the message box into the draft, keeping the changing words it can still find. */
+    private fun applyTypedMessage() {
+        if (step != Step.MESSAGE) return
+        val text = messageText.trim()
+        val result = draft.withNewText(text)
+        draft = result.draft
+        lost = result.lost
+        messageText = draft.plainText()
     }
 
-    // Saving
-
-    private fun currentDraft(): Shortcut = ShortcutDraft.build(
-        shortcutId,
-        nameField.text.toString(),
-        messageField.text.toString(),
-        parentId,
-        position,
-    ) { name -> cardFor(name).toVariableDef() }
+    // ---- save and delete ----
 
     private fun save() {
-        val draft = currentDraft()
-        var firstProblem: View? = null
-        if (draft.name.isEmpty()) {
-            showError(nameError, R.string.error_name_required)
-            firstProblem = nameField
-        }
-        if (draft.template.isBlank()) {
-            showError(messageError, R.string.error_message_required)
-            firstProblem = firstProblem ?: messageField
-        }
-        if (firstProblem != null) {
-            firstProblem.requestFocus()
+        applyTypedMessage()
+        if (name.isBlank()) {
+            nameError = true
+            goTo(Step.NAME)
             return
         }
-
-        val all = ShortcutRepository.all(this)
-        // Keep anything the keyboard learned while this screen was open.
-        val latest = all.firstOrNull { it.id == shortcutId }
-        val toSave = if (latest == null) {
-            draft
-        } else {
-            // It may have been moved (e.g. in the keyboard) while this screen was open.
-            draft.copy(
-                parentId = latest.parentId,
-                order = latest.order,
-                variables = draft.variables.map { variable ->
-                    latest.variable(variable.name)?.lastValue?.let { variable.copy(lastValue = it) } ?: variable
-                },
-            )
+        if (draft.plainText().isBlank()) {
+            messageError = true
+            goTo(Step.MESSAGE)
+            return
         }
         try {
-            ShortcutRepository.save(this, toSave)
+            ShortcutRepository.save(this, currentShortcut())
         } catch (e: Exception) {
-            Log.w(TAG, "Could not save shortcut", e)
-            Toast.makeText(this, R.string.edit_save_failed, Toast.LENGTH_LONG).show()
+            Log.w(TAG, "Could not save the shortcut", e)
+            Toast.makeText(this, R.string.editor_save_failed, Toast.LENGTH_LONG).show()
             return
         }
-        Toast.makeText(this, R.string.edit_saved, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, R.string.editor_saved, Toast.LENGTH_SHORT).show()
         finish()
-    }
-
-    private fun showError(view: TextView, message: Int) {
-        view.setText(message)
-        view.visibility = View.VISIBLE
     }
 
     private fun confirmDelete() {
-        val name = nameField.text.toString().trim().ifEmpty { original.name.trim() }
-        val title = if (name.isEmpty()) getString(R.string.delete_title_no_name) else getString(R.string.delete_title, name)
-        showDialog(
-            AlertDialog.Builder(this)
-                .setTitle(title)
-                .setMessage(R.string.delete_message)
-                .setPositiveButton(R.string.delete_confirm) { _, _ -> delete() }
-                .setNegativeButton(R.string.dialog_cancel, null)
-                .create(),
-        )
-    }
-
-    private fun delete() {
-        try {
-            ShortcutRepository.delete(this, shortcutId)
-        } catch (e: Exception) {
-            Log.w(TAG, "Could not delete shortcut", e)
-            Toast.makeText(this, R.string.edit_save_failed, Toast.LENGTH_LONG).show()
-            return
-        }
-        Toast.makeText(this, R.string.edit_deleted, Toast.LENGTH_SHORT).show()
-        finish()
-    }
-
-    private fun showDialog(newDialog: Dialog) {
         dialog?.dismiss()
-        dialog = newDialog
-        showReadable(newDialog)
+        dialog = ui.confirm(
+            this,
+            getString(R.string.editor_delete_title),
+            getString(R.string.editor_delete_message, name.ifBlank { getString(R.string.editor_title_new) }),
+            getString(R.string.editor_delete_confirm),
+            getString(R.string.editor_cancel),
+            danger = true,
+        ) {
+            try {
+                ShortcutRepository.delete(this, shortcutId)
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not delete the shortcut", e)
+            }
+            finish()
+        }.show()
+    }
+
+    // ---- drawing the steps ----
+
+    private fun render() {
+        screen.content.removeAllViews()
+        screen.bottomBar.removeAllViews()
+        when (step) {
+            Step.NAME -> buildName()
+            Step.MESSAGE -> buildMessage()
+            Step.WORDS -> buildWords()
+            Step.CHECK -> buildCheck()
+        }
+        screen.scroll.scrollTo(0, 0)
+    }
+
+    /** "Step 2 of 4", only while making a new shortcut. */
+    private fun stepLabel(number: Int) {
+        if (!isNew) return
+        with(ui) { screen.content.add(label(getString(R.string.editor_step_of, number, 4)), bottom = 6) }
+    }
+
+    private fun errorLine(textId: Int, visible: Boolean): TextView = with(ui) {
+        text(getString(textId), look.type.smallSp, 600, palette.danger).apply {
+            visibility = if (visible) View.VISIBLE else View.GONE
+            layoutParams = lp(top = 8)
+        }
+    }
+
+    private fun buildName() {
+        val content = screen.content
+        stepLabel(1)
+        with(ui) {
+            content.add(title(getString(R.string.editor_name_title)))
+            content.add(small(getString(R.string.editor_name_help)), top = 8)
+
+            val line = row()
+            val field = field(getString(R.string.editor_name_hint)).apply {
+                setText(name)
+                imeOptions = EditorInfo.IME_ACTION_NEXT
+                setOnEditorActionListener { _, _, _ -> next(); true }
+            }
+            val error = errorLine(R.string.editor_name_error, nameError)
+            field.addTextChangedListener(watcher { name = it; if (nameError) { nameError = false; error.visibility = View.GONE } })
+            line.addView(pictureButton({ icon }, { name }) { icon = it }, lp(width = ViewGroup.LayoutParams.WRAP_CONTENT, end = 14))
+            line.addView(field, lp(width = 0, weight = 1f))
+            content.add(line, top = 24)
+            content.add(error)
+
+            screen.bottomBar.addView(primaryButton(getString(R.string.editor_next)) { next() })
+            if (isNew && name.isEmpty()) showKeyboardFor(field)
+        }
+    }
+
+    private fun buildMessage() {
+        val content = screen.content
+        stepLabel(2)
+        with(ui) {
+            content.add(title(getString(R.string.editor_message_title)))
+            content.add(small(getString(R.string.editor_message_help)), top = 8)
+            content.add(
+                text(getString(R.string.editor_message_example), look.type.bodySp, 600, palette.ink).apply {
+                    setPadding(dp(14), dp(12), dp(14), dp(12))
+                    background = shape(palette.surfaceAlt, 14f)
+                },
+                top = 8,
+            )
+            val field = field(getString(R.string.editor_message_hint), multiline = true).apply { setText(messageText) }
+            val error = errorLine(R.string.editor_message_error, messageError)
+            field.addTextChangedListener(watcher { messageText = it; if (messageError) { messageError = false; error.visibility = View.GONE } })
+            content.add(field, top = 20)
+            content.add(error)
+            screen.bottomBar.addView(primaryButton(getString(R.string.editor_next)) { next() })
+            if (messageText.isEmpty()) showKeyboardFor(field)
+        }
+    }
+
+    private fun buildWords() {
+        val content = screen.content
+        stepLabel(3)
+        with(ui) {
+            content.add(title(getString(R.string.editor_words_title)))
+            content.add(body(getString(R.string.editor_words_hint)), top = 10)
+            if (lost > 0) {
+                content.add(
+                    text(resources.getQuantityString(R.plurals.editor_words_lost, lost, lost), look.type.bodySp, 600, palette.ink).apply {
+                        setPadding(dp(14), dp(12), dp(14), dp(12))
+                        background = shape(withAlpha(palette.accent, 0x26), 14f, palette.accent, 1.5f)
+                    },
+                    top = 14,
+                )
+            }
+            val card = card(16)
+            card.addView(wordFlow())
+            content.add(card, top = 16)
+            content.add(small(getString(R.string.editor_words_none)), top = 14)
+            screen.bottomBar.addView(primaryButton(getString(R.string.editor_next)) { next() })
+        }
+    }
+
+    /** The message as words to tap: plain words, punctuation, and the words that already change. */
+    private fun wordFlow(): View {
+        val flow = WordFlow(this, ui.dp(6), ui.dp(8)).apply { layoutParams = ui.lp() }
+        val colourIndex = draft.questions().withIndex().associate { it.value.blankId to it.index }
+        var tightNext = false
+        var breakNext = false
+        fun add(view: View, tight: Boolean = false) {
+            val params = WordFlow.Params(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            params.tight = tight || tightNext
+            params.lineBreakBefore = breakNext
+            tightNext = false
+            breakNext = false
+            flow.addView(view, params)
+        }
+        for (piece in draft.pieces()) {
+            when (piece) {
+                is Piece.Word -> add(wordView(piece))
+                is Piece.Chip -> add(chipView(piece, colourIndex))
+                is Piece.Gap -> {
+                    val shown = piece.text.replace('\n', ' ').trim()
+                    val breaks = piece.text.contains('\n')
+                    if (shown.isNotEmpty()) {
+                        // Punctuation hugs the word before it; an opening bracket hugs the word after it.
+                        add(ui.text(shown, ui.look.type.bodySp + 2, 600, ui.palette.inkSoft), tight = !piece.text.first().isWhitespace())
+                        tightNext = !piece.text.last().isWhitespace()
+                    }
+                    if (breaks) {
+                        breakNext = true
+                        tightNext = false
+                    }
+                }
+            }
+        }
+        return flow
+    }
+
+    private fun pill(): Float = ui.look.shape.buttonRadiusDp.toFloat()
+
+    private fun wordView(piece: Piece.Word): View = with(ui) {
+        val r = pill()
+        TextView(context).apply {
+            text = piece.text
+            gravity = Gravity.CENTER
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, look.type.bodySp + 1)
+            typeface = typefaceOf(500)
+            setTextColor(palette.ink)
+            minHeight = dp(48)
+            minWidth = dp(48)
+            setPadding(dp(14), dp(6), dp(14), dp(6))
+            background = rippled(shape(palette.surfaceAlt, r, palette.outline, max(1f, look.shape.strokeDp)), r)
+            isClickable = true
+            isFocusable = true
+            includeFontPadding = false
+            contentDescription = getString(R.string.editor_word_desc, piece.text)
+            setOnClickListener { sheets.openWord(piece.selection) }
+        }
+    }
+
+    private fun chipView(piece: Piece.Chip, colourIndex: Map<Int, Int>): View = with(ui) {
+        val r = pill()
+        val spec = draft.blank(piece.blankId)
+        val label: String
+        val colours: io.github.selementpecher.shortcutkeyboard.look.TileColors
+        val bg: android.graphics.drawable.Drawable
+        if (spec == null) {
+            // `now` or `today` from an older shortcut: shown as it will be, not asked about.
+            label = piece.shown
+            colours = io.github.selementpecher.shortcutkeyboard.look.TileColors(palette.surface, palette.ink)
+            bg = rippled(shape(colours.bg, r, palette.inkSoft, 1.5f, dashed = true), r)
+        } else {
+            label = EditorText.chipLabel(context, spec.question, piece.offsetMinutes)
+            colours = palette.tiles[(colourIndex[spec.id] ?: 0) % palette.tiles.size]
+            bg = rippled(shape(colours.bg, r), r)
+        }
+        val glyph = spec?.kind?.glyph ?: if (piece.shown.contains(':')) "🕒" else "📅"
+        TextView(context).apply {
+            text = "$glyph  $label"
+            gravity = Gravity.CENTER
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, look.type.bodySp + 1)
+            typeface = typefaceOf(max(600, look.type.tileWeight))
+            setTextColor(colours.fg)
+            minHeight = dp(48)
+            setPadding(dp(14), dp(6), dp(14), dp(6))
+            background = bg
+            isClickable = true
+            isFocusable = true
+            includeFontPadding = false
+            contentDescription = getString(R.string.editor_chip_desc, label)
+            setOnClickListener { sheets.openChip(piece.segment) }
+        }
+    }
+
+    private fun buildCheck() {
+        val content = screen.content
+        stepLabel(4)
+        with(ui) {
+            if (isNew) content.add(title(getString(R.string.editor_check_title)))
+
+            // Name and picture: tap to change.
+            val nameCard = card(14).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                isClickable = true
+                isFocusable = true
+                contentDescription = name + ". " + getString(R.string.editor_name_row_hint)
+                setOnClickListener { editNameAndPicture() }
+            }
+            nameCard.addView(pictureCircle(52, 26f), lp(width = ViewGroup.LayoutParams.WRAP_CONTENT, end = 14))
+            val names = column()
+            names.addView(heading(name.ifBlank { getString(R.string.editor_title_new) }).apply { maxLines = 2 })
+            names.add(small(getString(R.string.editor_name_row_hint)), top = 2)
+            nameCard.addView(names, lp(width = 0, weight = 1f))
+            content.add(nameCard, top = if (isNew) 16 else 0)
+
+            content.add(label(getString(R.string.editor_check_asks)), top = 24)
+            val asks = draft.questions()
+            if (asks.isEmpty()) {
+                content.add(body(getString(R.string.editor_check_nothing)), top = 8)
+            } else {
+                val card = card(8)
+                asks.forEachIndexed { index, q ->
+                    val line = row().apply { setPadding(dp(8), dp(8), dp(8), dp(8)); minimumHeight = dp(48) }
+                    val dot = palette.tiles[index % palette.tiles.size]
+                    line.addView(
+                        text(q.kind.glyph, 18f, 400, dot.fg).apply {
+                            gravity = Gravity.CENTER
+                            background = shape(dot.bg, 999f)
+                        },
+                        lp(width = dp(40), height = dp(40), end = 12),
+                    )
+                    line.addView(text(q.question + "?", look.type.bodySp, 600, palette.ink), lp(width = 0, weight = 1f))
+                    if (q.answerCount > 0) {
+                        line.addView(small(resources.getQuantityString(R.plurals.editor_check_answers, q.answerCount, q.answerCount)))
+                    }
+                    card.addView(line)
+                }
+                content.add(card, top = 8)
+            }
+
+            content.add(label(getString(R.string.editor_check_types)), top = 24)
+            val example = card(18)
+            example.addView(text(draft.exampleMessage().ifBlank { "…" }, look.type.bodySp + 1, 500, palette.ink).apply { setTextIsSelectable(true) })
+            content.add(example, top = 8)
+
+            val problem = errorLine(R.string.editor_message_error, draft.plainText().isBlank())
+            content.add(problem)
+
+            content.add(textButton(getString(R.string.editor_change_words)) { messageText = draft.plainText(); goTo(Step.MESSAGE) }, top = 16)
+            if (!draft.hasNoBlanks || !isNew) {
+                content.add(textButton(getString(R.string.editor_change_answers)) { goTo(Step.WORDS) }, top = 0)
+            }
+            if (!isNew) {
+                content.add(
+                    textButton(getString(R.string.editor_delete)) { confirmDelete() }.also { it.setTextColor(palette.danger) },
+                    top = 12,
+                )
+            }
+            screen.bottomBar.addView(primaryButton(getString(R.string.editor_save)) { save() })
+        }
+    }
+
+    // ---- small pieces ----
+
+    private fun next() {
+        when (step) {
+            Step.NAME -> {
+                name = name.trim()
+                if (name.isEmpty()) {
+                    nameError = true
+                    render()
+                    return
+                }
+                if (messageText.isBlank()) messageText = draft.plainText()
+                goTo(Step.MESSAGE)
+            }
+            Step.MESSAGE -> {
+                if (messageText.isBlank()) {
+                    messageError = true
+                    render()
+                    return
+                }
+                applyTypedMessage()
+                goTo(Step.WORDS)
+            }
+            Step.WORDS -> goTo(Step.CHECK)
+            Step.CHECK -> save()
+        }
+    }
+
+    /** A round picture button: shows the chosen picture or a plus, and opens the picture grid. */
+    private fun pictureButton(getIcon: () -> String, getName: () -> String, setIcon: (String) -> Unit): View = with(ui) {
+        val column = column().apply { gravity = Gravity.CENTER_HORIZONTAL }
+        lateinit var circle: TextView
+        fun refresh() {
+            val chosen = getIcon()
+            circle.text = if (chosen.isBlank()) "＋" else glyphFor(chosen, getName())
+        }
+        circle = pictureCircle(64, 30f).also { it.contentDescription = getString(R.string.editor_picture_desc) }
+        circle.setOnClickListener {
+            IconPicker.show(this@EditShortcutActivity, ui, getIcon()) { picked -> setIcon(picked); refresh() }
+        }
+        refresh()
+        column.addView(circle, LinearLayout.LayoutParams(dp(64), dp(64)))
+        column.add(small(getString(R.string.editor_picture)), top = 4)
+        column
+    }
+
+    private fun pictureCircle(sizeDp: Int, sizeSp: Float): TextView = with(ui) {
+        text(glyphFor(icon, name), sizeSp, 400, palette.ink).apply {
+            gravity = Gravity.CENTER
+            background = rippled(shape(withAlpha(palette.accent, 0x30), 999f, palette.accent, 1.5f), 999f)
+            isClickable = true
+            isFocusable = true
+            layoutParams = LinearLayout.LayoutParams(dp(sizeDp), dp(sizeDp))
+        }
+    }
+
+    /** A small dialog to change the name and the picture from the check step. */
+    private fun editNameAndPicture() {
+        dialog?.dismiss()
+        var newIcon = icon
+        var newName = name
+        with(ui) {
+            val panel = dialog(this@EditShortcutActivity, getString(R.string.editor_edit_name_title))
+            val field = field(getString(R.string.editor_name_hint)).apply { setText(newName) }
+            val error = errorLine(R.string.editor_name_error, false)
+            field.addTextChangedListener(watcher { newName = it })
+            val line = row()
+            line.addView(pictureButton({ newIcon }, { newName }) { newIcon = it }, lp(width = ViewGroup.LayoutParams.WRAP_CONTENT, end = 14))
+            line.addView(field, lp(width = 0, weight = 1f))
+            panel.body.add(line, top = 8)
+            panel.body.add(error)
+            panel.buttons(
+                listOf(
+                    DialogButton(getString(R.string.editor_done)) {
+                        if (newName.isBlank()) {
+                            error.visibility = View.VISIBLE
+                            false
+                        } else {
+                            name = newName.trim()
+                            icon = newIcon
+                            render()
+                            true
+                        }
+                    },
+                    DialogButton(getString(R.string.editor_cancel), ButtonStyle.TEXT),
+                ),
+            )
+            dialog = panel.show()
+        }
+    }
+
+    private fun watcher(onText: (String) -> Unit) = object : TextWatcher {
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+        override fun afterTextChanged(s: Editable?) = onText(s?.toString().orEmpty())
+    }
+
+    private fun showKeyboardFor(field: EditText) {
+        field.post {
+            if (isFinishing || isDestroyed) return@post
+            if (field.requestFocus()) {
+                (getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)?.showSoftInput(field, 0)
+            }
+        }
     }
 
     companion object {
@@ -424,10 +611,11 @@ class EditShortcutActivity : Activity() {
 
         private const val TAG = "EditShortcutActivity"
         private const val STATE_ID = "id"
+        private const val STATE_STEP = "step"
         private const val STATE_NAME = "name"
+        private const val STATE_ICON = "icon"
         private const val STATE_MESSAGE = "message"
-        private const val STATE_SELECTION_START = "selectionStart"
-        private const val STATE_SELECTION_END = "selectionEnd"
-        private const val STATE_CARDS = "blanks"
+        private const val STATE_DRAFT = "draft"
+        private const val STATE_LOST = "lost"
     }
 }

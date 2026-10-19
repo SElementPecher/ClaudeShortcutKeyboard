@@ -7,18 +7,6 @@ import android.util.TypedValue
 import android.view.View
 import io.github.selementpecher.shortcutkeyboard.R
 
-/** The "How blanks work" box, with a few short examples. */
-internal object HelpDialog {
-
-    /** Builds the dialog. The caller shows it, and dismisses it if the screen closes. */
-    fun create(activity: Activity): AlertDialog =
-        AlertDialog.Builder(activity)
-            .setTitle(R.string.help_title)
-            .setView(View.inflate(activity, R.layout.dialog_help, null))
-            .setPositiveButton(R.string.dialog_got_it, null)
-            .create()
-}
-
 /**
  * Shows [dialog] with easier-to-read buttons: normal case instead of ALL CAPS, and a bit bigger.
  */

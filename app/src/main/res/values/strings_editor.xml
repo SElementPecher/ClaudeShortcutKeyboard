@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Screen titles -->
+    <string name="editor_title_new">New shortcut</string>
+    <string name="editor_title_change">Change shortcut</string>
+    <string name="editor_step_of">Step %1$d of %2$d</string>
+    <string name="editor_back">Back</string>
+    <string name="editor_next">Next</string>
+    <string name="editor_cancel">Cancel</string>
+    <string name="editor_ok">OK</string>
+    <string name="editor_done">Done</string>
+
+    <!-- Step 1: name and picture -->
+    <string name="editor_name_title">What is it for?</string>
+    <string name="editor_name_help">Give it a short name. You will see it on the keyboard.</string>
+    <string name="editor_name_hint">Medicine given</string>
+    <string name="editor_name_error">Please give it a name.</string>
+    <string name="editor_picture">Picture</string>
+    <string name="editor_picture_desc">Choose a picture</string>
+
+    <!-- Step 2: the message -->
+    <string name="editor_message_title">Type your message</string>
+    <string name="editor_message_help">Write it just as you would send it. For example:</string>
+    <string name="editor_message_example">Sam, Calpol, 5ml, 20:20 next dose not before 00:20</string>
+    <string name="editor_message_hint">Your message</string>
+    <string name="editor_message_error">Please type a message.</string>
+
+    <!-- Step 3: tap the words that change -->
+    <string name="editor_words_title">Tap the words that change</string>
+    <string name="editor_words_hint">Tap the words that will be different each time.</string>
+    <string name="editor_words_none">Nothing to tap? You can leave a message as it is.</string>
+    <plurals name="editor_words_lost">
+        <item quantity="one">%d word could not be found again. Tap it again.</item>
+        <item quantity="other">%d words could not be found again. Tap them again.</item>
+    </plurals>
+    <string name="editor_chip_later">%1$s + %2$s</string>
+    <string name="editor_chip_earlier">%1$s − %2$s</string>
+    <string name="editor_chip_desc">%1$s. Tap to change.</string>
+    <string name="editor_word_desc">%1$s. Tap if it changes.</string>
+
+    <!-- The sheet for one word -->
+    <string name="editor_sheet_before">◀ + word</string>
+    <string name="editor_sheet_after">word + ▶</string>
+    <string name="editor_sheet_just_one">Just “%s”</string>
+    <string name="editor_kind_title">What kind of word is it?</string>
+    <string name="editor_kind_list">A list of answers</string>
+    <string name="editor_kind_list_hint">Pick one each time</string>
+    <string name="editor_kind_time">A time</string>
+    <string name="editor_kind_time_hint">Starts at the time now</string>
+    <string name="editor_kind_date">A date</string>
+    <string name="editor_kind_date_hint">Starts at today</string>
+    <string name="editor_kind_number">A number</string>
+    <string name="editor_kind_number_hint">Type it on a pad</string>
+    <string name="editor_time_after">%1$s after “%2$s”</string>
+    <string name="editor_time_before">%1$s before “%2$s”</string>
+    <string name="editor_time_same">The same time as “%s”</string>
+    <string name="editor_time_choose_before">It is %1$s before “%2$s”</string>
+    <string name="editor_time_help">It follows the time you choose, so it moves when that does.</string>
+    <plurals name="editor_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <plurals name="editor_hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <plurals name="editor_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <string name="editor_question_title">What will the keyboard ask?</string>
+    <string name="editor_question_hint">Or write your own question</string>
+    <string name="editor_answers_title">Answers</string>
+    <string name="editor_answers_help">The keyboard shows these as buttons. You can add more later.</string>
+    <string name="editor_answer_hint">An answer</string>
+    <string name="editor_answer_add">＋ Add an answer</string>
+    <string name="editor_answer_remove">Remove %s</string>
+    <string name="editor_answer_remove_empty">Remove this answer</string>
+    <string name="editor_answer_first">%s (the word you tapped)</string>
+    <string name="editor_info_time">The keyboard will show the time, ready to change.</string>
+    <string name="editor_info_date">The keyboard will show today’s date, ready to change.</string>
+    <string name="editor_info_number">The keyboard will show a number pad.</string>
+    <string name="editor_make_it">Make it change</string>
+    <string name="editor_plain_again">Make it plain words again</string>
+    <string name="editor_offset_info">This is “%1$s” plus %2$s.</string>
+    <string name="editor_offset_info_minus">This is “%1$s” minus %2$s.</string>
+    <string name="editor_fixed_now">This fills in the time now by itself.</string>
+    <string name="editor_fixed_today">This fills in today’s date by itself.</string>
+    <string name="editor_fixed_other">This fills itself in.</string>
+
+    <!-- Step 4: check and save -->
+    <string name="editor_check_title">Check and save</string>
+    <string name="editor_check_asks">The keyboard will ask:</string>
+    <string name="editor_check_nothing">Nothing. It types the message as it is.</string>
+    <plurals name="editor_check_answers">
+        <item quantity="one">%d answer</item>
+        <item quantity="other">%d answers</item>
+    </plurals>
+    <string name="editor_check_types">It will type something like:</string>
+    <string name="editor_save">Save</string>
+    <string name="editor_change_words">Change the words</string>
+    <string name="editor_change_answers">Change the answers</string>
+    <string name="editor_name_row_hint">Tap to change the name or picture</string>
+    <string name="editor_edit_name_title">Name and picture</string>
+
+    <!-- Delete, saving, leaving -->
+    <string name="editor_delete">Delete this shortcut</string>
+    <string name="editor_delete_title">Delete this shortcut?</string>
+    <string name="editor_delete_message">“%s” will be gone for good.</string>
+    <string name="editor_delete_confirm">Delete</string>
+    <string name="editor_saved">Saved</string>
+    <string name="editor_save_failed">Sorry, that could not be saved.</string>
+    <string name="editor_unsaved_title">Save your changes?</string>
+    <string name="editor_unsaved_save">Save</string>
+    <string name="editor_unsaved_discard">Don’t save</string>
+    <string name="editor_unsaved_keep">Keep editing</string>
+</resources>
