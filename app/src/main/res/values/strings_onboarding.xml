@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The first-run tour -->
+    <string name="tour_skip">Skip</string>
+    <string name="tour_next">Next</string>
+    <string name="tour_done">Get started</string>
+    <string name="tour_page">Page %1$d of %2$d</string>
+
+    <string name="tour_1_title">Type a whole message with one tap</string>
+    <string name="tour_1_text">Make a shortcut once. Then tap it on your keyboard and the message is typed for you.</string>
+    <string name="tour_1_fixed_start">Running late, sorry! I\'ll be there in </string>
+
+    <string name="tour_2_title">Some words change each time</string>
+    <string name="tour_2_text">Add a time, a date, a number or a list. The keyboard asks you with big buttons.</string>
+    <string name="tour_2_note">The coloured words are the parts that change.</string>
+
+    <string name="tour_3_title">Keep things tidy</string>
+    <string name="tour_3_text">Put shortcuts in folders. Press and hold a tile, then drag it to move it. To delete many at once, tap the tick at the top.</string>
+    <string name="tour_3_folder">Kids</string>
+    <string name="tour_3_folder_items">3 items</string>
+    <string name="tour_3_shortcut">Running late</string>
+
+    <string name="tour_4_title">Turn on your keyboard</string>
+    <string name="tour_4_text">One quick step in your phone\'s settings.</string>
+    <string name="tour_4_turn_on">Turn on Shortcut Keyboard</string>
+    <string name="tour_4_on">Keyboard is on</string>
+    <string name="tour_4_use">To use it, tap the keyboard icon at the bottom of your screen when you are typing, then choose Shortcut Keyboard.</string>
+
+    <string name="tour_again_title">Take the tour again</string>
+    <string name="tour_again_help">A quick look at how it works.</string>
+    <string name="tour_again_button">Show the tour</string>
+</resources>

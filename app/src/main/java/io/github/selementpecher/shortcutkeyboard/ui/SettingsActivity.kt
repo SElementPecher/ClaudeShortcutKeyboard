@@ -77,10 +77,19 @@ class SettingsActivity : Activity() {
         content.add(textSizeCard(), top = 8)
         content.add(lookCard(), top = 16)
         content.add(cheatCard(), top = 16)
+        content.add(tourCard(), top = 16)
         content.add(backupCard(), top = 16)
         content.add(tryCard(), top = 16)
         content.add(helpCard(), top = 16)
         content.add(aboutCard(), top = 16)
+    }
+
+    private fun tourCard(): View = with(ui) {
+        val card = card()
+        card.add(heading(getString(R.string.tour_again_title)))
+        card.add(small(getString(R.string.tour_again_help)), top = 4)
+        card.add(secondaryButton(getString(R.string.tour_again_button)) { OnboardingActivity.open(this@SettingsActivity) }, top = 14)
+        card
     }
 
     private fun cheatCard(): View = with(ui) {

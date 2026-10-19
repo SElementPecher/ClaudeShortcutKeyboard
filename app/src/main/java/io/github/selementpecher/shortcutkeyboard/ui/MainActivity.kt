@@ -85,6 +85,8 @@ class MainActivity : Activity() {
         selectButton = ui.iconButton(Icons.Kind.CHECK, getString(R.string.select_open)) { startSelecting(null) }
         screen = ui.screen(getString(R.string.app_name), trailing = listOf(selectButton, gear), large = true, withBottomBar = true)
         screen.install(this)
+        // The first time the app opens, show the short tour (it can be skipped).
+        if (savedInstanceState == null && !Onboarding.isDone(this)) OnboardingActivity.open(this)
         drag = TileDrag(this, ui, screen.scroll, object : TileDrag.Callbacks {
             override fun tiles() = shownTiles
             override fun folderIds() = shownFolderIds
