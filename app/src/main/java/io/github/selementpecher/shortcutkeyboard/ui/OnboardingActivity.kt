@@ -151,7 +151,8 @@ class OnboardingActivity : Activity() {
     private fun pageOne(): View = with(ui) {
         val box = intro("👋", R.string.tour_1_title, R.string.tour_1_text)
         val parts = listOf(
-            ExampleParts.Part(getString(R.string.tour_1_fixed_start), ExampleParts.FIXED),
+            // Android trims the space at the end of a string, so it is added here.
+            ExampleParts.Part(getString(R.string.tour_1_fixed_start).trimEnd() + " ", ExampleParts.FIXED),
             ExampleParts.Part("10 mins (18:40)", 0),
             ExampleParts.Part(".", ExampleParts.FIXED),
         )
