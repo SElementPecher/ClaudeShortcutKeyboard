@@ -100,6 +100,12 @@ class FillSession(
     /** The finished message. Unfilled blanks become empty. */
     fun result(): String = now().let { t -> template.render(renderValues(t), types, t, locale) { "" } }
 
+    /**
+     * Every value as it will be printed, keyed by [VariableDef.key]: includes fixed "how long" blanks (which are not
+     * steps) and turns amounts into what the message shows ("10 mins", "20:35" or "10 mins (20:35)").
+     */
+    fun printedValues(): Map<String, String> = renderValues(now())
+
     /** The values as printed: "how long" blanks become "in 5 mins" / "5 mins ago" (with the clock if switched on). */
     private fun renderValues(at: LocalDateTime): Map<String, String> {
         if (allVariables.none { it.type.isRelative }) return values
