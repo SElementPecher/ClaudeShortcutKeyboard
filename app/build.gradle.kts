@@ -15,19 +15,19 @@ base {
 
 android {
     namespace = "io.github.selementpecher.shortcutkeyboard"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "io.github.selementpecher.shortcutkeyboard"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = buildNumber
         versionName = "1.0.$buildNumber"
     }
 
     signingConfigs {
         // A fixed key checked into the repo, so a new build can be installed over an old one
-        // without losing saved shortcuts. Fine for a personal, sideloaded app; not for the Play Store.
+        // without losing saved shortcuts. Only for the sideloaded test builds: the Play Store release uses the "upload" key below.
         getByName("debug") {
             storeFile = rootProject.file("keystore/shared-debug.keystore")
             storePassword = "android"
@@ -36,10 +36,22 @@ android {
         }
     }
 
+    // The Play Store upload key. It is never in the repo: CI (or the owner's computer) passes it in.
+    // Without these set, the release build is simply not signed (and Play would refuse it).
+    val uploadKeystore = System.getenv("QUIKEY_KEYSTORE_FILE")
+    if (uploadKeystore != null) {
+        signingConfigs.create("upload") {
+            storeFile = file(uploadKeystore)
+            storePassword = System.getenv("QUIKEY_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("QUIKEY_KEY_ALIAS")
+            keyPassword = System.getenv("QUIKEY_KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            if (uploadKeystore != null) signingConfig = signingConfigs.getByName("upload")
         }
     }
 
