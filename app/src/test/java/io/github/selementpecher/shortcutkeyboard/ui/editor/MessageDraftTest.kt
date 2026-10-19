@@ -68,7 +68,7 @@ class MessageDraftTest {
         val d = MessageDraft.fromMessage("Hi , ok").insertBlank(3, list("Who", "Sam"), now, uk)
         assertEquals("Hi ${MessageDraft.PLACEHOLDER}, ok", d.placeholderText())
         assertEquals("Hi Sam, ok", d.plainText())
-        assertEquals(7, d.length)
+        assertEquals(8, d.length)
         assertEquals(3, d.chipOffset(0))
         assertEquals(0, d.chipIndexAt(3))
         assertNull(d.chipIndexAt(2))

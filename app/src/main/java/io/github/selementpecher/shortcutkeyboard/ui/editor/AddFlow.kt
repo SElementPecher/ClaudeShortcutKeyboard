@@ -337,6 +337,10 @@ class AddFlow private constructor(
 
     /** One level back. False when already on the first level: the screen should then close the chain. */
     fun back(): Boolean {
+        if (isDone) {
+            isDone = false
+            return true
+        }
         val previous = history.removeLastOrNull() ?: return false
         nav = previous
         isDone = false
@@ -344,7 +348,7 @@ class AddFlow private constructor(
     }
 
     /** True when [back] has a level to go to. */
-    val canGoBack: Boolean get() = history.isNotEmpty()
+    val canGoBack: Boolean get() = isDone || history.isNotEmpty()
 
     /** Gives up: the half-made chip goes away. */
     fun cancel() {

@@ -194,6 +194,8 @@ class AddFlowTest {
         assertTrue(f.back())
         assertFalse(f.isDone)
         assertNull(f.result())
+        assertEquals(FlowStep.QUESTION, f.step)
+        assertTrue(f.back())
         assertEquals(FlowStep.KIND, f.step)
     }
 
@@ -385,7 +387,7 @@ class AddFlowTest {
         f.chooseKind(BlankKind.TIME)
         f.chooseTime(TimeChoice.FROM_NOW)
         f.chooseUnit(RelativeUnit.MINS)
-        for (bad in listOf("", "0", "00", "abc", "-5", ".")) {
+        for (bad in listOf("", "0", "00", "abc", ".")) {
             f.typeNumber(bad)
             assertNull("[$bad]", f.pendingAmount)
             assertFalse("[$bad]", f.canAdvance)

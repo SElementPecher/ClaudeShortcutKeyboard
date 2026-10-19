@@ -6,51 +6,68 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
-import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository
-import io.github.selementpecher.shortcutkeyboard.model.Shortcut
 import io.github.selementpecher.shortcutkeyboard.look.Icons
-import io.github.selementpecher.shortcutkeyboard.look.tileColorsFor
-import io.github.selementpecher.shortcutkeyboard.look.typefaceOf
+import io.github.selementpecher.shortcutkeyboard.look.TileColors
+import io.github.selementpecher.shortcutkeyboard.model.Shortcut
+import io.github.selementpecher.shortcutkeyboard.ui.editor.AddFlow
 import io.github.selementpecher.shortcutkeyboard.ui.editor.BlankKind
+import io.github.selementpecher.shortcutkeyboard.ui.editor.ChainPanel
+import io.github.selementpecher.shortcutkeyboard.ui.editor.ChipPreview
+import io.github.selementpecher.shortcutkeyboard.ui.editor.ChipStyle
+import io.github.selementpecher.shortcutkeyboard.ui.editor.ClockBlank
 import io.github.selementpecher.shortcutkeyboard.ui.editor.EditorText
 import io.github.selementpecher.shortcutkeyboard.ui.editor.MessageDraft
-import io.github.selementpecher.shortcutkeyboard.ui.editor.Piece
-import io.github.selementpecher.shortcutkeyboard.ui.editor.WordFlow
-import io.github.selementpecher.shortcutkeyboard.ui.editor.WordSheets
-import kotlin.math.max
+import io.github.selementpecher.shortcutkeyboard.ui.editor.MessageEditText
+import io.github.selementpecher.shortcutkeyboard.ui.editor.Segment
+import io.github.selementpecher.shortcutkeyboard.ui.editor.shownText
+import java.time.LocalDateTime
+import java.util.Locale
 
 /**
- * Makes or changes a shortcut, one small step at a time:
- * name, message, tap the words that change, check and save.
+ * Makes or changes a shortcut in three small steps: name and picture, message, check and save.
  *
- * Nothing on screen shows curly brackets: the message is written in plain words and the words that
- * change are tapped. [MessageDraft] turns that into the stored template.
+ * The message is written in a box where the parts that change sit inside the words as coloured chips,
+ * put there with "Add something that changes" (a chain of big choices, see [ChainPanel]). Nothing on screen
+ * shows curly brackets: [MessageDraft] turns the chips into the stored template.
  *
  * Start with [EXTRA_ID] to change a saved shortcut (it opens on the check step); without it, or if
  * it no longer exists, a new shortcut is made.
  */
-class EditShortcutActivity : Activity() {
+class EditShortcutActivity : Activity(), ChainPanel.Listener {
 
-    private enum class Step { NAME, MESSAGE, WORDS, CHECK }
+    private enum class Step { NAME, MESSAGE, CHECK }
+
+    /** The chain of choices while it is open. */
+    private class Chain(
+        val flow: AddFlow,
+        /** The message as it was before the chain opened. */
+        val original: MessageDraft,
+        /** The message without the words the chip replaces. */
+        val base: MessageDraft,
+        val offset: Int,
+        val selStart: Int,
+        val selEnd: Int,
+        /** The number of the chip being changed, or the one being made. */
+        val chipIndex: Int,
+        val adding: Boolean,
+    )
 
     private lateinit var ui: Ui
     private lateinit var screen: UiScreen
-    private lateinit var sheets: WordSheets
+    private lateinit var panel: ChainPanel
 
     private var step = Step.NAME
-
-    /** Where the back arrow goes from the "tap the words" step. */
-    private var wordsBack = Step.MESSAGE
     private var stored: Shortcut? = null
     private var baseline: Shortcut? = null
     private lateinit var shortcutId: String
@@ -60,15 +77,23 @@ class EditShortcutActivity : Activity() {
     private var name = ""
     private var icon = ""
     private var color = -1
-    private var messageText = ""
     private var draft = MessageDraft(emptyList())
-
-    /** How many changing words the last re-typing could not find again. */
-    private var lost = 0
     private var nameError = false
     private var messageError = false
 
     private var dialog: UiPanel? = null
+
+    private var messageEdit: MessageEditText? = null
+    private var pinned: LinearLayout? = null
+    private var syncing = false
+    private var caretStart = -1
+    private var caretEnd = -1
+    private var chain: Chain? = null
+
+    /** A chip to open for changing as soon as the message step is drawn (tapped on the check step). */
+    private var openChipAfterDraw = -1
+    private var hintAfterDraw = false
+    private var messageErrorLine: TextView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -102,8 +127,9 @@ class EditShortcutActivity : Activity() {
             withBottomBar = true,
         )
         screen.install(this)
-        sheets = WordSheets(this, ui, { draft }, { changed -> draft = changed; lost = 0; render() })
+        panel = ChainPanel(this, ui, screen, this)
         render()
+        savedInstanceState?.let { restoreChain(it) }
     }
 
     override fun onResume() {
@@ -118,10 +144,24 @@ class EditShortcutActivity : Activity() {
         outState.putString(STATE_NAME, name)
         outState.putString(STATE_ICON, icon)
         outState.putInt(STATE_COLOR, color)
-        outState.putString(STATE_MESSAGE, messageText)
-        outState.putString(STATE_DRAFT, draft.toJson())
-        outState.putInt(STATE_LOST, lost)
-        outState.putString(STATE_WORDS_BACK, wordsBack.name)
+        // While the chain is open the draft holds a half-made chip: keep the message as it was and the chain beside it.
+        val open = chain
+        outState.putString(STATE_DRAFT, (open?.original ?: draft).toJson())
+        messageEdit?.let {
+            caretStart = it.selectionStart
+            caretEnd = it.selectionEnd
+        }
+        outState.putInt(STATE_CARET_START, caretStart)
+        outState.putInt(STATE_CARET_END, caretEnd)
+        if (open != null) {
+            outState.putString(STATE_CHAIN_FLOW, open.flow.toJson())
+            outState.putString(STATE_CHAIN_BASE, open.base.toJson())
+            outState.putInt(STATE_CHAIN_OFFSET, open.offset)
+            outState.putInt(STATE_CHAIN_SEL_START, open.selStart)
+            outState.putInt(STATE_CHAIN_SEL_END, open.selEnd)
+            outState.putInt(STATE_CHAIN_CHIP, open.chipIndex)
+            outState.putBoolean(STATE_CHAIN_ADDING, open.adding)
+        }
     }
 
     private fun restore(state: Bundle) {
@@ -129,15 +169,32 @@ class EditShortcutActivity : Activity() {
         name = state.getString(STATE_NAME, name)
         icon = state.getString(STATE_ICON, icon)
         color = state.getInt(STATE_COLOR, color)
-        messageText = state.getString(STATE_MESSAGE, messageText)
         state.getString(STATE_DRAFT)?.let { json -> MessageDraft.fromJson(json)?.let { draft = it } }
-        lost = state.getInt(STATE_LOST)
-        wordsBack = Step.entries.firstOrNull { it.name == state.getString(STATE_WORDS_BACK) } ?: wordsBack
+        caretStart = state.getInt(STATE_CARET_START, -1)
+        caretEnd = state.getInt(STATE_CARET_END, -1)
+    }
+
+    /** Opens the chain again after the phone was turned in the middle of it. */
+    private fun restoreChain(state: Bundle) {
+        val json = state.getString(STATE_CHAIN_FLOW) ?: return
+        if (step != Step.MESSAGE) return
+        val flow = AddFlow.fromJson(json) ?: return
+        val base = state.getString(STATE_CHAIN_BASE)?.let { MessageDraft.fromJson(it) } ?: return
+        val chain = Chain(
+            flow = flow,
+            original = draft,
+            base = base,
+            offset = state.getInt(STATE_CHAIN_OFFSET),
+            selStart = state.getInt(STATE_CHAIN_SEL_START),
+            selEnd = state.getInt(STATE_CHAIN_SEL_END),
+            chipIndex = state.getInt(STATE_CHAIN_CHIP),
+            adding = state.getBoolean(STATE_CHAIN_ADDING),
+        )
+        startChain(chain)
     }
 
     override fun onDestroy() {
         dialog?.dismiss()
-        sheets.dismiss()
         super.onDestroy()
     }
 
@@ -152,18 +209,19 @@ class EditShortcutActivity : Activity() {
 
     private fun goTo(next: Step) {
         step = next
+        messageEdit = null
         render()
     }
 
     private fun goBack() {
+        if (chain != null) {
+            panel.back()
+            return
+        }
         when (step) {
             Step.NAME -> leave()
-            Step.MESSAGE -> if (isNew) goTo(Step.NAME) else { applyTypedMessage(); goTo(Step.CHECK) }
-            Step.WORDS -> {
-                if (wordsBack == Step.MESSAGE) messageText = draft.plainText()
-                goTo(wordsBack)
-            }
-            Step.CHECK -> if (isNew) goTo(Step.WORDS) else leave()
+            Step.MESSAGE -> goTo(if (isNew) Step.NAME else Step.CHECK)
+            Step.CHECK -> if (isNew) goTo(Step.MESSAGE) else leave()
         }
     }
 
@@ -189,26 +247,13 @@ class EditShortcutActivity : Activity() {
     private fun currentShortcut(): Shortcut = draft.toShortcut(shortcutId, name, parentId, position, icon, color)
 
     private fun hasChanges(): Boolean {
-        val typedElsewhere = step == Step.MESSAGE && messageText != draft.plainText()
-        val before = baseline ?: return name.isNotBlank() || icon.isNotBlank() || color >= 0 || messageText.isNotBlank() ||
-            draft.segments.isNotEmpty()
-        return typedElsewhere || currentShortcut() != before
-    }
-
-    /** Takes what is typed in the message box into the draft, keeping the changing words it can still find. */
-    private fun applyTypedMessage() {
-        if (step != Step.MESSAGE) return
-        val text = messageText.trim()
-        val result = draft.withNewText(text)
-        draft = result.draft
-        lost = result.lost
-        messageText = draft.plainText()
+        val before = baseline ?: return name.isNotBlank() || icon.isNotBlank() || color >= 0 || draft.segments.isNotEmpty()
+        return currentShortcut() != before
     }
 
     // ---- save and delete ----
 
     private fun save() {
-        applyTypedMessage()
         if (name.isBlank()) {
             nameError = true
             goTo(Step.NAME)
@@ -253,23 +298,24 @@ class EditShortcutActivity : Activity() {
     // ---- drawing the steps ----
 
     private fun render() {
+        unpinMessage()
         screen.content.removeAllViews()
         screen.bottomBar.removeAllViews()
+        screen.showBottomBar(true)
         when (step) {
             Step.NAME -> buildName()
             Step.MESSAGE -> buildMessage()
-            Step.WORDS -> buildWords()
             Step.CHECK -> buildCheck()
         }
         screen.scroll.scrollTo(0, 0)
     }
 
-    /** A slim progress bar and "Step 2 of 4" under the title, only while making a new shortcut. */
+    /** A slim progress bar and "Step 2 of 3" under the title, only while making a new shortcut. */
     private fun stepHeader(number: Int) {
         if (!isNew) return
         with(ui) {
-            screen.content.add(progressBar(number / 4f), top = 12)
-            screen.content.add(label(getString(R.string.editor_step_of, number, 4)), top = 8)
+            screen.content.add(progressBar(number / TOTAL_STEPS.toFloat()), top = 12)
+            screen.content.add(label(getString(R.string.editor_step_of, number, TOTAL_STEPS)), top = 8)
         }
     }
 
@@ -306,153 +352,296 @@ class EditShortcutActivity : Activity() {
         }
     }
 
+    // ---- step 2: the message ----
+
     private fun buildMessage() {
         val content = screen.content
         with(ui) {
             content.add(title(getString(R.string.editor_message_title)))
             stepHeader(2)
             content.add(small(getString(R.string.editor_message_help)), top = 12)
-            content.add(
-                text(getString(R.string.editor_message_example), look.type.bodySp, 600, palette.ink).apply {
-                    setPadding(dp(14), dp(12), dp(14), dp(12))
-                    background = shape(android.graphics.Color.TRANSPARENT, 14f, palette.outline, 1.5f, dashed = true)
-                },
-                top = 8,
-            )
-            val field = field(getString(R.string.editor_message_hint), multiline = true).apply { setText(messageText) }
+
+            val edit = messageEdit ?: createMessageEdit()
+            (edit.parent as? ViewGroup)?.removeView(edit)
+            edit.minLines = 4
+            edit.maxLines = 12
+            content.add(edit, top = 16)
             val error = errorLine(R.string.editor_message_error, messageError)
-            field.addTextChangedListener(watcher { messageText = it; if (messageError) { messageError = false; error.visibility = View.GONE } })
-            content.add(field, top = 20)
+            messageErrorLine = error
             content.add(error)
-            screen.bottomBar.addView(primaryButton(getString(R.string.editor_next)) { next() })
-            if (messageText.isEmpty()) showKeyboardFor(field)
-        }
-    }
+            content.add(
+                secondaryButton(getString(R.string.editor_add), Icons.Kind.PLUS) { openAdd() }.apply {
+                    contentDescription = getString(R.string.editor_add)
+                    // One line at any text size: the words shrink a little before they would wrap.
+                    maxLines = 1
+                    setAutoSizeTextTypeUniformWithConfiguration(14, look.type.bodySp.toInt().coerceAtLeast(14), 1, android.util.TypedValue.COMPLEX_UNIT_SP)
+                },
+                top = 14,
+            )
+            if (draft.chips().isNotEmpty()) content.add(small(getString(R.string.editor_message_tap)), top = 12)
 
-    private fun buildWords() {
-        val content = screen.content
-        with(ui) {
-            content.add(title(getString(R.string.editor_words_title)))
-            stepHeader(3)
-            content.add(body(getString(R.string.editor_words_hint)), top = 12)
-            content.add(textButton(getString(R.string.cheat_open_link)) {
-                startActivity(android.content.Intent(this@EditShortcutActivity, CheatSheetActivity::class.java))
-            }, top = 4)
-            if (lost > 0) {
-                content.add(
-                    text(resources.getQuantityString(R.plurals.editor_words_lost, lost, lost), look.type.bodySp, 600, palette.ink).apply {
-                        setPadding(dp(14), dp(12), dp(14), dp(12))
-                        background = shape(withAlpha(palette.accent, 0x26), 14f, palette.accent, 1.5f)
-                    },
-                    top = 14,
-                )
-            }
-            val card = card(16)
-            card.addView(wordFlow())
-            content.add(card, top = 16)
-            content.add(small(getString(R.string.editor_words_none)), top = 14)
-            screen.bottomBar.addView(primaryButton(getString(R.string.editor_next)) { next() })
-        }
-    }
-
-    /** The message as words to tap: plain words, punctuation, and the words that already change. */
-    private fun wordFlow(): View {
-        val flow = WordFlow(this, ui.dp(6), ui.dp(8)).apply { layoutParams = ui.lp() }
-        val colourIndex = draft.questions().withIndex().associate { it.value.blankId to it.index }
-        var tightNext = false
-        var breakNext = false
-        fun add(view: View, tight: Boolean = false) {
-            val params = WordFlow.Params(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            params.tight = tight || tightNext
-            params.lineBreakBefore = breakNext
-            tightNext = false
-            breakNext = false
-            flow.addView(view, params)
-        }
-        for (piece in draft.pieces()) {
-            when (piece) {
-                is Piece.Word -> add(wordView(piece))
-                is Piece.Chip -> add(chipView(piece, colourIndex))
-                is Piece.Gap -> {
-                    val shown = piece.text.replace('\n', ' ').trim()
-                    val breaks = piece.text.contains('\n')
-                    if (shown.isNotEmpty()) {
-                        // Punctuation hugs the word before it; an opening bracket hugs the word after it.
-                        add(ui.text(shown, ui.look.type.bodySp + 4, 700, ui.palette.inkSoft), tight = !piece.text.first().isWhitespace())
-                        tightNext = !piece.text.last().isWhitespace()
+            screen.bottomBar.addView(
+                primaryButton(getString(R.string.editor_next)) {
+                    if (draft.plainText().isBlank()) {
+                        messageError = true
+                        error.visibility = View.VISIBLE
+                    } else {
+                        goTo(Step.CHECK)
                     }
-                    if (breaks) {
-                        breakNext = true
-                        tightNext = false
-                    }
-                }
+                },
+            )
+            val caret = if (caretStart in 0..draft.length) caretStart else draft.length
+            renderMessage(caret, if (caretEnd in 0..draft.length) caretEnd else caret)
+            if (openChipAfterDraw >= 0) {
+                val index = openChipAfterDraw
+                openChipAfterDraw = -1
+                edit.post { if (!isFinishing && !isDestroyed) openEdit(index) }
+            } else if (hintAfterDraw) {
+                hintAfterDraw = false
+                edit.post { if (!isFinishing && !isDestroyed) screen.snack(getString(R.string.editor_change_answers_hint)) }
+            } else if (draft.segments.isEmpty() && messageEdit === edit && chain == null && isNew) {
+                showKeyboardFor(edit)
             }
         }
-        return flow
     }
 
-    private fun pill(): Float = ui.look.shape.buttonRadiusDp.toFloat()
+    private fun createMessageEdit(): MessageEditText {
+        val edit = MessageEditText(this, ui)
+        edit.hint = getString(R.string.editor_message_hint)
+        edit.contentDescription = getString(R.string.editor_message_desc)
+        edit.onChipTap = { index -> openEdit(index) }
+        edit.addTextChangedListener(watcher {
+            if (syncing) return@watcher
+            draft = draft.withEditableText(edit.editableText(), edit.chipSegments())
+            edit.restyle(::styleFor)
+            if (messageError && draft.plainText().isNotBlank()) {
+                messageError = false
+                messageErrorLine?.visibility = View.GONE
+            }
+        })
+        messageEdit = edit
+        return edit
+    }
 
-    private fun wordView(piece: Piece.Word): View = with(ui) {
-        val r = pill()
-        TextView(context).apply {
-            text = piece.text
-            gravity = Gravity.CENTER
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, look.type.bodySp + 1)
-            typeface = typefaceOf(500)
-            setTextColor(palette.ink)
-            minHeight = dp(48)
-            minWidth = dp(48)
-            setPadding(dp(14), dp(6), dp(14), dp(6))
-            background = rippled(shape(palette.surfaceAlt, r, palette.outline, max(1f, look.shape.strokeDp)), r)
-            isClickable = true
-            isFocusable = true
-            includeFontPadding = false
-            contentDescription = getString(R.string.editor_word_desc, piece.text)
-            setOnClickListener { sheets.openWord(piece.selection) }
+    /** Puts [draft] into the message box with the caret at [start] to [end]. */
+    private fun renderMessage(start: Int, end: Int = start) {
+        val edit = messageEdit ?: return
+        syncing = true
+        try {
+            edit.render(draft, start, end, ::styleFor)
+        } finally {
+            syncing = false
         }
     }
 
-    private fun chipView(piece: Piece.Chip, colourIndex: Map<Int, Int>): View = with(ui) {
-        val r = pill()
-        val spec = draft.blank(piece.blankId)
-        val label: String
-        val colours: io.github.selementpecher.shortcutkeyboard.look.TileColors
-        val bg: android.graphics.drawable.Drawable
-        if (spec == null) {
-            // `now` or `today` from an older shortcut: shown as it will be, not asked about.
-            label = piece.shown
-            colours = io.github.selementpecher.shortcutkeyboard.look.TileColors(palette.surface, palette.ink)
-            bg = rippled(shape(colours.bg, r, palette.inkSoft, 1.5f, dashed = true), r)
+    /** The colour and words of chip number [index]. */
+    private fun styleFor(index: Int, segment: Segment): ChipStyle {
+        val palette = ui.palette
+        val open = chain
+        val pending = if (open != null) open.chipIndex.takeIf { it >= 0 } ?: pendingChipIndex(open) else -1
+        val ring = if (index == pending) palette.ink else null
+        if (segment is Segment.Fixed) {
+            val glyph = if (segment.shown.contains(':')) "🕒" else "📅"
+            return ChipStyle(glyph, segment.shown, palette.surface, palette.ink, ring, dashed = true)
+        }
+        val ref = segment as Segment.Ref
+        val spec = draft.blank(ref.blankId)
+        val order = draft.questions().indexOfFirst { it.blankId == ref.blankId }.coerceAtLeast(0)
+        val colours: TileColors = palette.tiles[order % palette.tiles.size]
+        if (spec == null) return ChipStyle("", ref.shown, colours.bg, colours.fg, ring)
+        val provisional = open != null && index == pending && (open.flow.preview() as? ChipPreview.Blank)?.named == false
+        val label = when {
+            provisional -> getString(EditorText.kindName(spec.kind))
+            ref.offsetMinutes != 0L -> EditorText.referenceLabel(this, spec.question, ref.offsetMinutes)
+            spec.fixed -> ref.shown
+            else -> spec.question
+        }
+        return ChipStyle(spec.kind.glyph, label, colours.bg, colours.fg, ring)
+    }
+
+    /** Which chip the chain is making: the one at its offset. */
+    private fun pendingChipIndex(open: Chain): Int =
+        (0 until open.base.chips().size).count { open.base.chipOffset(it) < open.offset }
+
+    // ---- the chain of choices ----
+
+    /** "Add something that changes" was pressed. */
+    private fun openAdd() {
+        val edit = messageEdit ?: return
+        val size = draft.length
+        val a = edit.selectionStart.let { if (it < 0) size else it.coerceIn(0, size) }
+        val b = edit.selectionEnd.let { if (it < 0) size else it.coerceIn(0, size) }
+        val start = minOf(a, b)
+        val end = maxOf(a, b)
+        val selected = draft.placeholderText().substring(start, end).replace(MessageDraft.PLACEHOLDER.toString(), "")
+        val base = if (start < end) draft.deleteRange(start, end) else draft
+        val flow = AddFlow.start(
+            taken = base.blanks.map { it.question }.toSet(),
+            clockBlanks = clockBlanks(base),
+            selected = selected,
+            now = LocalDateTime.now(),
+            locale = Locale.getDefault(),
+        )
+        startChain(Chain(flow, draft, base, start, start, end, chipIndex = -1, adding = true))
+    }
+
+    /** A chip was tapped: change it. */
+    private fun openEdit(index: Int) {
+        if (chain != null) return
+        val segment = draft.chips().getOrNull(index) ?: return
+        val offset = draft.chipOffset(index)
+        val ref = segment as? Segment.Ref
+        if (ref == null) {
+            showFixedInfo(index, segment as Segment.Fixed)
+            return
+        }
+        val spec = draft.blank(ref.blankId) ?: return
+        val now = LocalDateTime.now()
+        val locale = Locale.getDefault()
+        val flow = if (ref.offsetMinutes != 0L) {
+            AddFlow.editReference(spec.id, ref.offsetMinutes, index, clockBlanks(draft), now, locale)
         } else {
-            label = EditorText.chipLabel(context, spec.question, piece.offsetMinutes)
-            colours = palette.tiles[(colourIndex[spec.id] ?: 0) % palette.tiles.size]
-            bg = rippled(shape(colours.bg, r), r)
+            AddFlow.edit(spec, index, draft.blanks.filter { it.id != spec.id }.map { it.question }.toSet(), clockBlanks(draft), now, locale)
         }
-        val glyph = spec?.kind?.glyph ?: if (piece.shown.contains(':')) "🕒" else "📅"
-        TextView(context).apply {
-            text = "$glyph  $label"
-            gravity = Gravity.CENTER
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, look.type.bodySp + 1)
-            typeface = typefaceOf(max(600, look.type.tileWeight))
-            setTextColor(colours.fg)
-            minHeight = dp(48)
-            setPadding(dp(14), dp(6), dp(14), dp(6))
-            background = bg
-            isClickable = true
-            isFocusable = true
-            includeFontPadding = false
-            contentDescription = getString(R.string.editor_chip_desc, label)
-            setOnClickListener { sheets.openChip(piece.segment) }
-        }
+        startChain(Chain(flow, draft, draft, offset, offset + 1, offset + 1, index, adding = false))
     }
+
+    private fun clockBlanks(from: MessageDraft): List<ClockBlank> =
+        from.blanks.filter { it.kind == BlankKind.TIME }.map { ClockBlank(it.id, it.question) }
+
+    private fun startChain(open: Chain) {
+        val edit = messageEdit ?: return
+        chain = open
+        edit.lock(true)
+        hideKeyboard()
+        screen.content.removeAllViews()
+        screen.bottomBar.removeAllViews()
+        pinMessage(edit)
+        screen.content.addView(panel.view, ui.lp())
+        panel.show(open.flow)
+        applyChain()
+        screen.scroll.scrollTo(0, 0)
+    }
+
+    /** Shows the message with the half-made chip in it. */
+    private fun applyChain() {
+        val open = chain ?: return
+        draft = open.flow.applyTo(open.base, open.offset)
+        val caret = if (open.adding) open.offset + (if (draft.length > open.base.length) 1 else 0) else open.offset + 1
+        renderMessage(caret)
+        messageEdit?.let { edit -> edit.post { edit.bringIntoView(caret) } }
+    }
+
+    private fun MessageEditText.bringIntoView(offset: Int) {
+        if (android.os.Build.VERSION.SDK_INT >= 29) bringPointIntoView(offset.coerceIn(0, length()))
+    }
+
+    override fun onChanged() = applyChain()
+
+    override fun onFinished() {
+        val open = chain ?: return
+        draft = open.flow.applyTo(open.base, open.offset)
+        val index = if (open.adding) pendingChipIndex(open) else open.chipIndex
+        val caret = open.offset + 1
+        closeChain(caret, caret, popChip = index)
+    }
+
+    override fun onCancelled() {
+        val open = chain ?: return
+        draft = open.original
+        closeChain(open.selStart, open.selEnd)
+    }
+
+    override fun onMakePlain() {
+        val open = chain ?: return
+        draft = open.original.makePlain(open.chipIndex)
+        val caret = open.offset + open.original.chips()[open.chipIndex].shownText.length
+        closeChain(caret, caret)
+    }
+
+    override fun onRemove() {
+        val open = chain ?: return
+        draft = open.original.removeChip(open.chipIndex)
+        closeChain(open.offset, open.offset)
+    }
+
+    /** Closes the chain and goes back to the message, with the caret at [start] to [end]. */
+    private fun closeChain(start: Int, end: Int, popChip: Int = -1) {
+        val edit = messageEdit
+        chain = null
+        panel.clear()
+        edit?.lock(false)
+        caretStart = start
+        caretEnd = end
+        unpinMessage()
+        render()
+        if (popChip >= 0) messageEdit?.popChip(popChip)
+    }
+
+    /** A chip the phone fills in by itself: explains it and offers to make it plain words or remove it. */
+    private fun showFixedInfo(index: Int, fixed: Segment.Fixed) {
+        dialog?.dismiss()
+        val key = fixed.raw.trim().substringBefore('|').trim().lowercase().takeWhile { it.isLetter() }
+        val text = when (key) {
+            "now" -> R.string.editor_fixed_now
+            "today" -> R.string.editor_fixed_today
+            else -> R.string.editor_fixed_other
+        }
+        dialog = ui.ask(
+            this,
+            getString(R.string.editor_fixed_title),
+            getString(text),
+            listOf(
+                DialogButton(getString(R.string.editor_ok)),
+                DialogButton(getString(R.string.chain_make_plain), ButtonStyle.SECONDARY) {
+                    val at = draft.chipOffset(index)
+                    draft = draft.makePlain(index)
+                    caretStart = at + fixed.shownText.length
+                    caretEnd = caretStart
+                    render()
+                    true
+                },
+                DialogButton(getString(R.string.chain_remove), ButtonStyle.DANGER) {
+                    val at = draft.chipOffset(index)
+                    draft = draft.removeChip(index)
+                    caretStart = at
+                    caretEnd = at
+                    render()
+                    true
+                },
+            ),
+        ).show()
+    }
+
+    /** While the chain is open the message stays on screen above it, outside the scrolling part. */
+    private fun pinMessage(edit: MessageEditText) {
+        unpinMessage()
+        (edit.parent as? ViewGroup)?.removeView(edit)
+        edit.minLines = 2
+        edit.maxLines = 5
+        val holder = ui.column().apply {
+            setPadding(ui.dp(TileSpec.SCREEN_MARGIN_DP), ui.dp(4), ui.dp(TileSpec.SCREEN_MARGIN_DP), ui.dp(12))
+            addView(edit, ui.lp())
+        }
+        screen.root.addView(holder, 1, ui.lp())
+        pinned = holder
+    }
+
+    private fun unpinMessage() {
+        val holder = pinned ?: return
+        holder.removeAllViews()
+        (holder.parent as? ViewGroup)?.removeView(holder)
+        pinned = null
+    }
+
+    // ---- step 3: check and save ----
 
     private fun buildCheck() {
         val content = screen.content
         with(ui) {
             if (isNew) {
                 content.add(title(getString(R.string.editor_check_title)))
-                stepHeader(4)
+                stepHeader(3)
             }
 
             // Name and picture: tap to change.
@@ -481,38 +670,54 @@ class EditShortcutActivity : Activity() {
             } else {
                 val card = card(8)
                 asks.forEachIndexed { index, q ->
-                    val line = row().apply { setPadding(dp(8), dp(8), dp(8), dp(8)); minimumHeight = dp(48) }
-                    val dot = palette.tiles[index % palette.tiles.size]
+                    val tile = palette.tiles[index % palette.tiles.size]
+                    val asked = q.fixedAmount == null
+                    val title = if (asked) q.question.replaceFirstChar { it.uppercase() } + "?" else q.question.replaceFirstChar { it.uppercase() }
+                    val extra = EditorText.answersLine(this@EditShortcutActivity, q)
+                    val line = row().apply {
+                        setPadding(dp(8), dp(8), dp(8), dp(8))
+                        minimumHeight = dp(56)
+                        background = rippled(shape(android.graphics.Color.TRANSPARENT, 14f), 14f)
+                        isClickable = true
+                        isFocusable = true
+                        contentDescription = getString(R.string.editor_check_row_desc, listOfNotNull(title, extra).joinToString(", "))
+                        setOnClickListener { editQuestion(q.blankId) }
+                    }
                     line.addView(
-                        text(q.kind.glyph, 18f, 400, dot.fg).apply {
+                        text(q.kind.glyph, 18f, 400, tile.fg).apply {
                             gravity = Gravity.CENTER
-                            background = shape(dot.bg, 999f)
+                            background = shape(tile.bg, 999f)
                         },
                         lp(width = dp(40), height = dp(40), end = 12),
                     )
-                    line.addView(text(q.question.replaceFirstChar { it.uppercase() } + "?", look.type.bodySp, 600, palette.ink), lp(width = 0, weight = 1f))
-                    if (q.answerCount > 0) {
-                        line.addView(
-                            small(resources.getQuantityString(R.plurals.editor_check_answers, q.answerCount, q.answerCount)),
-                            lp(width = ViewGroup.LayoutParams.WRAP_CONTENT, start = 8),
-                        )
-                    }
+                    val words = column()
+                    words.addView(text(title, look.type.bodySp, 600, palette.ink).apply { maxLines = 2 })
+                    if (extra != null) words.add(small(extra), top = 1)
+                    line.addView(words, lp(width = 0, weight = 1f))
+                    line.addView(
+                        ImageView(context).apply {
+                            setImageDrawable(icon(Icons.Kind.FORWARD, 20, palette.inkSoft))
+                            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                        },
+                        lp(width = dp(20), height = dp(20), start = 8),
+                    )
                     card.addView(line)
                 }
                 content.add(card, top = 8)
             }
 
-
             val problem = errorLine(R.string.editor_message_error, draft.plainText().isBlank())
             content.add(problem)
 
-            content.add(
-                buttonRow(
-                    secondaryButton(getString(R.string.editor_change_words)) { messageText = draft.plainText(); goTo(Step.MESSAGE) },
-                    secondaryButton(getString(R.string.editor_change_answers)) { wordsBack = Step.CHECK; goTo(Step.WORDS) },
-                ),
-                top = 20,
-            )
+            val words = secondaryButton(getString(R.string.editor_change_words)) { goTo(Step.MESSAGE) }
+            if (asks.isEmpty()) {
+                content.add(words, top = 20)
+            } else {
+                content.add(
+                    buttonRow(words, secondaryButton(getString(R.string.editor_change_answers)) { editAnswers(asks.map { it.blankId }) }),
+                    top = 20,
+                )
+            }
             if (!isNew) {
                 content.add(
                     dangerButton(getString(R.string.editor_delete), Icons.Kind.TRASH) { confirmDelete() },
@@ -523,14 +728,29 @@ class EditShortcutActivity : Activity() {
         }
     }
 
-    /** The example message, with the words that change shown as soft highlights in their question's colour. */
+    /** Goes to the message and opens the first use of question [blankId] for changing. */
+    private fun editQuestion(blankId: Int) {
+        val index = draft.chips().indexOfFirst { it is Segment.Ref && it.blankId == blankId && it.offsetMinutes == 0L }
+            .let { if (it >= 0) it else draft.chips().indexOfFirst { c -> c is Segment.Ref && c.blankId == blankId } }
+        openChipAfterDraw = index
+        goTo(Step.MESSAGE)
+    }
+
+    private fun editAnswers(blankIds: List<Int>) {
+        if (blankIds.size == 1) editQuestion(blankIds.first()) else {
+            hintAfterDraw = true
+            goTo(Step.MESSAGE)
+        }
+    }
+
+    /** The example message, with the changing parts shown as soft highlights in their question's colour. */
     private fun exampleCard(): View = with(ui) {
         val card = card(20)
         val parts = ExampleParts.of(draft)
         val shown: CharSequence = if (parts.isEmpty()) "…" else ExampleText.build(
             parts = parts,
             colors = palette.tiles,
-            neutral = io.github.selementpecher.shortcutkeyboard.look.TileColors(palette.surfaceAlt, palette.ink),
+            neutral = TileColors(palette.surfaceAlt, palette.ink),
             paddingPx = dpf(6f),
             radiusPx = dpf(8f),
             verticalPx = dpf(2f),
@@ -550,20 +770,9 @@ class EditShortcutActivity : Activity() {
                     render()
                     return
                 }
-                if (messageText.isBlank()) messageText = draft.plainText()
                 goTo(Step.MESSAGE)
             }
-            Step.MESSAGE -> {
-                if (messageText.isBlank()) {
-                    messageError = true
-                    render()
-                    return
-                }
-                applyTypedMessage()
-                wordsBack = Step.MESSAGE
-                goTo(Step.WORDS)
-            }
-            Step.WORDS -> goTo(Step.CHECK)
+            Step.MESSAGE -> goTo(Step.CHECK)
             Step.CHECK -> save()
         }
     }
@@ -643,6 +852,11 @@ class EditShortcutActivity : Activity() {
         }
     }
 
+    private fun hideKeyboard() {
+        val token = window.decorView.windowToken ?: return
+        (getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)?.hideSoftInputFromWindow(token, 0)
+    }
+
     companion object {
         /** The id of the shortcut to change. Leave it out to make a new one. */
         const val EXTRA_ID = "id"
@@ -651,14 +865,21 @@ class EditShortcutActivity : Activity() {
         const val EXTRA_PARENT_ID = "parent_id"
 
         private const val TAG = "EditShortcutActivity"
+        private const val TOTAL_STEPS = 3
         private const val STATE_ID = "id"
         private const val STATE_STEP = "step"
         private const val STATE_NAME = "name"
         private const val STATE_ICON = "icon"
         private const val STATE_COLOR = "color"
-        private const val STATE_MESSAGE = "message"
         private const val STATE_DRAFT = "draft"
-        private const val STATE_LOST = "lost"
-        private const val STATE_WORDS_BACK = "wordsBack"
+        private const val STATE_CARET_START = "caretStart"
+        private const val STATE_CARET_END = "caretEnd"
+        private const val STATE_CHAIN_FLOW = "chainFlow"
+        private const val STATE_CHAIN_BASE = "chainBase"
+        private const val STATE_CHAIN_OFFSET = "chainOffset"
+        private const val STATE_CHAIN_SEL_START = "chainSelStart"
+        private const val STATE_CHAIN_SEL_END = "chainSelEnd"
+        private const val STATE_CHAIN_CHIP = "chainChip"
+        private const val STATE_CHAIN_ADDING = "chainAdding"
     }
 }

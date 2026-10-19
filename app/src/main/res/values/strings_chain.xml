@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The chain of big choices that adds something that changes -->
+    <string name="chain_back">Back one step</string>
+    <string name="chain_cancel">Cancel</string>
+    <string name="chain_crumb_separator">"  ›  "</string>
+    <string name="chain_add">Add</string>
+    <string name="chain_next">Next</string>
+    <string name="chain_done">Done</string>
+
+    <!-- What kind -->
+    <string name="chain_title_kind">What changes?</string>
+    <string name="chain_kind_list">A list</string>
+    <string name="chain_kind_list_hint">Pick one each time</string>
+    <string name="chain_kind_time">A time</string>
+    <string name="chain_kind_time_hint">A clock time, or how long</string>
+    <string name="chain_kind_date">A date</string>
+    <string name="chain_kind_date_hint">Starts at today</string>
+    <string name="chain_kind_number">A number</string>
+    <string name="chain_kind_number_hint">Type it on a pad</string>
+    <string name="chain_kind_howlong">How long</string>
+
+    <!-- Which time -->
+    <string name="chain_title_time">Which time?</string>
+    <string name="chain_time_clock">Time</string>
+    <string name="chain_time_clock_hint">A clock time, like 20:35</string>
+    <string name="chain_time_from_now">From now</string>
+    <string name="chain_time_from_now_hint">Like in 10 mins</string>
+    <string name="chain_time_ago">Ago</string>
+    <string name="chain_time_ago_hint">Like 10 mins ago</string>
+    <string name="chain_time_after_other">After another time</string>
+    <string name="chain_time_after_other_hint">Counted from a time in your message</string>
+    <string name="chain_title_base">After which time?</string>
+
+    <!-- Mins, hours, days -->
+    <string name="chain_title_unit">Mins, hours or days?</string>
+    <string name="chain_title_unit_short">Mins or hours?</string>
+    <string name="chain_unit_mins">Mins</string>
+    <string name="chain_unit_hours">Hours</string>
+    <string name="chain_unit_days">Days</string>
+
+    <!-- Type the amount -->
+    <string name="chain_title_amount">Type the amount</string>
+    <string name="chain_amount_hint">10</string>
+    <string name="chain_amount_help">One amount is always used. Add more and the keyboard asks which.</string>
+    <string name="chain_amount_add">Add another amount</string>
+    <string name="chain_amount_so_far">Amounts so far</string>
+    <string name="chain_amount_remove">Remove %s</string>
+    <string name="chain_after_help">Counted from “%s”.</string>
+    <string name="chain_after">After</string>
+    <string name="chain_before">Before</string>
+
+    <!-- What the message shows -->
+    <string name="chain_title_show">What should the message show?</string>
+    <string name="chain_show_amount">The amount</string>
+    <string name="chain_show_clock">The time</string>
+    <string name="chain_show_both">Both</string>
+
+    <!-- The question and the answers -->
+    <string name="chain_title_question">What will the keyboard ask?</string>
+    <string name="chain_question_hint">Or write your own question</string>
+    <string name="chain_title_answers">What are the answers?</string>
+    <string name="chain_answers_help">The keyboard shows them as buttons.</string>
+    <string name="chain_answer_hint">An answer</string>
+    <string name="chain_answer_add">Add another answer</string>
+    <string name="chain_answer_remove">Remove %s</string>
+    <string name="chain_answer_remove_empty">Remove this answer</string>
+
+    <!-- Changing something already there -->
+    <string name="chain_make_plain">Make it plain words</string>
+    <string name="chain_remove">Remove it</string>
+</resources>
