@@ -330,7 +330,7 @@ class AddFlowTest {
     }
 
     @Test
-    fun severalAmountsAreAskedAndNameTheQuestion() {
+    fun severalAmountsAreAskedAndNamedByDefault() {
         val f = flow()
         f.chooseKind(BlankKind.TIME)
         f.chooseTime(TimeChoice.FROM_NOW)
@@ -343,13 +343,9 @@ class AddFlowTest {
         f.advance()
         assertEquals(FlowStep.SHOW, f.step)
         f.chooseShow(RelativeShow.CLOCK)
-        assertFalse(f.isDone)
-        assertEquals(FlowStep.QUESTION, f.step)
-        f.setQuestion("Back at")
-        f.advance()
         assertTrue(f.isDone)
         val spec = f.spec()
-        assertEquals("Back at", spec.question)
+        assertEquals(BlankQuestions.default(BlankKind.TIME_AHEAD), spec.question)
         assertEquals(listOf("10 mins", "1 hour"), spec.amounts.map { it.text() })
         assertEquals(RelativeShow.CLOCK, spec.show)
         assertFalse(spec.fixed)

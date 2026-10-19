@@ -403,6 +403,8 @@ class AddFlow private constructor(
     private fun go(next: Nav) {
         history += nav
         nav = next
+        // Only a list asks for a name while making. The rest get their default name; tapping the pill renames.
+        if (next.step == FlowStep.QUESTION && !isEditing) isDone = true
     }
 
     private fun resetContent() {
