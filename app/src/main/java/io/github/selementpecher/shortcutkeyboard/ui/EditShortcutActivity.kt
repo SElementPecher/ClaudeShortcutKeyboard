@@ -225,10 +225,17 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
         }
     }
 
-    /** Leaves the screen, asking first when there is something that would be lost. */
+    /**
+     * Leaves the screen. Changes are kept: a quiKey that is complete (it has a name and a message) is saved on the way
+     * out. Only a half-made one, which cannot be saved, asks first.
+     */
     private fun leave() {
         if (!hasChanges()) {
             finish()
+            return
+        }
+        if (name.isNotBlank() && draft.plainText().isNotBlank()) {
+            save()
             return
         }
         dialog?.dismiss()
