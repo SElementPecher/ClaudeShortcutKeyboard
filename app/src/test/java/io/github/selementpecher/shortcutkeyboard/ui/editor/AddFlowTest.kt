@@ -159,11 +159,11 @@ class AddFlowTest {
         f.setQuestion("who")
         assertTrue((f.preview() as ChipPreview.Blank).named)
         f.advance(); f.setAnswer(0, "x"); f.advance()
-        assertEquals("who 2", f.spec().question)
+        assertEquals("who\u200B", f.spec().question)
         val g = flow(taken = setOf("Who"))
         g.chooseKind(BlankKind.LIST)
         g.advance(); g.setAnswer(0, "x"); g.advance()
-        assertEquals("Who 2", g.spec().question)
+        assertEquals("Who\u200B", g.spec().question)
     }
 
     // ---- back and cancel ----
@@ -369,12 +369,12 @@ class AddFlowTest {
 
     @Test
     fun aFixedBlankGetsAUniqueAutomaticName() {
-        val f = flow(taken = setOf("How long", "How long 2"))
+        val f = flow(taken = setOf("How long", "How long\u200B"))
         f.chooseKind(BlankKind.TIME)
         f.chooseTime(TimeChoice.FROM_NOW)
         f.chooseUnit(RelativeUnit.HOURS)
         f.typeNumber("4"); f.advance(); f.chooseShow(RelativeShow.AMOUNT)
-        assertEquals("How long 3", f.spec().question)
+        assertEquals("How long\u200B\u200B", f.spec().question)
     }
 
     @Test
@@ -805,9 +805,9 @@ class AddFlowTest {
         d = d.insertBlank(d.length - 4, asked.spec, now, uk)
 
         val shortcut = d.toShortcut("id", "Meds")
-        assertEquals("Dose {Which}, again in {How long}, taken {How long 2} ago", shortcut.template)
+        assertEquals("Dose {Which}, again in {How long}, taken {How long\u200B} ago", shortcut.template)
         val session = FillSession(shortcut, now = { now }, locale = uk)
-        assertEquals(listOf("Which", "How long 2"), session.variables.map { it.name })
+        assertEquals(listOf("Which", "How long\u200B"), session.variables.map { it.name })
         assertEquals(listOf(VariableType.CHOICE, VariableType.TIME_AGO), session.variables.map { it.type })
         assertEquals("10 mins", session.valueOf(session.variables[1]))
         session.setValue(session.variables[0], "Nurofen")

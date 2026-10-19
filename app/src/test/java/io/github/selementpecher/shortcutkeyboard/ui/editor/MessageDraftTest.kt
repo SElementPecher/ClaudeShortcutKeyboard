@@ -110,7 +110,7 @@ class MessageDraftTest {
         d = d.insertBlank(1, list("Who", "Sam"), now, uk)
         assertEquals(first, d.blanks.single().id)
         d = d.insertBlank(1, list("who", "Ben"), now, uk)
-        assertEquals(listOf("Who", "who 2"), d.blanks.map { it.question })
+        assertEquals(listOf("Who", "who\u200B"), d.blanks.map { it.question })
         assertEquals(first + 2, d.nextBlankId)
     }
 
@@ -154,10 +154,10 @@ class MessageDraftTest {
         var d = MessageDraft.fromMessage("x").insertBlank(1, list("Who", "Sam"), now, uk).insertBlank(1, list("What", "Tea"), now, uk)
         val id = d.blanks.first { it.question == "What" }.id
         d = d.updateBlank(id, d.blank(id)!!.copy(question = "who"), now, uk)
-        assertEquals("who 2", d.blank(id)!!.question)
+        assertEquals("who\u200B", d.blank(id)!!.question)
         // The blank keeps its own name when it is only changed in other ways.
         d = d.updateBlank(id, d.blank(id)!!.copy(answers = listOf("Coffee")), now, uk)
-        assertEquals("who 2", d.blank(id)!!.question)
+        assertEquals("who\u200B", d.blank(id)!!.question)
     }
 
     @Test

@@ -39,14 +39,14 @@ class BlankQuestionsTest {
 
     @Test
     fun notNowOrToday() {
-        assertEquals("now 2", clean("now"))
-        assertEquals("Today 2", clean("Today", BlankKind.DATE))
+        assertEquals("now\u200B", clean("now"))
+        assertEquals("Today\u200B", clean("Today", BlankKind.DATE))
     }
 
     @Test
     fun differentFromTheOthersIgnoringCase() {
-        assertEquals("who 2", clean("who", taken = setOf("Who")))
-        assertEquals("Who 3", clean("Who", taken = setOf("who", "Who 2")))
+        assertEquals("who\u200B", clean("who", taken = setOf("Who")))
+        assertEquals("Who\u200B\u200B", clean("Who", taken = setOf("who", "Who\u200B")))
     }
 
     @Test

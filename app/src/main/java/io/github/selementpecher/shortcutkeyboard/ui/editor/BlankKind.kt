@@ -35,6 +35,9 @@ enum class BlankKind(val glyph: String) {
  * Plain Kotlin, no Android types.
  */
 object BlankQuestions {
+    /** Zero-width space: keeps two blanks with the same words apart without showing anything. */
+    const val UNIQUE_MARK = "\u200B"
+
     private const val MAX_LENGTH = 40
 
     /** Questions offered as one-tap suggestions for each kind. */
@@ -51,8 +54,9 @@ object BlankQuestions {
     /**
      * Turns what was typed into a question that can be stored: no brackets or bars, nothing
      * that reads like a time offset (`+3`, `-5`), not "now" or "today", and different from every
-     * name in [taken] (compared ignoring case; a clash gets " 2", " 3"...). An empty question
-     * becomes the default for [kind].
+     * name in [taken] (compared ignoring case). A clash keeps the words the owner sees and adds invisible
+     * [UNIQUE_MARK]s, so two blanks can both read "When" on screen but stay separate inside the app.
+     * An empty question becomes the default for [kind].
      */
     fun clean(raw: String, kind: BlankKind, taken: Set<String>): String {
         val takenKeys = taken.map { it.trim().lowercase() }.toSet() + setOf("now", "today")
@@ -61,11 +65,7 @@ object BlankQuestions {
             text = default(kind)
         }
         var candidate = text
-        var n = 2
-        while (candidate.lowercase() in takenKeys) {
-            candidate = "$text $n"
-            n++
-        }
+        while (candidate.lowercase() in takenKeys) candidate += UNIQUE_MARK
         return if (ShortcutDraft.checkBlankName(candidate) == null) candidate else uniqueDefault(kind, takenKeys)
     }
 
@@ -80,11 +80,7 @@ object BlankQuestions {
     private fun uniqueDefault(kind: BlankKind, takenKeys: Set<String>): String {
         val base = default(kind)
         var candidate = base
-        var n = 2
-        while (candidate.lowercase() in takenKeys) {
-            candidate = "$base $n"
-            n++
-        }
+        while (candidate.lowercase() in takenKeys) candidate += UNIQUE_MARK
         return candidate
     }
 }
