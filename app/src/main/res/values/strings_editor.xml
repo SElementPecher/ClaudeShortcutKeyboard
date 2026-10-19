@@ -4,6 +4,9 @@
     <string name="editor_title_new">New quiKey</string>
     <string name="editor_title_change">Change quiKey</string>
     <string name="editor_step_of">Step %1$d of %2$d</string>
+    <string name="editor_step_name">Name</string>
+    <string name="editor_step_message">Message</string>
+    <string name="editor_step_check">Check</string>
     <string name="editor_next">Next</string>
     <string name="editor_cancel">Cancel</string>
     <string name="editor_ok">OK</string>

@@ -311,11 +311,29 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
     }
 
     /** A slim progress bar and "Step 2 of 3" under the title, only while making a new shortcut. */
-    private fun stepHeader(number: Int) {
-        if (!isNew) return
+    /** The three steps as a slim bar with their names, at the very top: where you are, and how far there is to go. */
+    private fun stepBar(current: Int) {
         with(ui) {
-            screen.content.add(progressBar(number / TOTAL_STEPS.toFloat()), top = 12)
-            screen.content.add(label(getString(R.string.editor_step_of, number, TOTAL_STEPS)), top = 8)
+            val names = listOf(R.string.editor_step_name, R.string.editor_step_message, R.string.editor_step_check)
+            val box = column().apply {
+                contentDescription = getString(R.string.editor_step_of, current, TOTAL_STEPS) + ": " + getString(names[current - 1])
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
+            }
+            val segments = row()
+            val labels = row()
+            for (i in 1..TOTAL_STEPS) {
+                segments.addView(progressBar(if (i <= current) 1f else 0f, 6), lp(width = 0, weight = 1f, start = if (i == 1) 0 else 6, height = dp(6)))
+                labels.addView(
+                    text(getString(names[i - 1]), look.type.smallSp, if (i == current) 700 else 500, if (i == current) palette.ink else palette.inkSoft).apply {
+                        gravity = Gravity.START
+                        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                    },
+                    lp(width = 0, weight = 1f, start = if (i == 1) 0 else 6),
+                )
+            }
+            box.addView(segments, lp())
+            box.add(labels, top = 8)
+            screen.content.add(box, bottom = 20)
         }
     }
 
@@ -329,8 +347,8 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
     private fun buildName() {
         val content = screen.content
         with(ui) {
+            stepBar(1)
             content.add(title(getString(R.string.editor_name_title)))
-            stepHeader(1)
             content.add(small(getString(R.string.editor_name_help)), top = 12)
 
             val line = row()
@@ -357,8 +375,8 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
     private fun buildMessage() {
         val content = screen.content
         with(ui) {
+            stepBar(2)
             content.add(title(getString(R.string.editor_message_title)))
-            stepHeader(2)
             content.add(small(getString(R.string.editor_message_help)), top = 12)
 
             val edit = messageEdit ?: createMessageEdit()
@@ -648,10 +666,8 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
     private fun buildCheck() {
         val content = screen.content
         with(ui) {
-            if (isNew) {
-                content.add(title(getString(R.string.editor_check_title)))
-                stepHeader(3)
-            }
+            stepBar(3)
+            if (isNew) content.add(title(getString(R.string.editor_check_title)))
 
             // Name and picture: tap to change.
             val nameCard = card(14).apply {
