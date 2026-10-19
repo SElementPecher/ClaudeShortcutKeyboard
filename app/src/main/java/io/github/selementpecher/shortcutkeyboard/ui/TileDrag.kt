@@ -68,6 +68,9 @@ internal class TileDrag(
     private var moved = false
     private var scrolling = false
 
+    /** True while [start] sends its own "cancel" through the screen; that touch must not be taken for a real one. */
+    private var starting = false
+
     val isActive: Boolean get() = draggedId != null
 
     /** The tile that was carried most recently (still set while its drop is being applied). */
@@ -76,6 +79,7 @@ internal class TileDrag(
 
     /** Sends the screen's touches here. Returns true while a tile is being carried (the touch is used up). */
     fun handle(event: MotionEvent): Boolean {
+        if (starting) return false
         lastX = event.rawX
         lastY = event.rawY
         if (event.actionMasked == MotionEvent.ACTION_DOWN) {
@@ -104,8 +108,13 @@ internal class TileDrag(
 
         // The tile's own press is over: the finger now belongs to the drag.
         val cancel = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_CANCEL, lastX, lastY, 0)
-        activity.window.decorView.dispatchTouchEvent(cancel)
-        cancel.recycle()
+        starting = true
+        try {
+            activity.window.decorView.dispatchTouchEvent(cancel)
+        } finally {
+            starting = false
+            cancel.recycle()
+        }
         scroll.requestDisallowInterceptTouchEvent(true)
 
         val picture = Bitmap.createBitmap(tile.width.coerceAtLeast(1), tile.height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)

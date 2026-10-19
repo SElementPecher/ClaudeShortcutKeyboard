@@ -7,15 +7,15 @@ There are **no letter keys**. You tap tiles, and it does the rest.
 
 ## What it does
 
-- You save a **shortcut**. A shortcut is a message you send a lot.
+- You save a **quiKey**. A quiKey is a message you send a lot.
 - The message has **blanks** in it, like `{child}` or `{time}`.
-- Shortcuts live on **tiles**. Tiles can sit inside **folders**.
-- When you use a shortcut, the keyboard asks **one question at a time**.
+- quiKeys live on **tiles**. Tiles can sit inside **folders**.
+- When you use a quiKey, the keyboard asks **one question at a time**.
 - Then it types the **whole message** for you.
 
 ### Example: "Medicine given"
 
-The shortcut message is:
+The quiKey message is:
 
 ```
 {child}, {medicine}, {dose}, {time} next dose not before {time+4h}
@@ -48,7 +48,7 @@ Do these steps **on your phone**.
 7. Tap **Open**.
 
 **Getting a new version:** do the same steps again.
-Your saved shortcuts **stay safe**.
+Your saved quiKeys **stay safe**.
 
 ---
 
@@ -67,10 +67,10 @@ Choose **quiKey**. Your normal keyboard comes back by itself after you tap **Add
 
 ---
 
-## Make a shortcut
+## Make a quiKey
 
 1. Open the **quiKey** app.
-2. Tap **New shortcut**.
+2. Tap **New quiKey**.
 3. **Name it.** Add a picture and a colour if you like.
 4. **Type your message** like you would send it.
 5. Where a word should change, tap **＋ Add something that changes**.
@@ -94,11 +94,11 @@ No curly brackets to type. The app does that part for you.
 - Press and **hold** a row for **Rename**, **Move to…** or **Delete**.
 - Deleting a folder does **not** delete what is inside. It moves up one level.
 
-### Use a shortcut
+### Use a quiKey
 
 1. Open the keyboard. You see **6 tiles** at a time. Use the arrows for more.
 2. Tap a **folder** to open it. Tap **◀** to go back.
-3. Tap a **shortcut**. Answer each question by tapping.
+3. Tap a **quiKey**. Answer each question by tapping.
 4. Check the message. Tap **✓ Add**.
 
 ### Move tiles around
@@ -146,8 +146,8 @@ The keyboard **remembers** your answers. New answers are added to the list for n
 
 - This keyboard has **no internet access**. The app does not ask for it.
 - What you type **stays on your phone**.
-- Your shortcuts are saved **only on your phone**.
-- To keep a copy, use **Back up shortcuts** in the app menu.
+- Your quiKeys are saved **only on your phone**.
+- To keep a copy, use **Back up quiKeys** in the app menu.
 
 ---
 
@@ -176,10 +176,10 @@ The APK is in `app/build/outputs/apk/debug/`.
 - Code lives in `app/src/main/java/io/github/selementpecher/shortcutkeyboard/`:
   - `template/` reads messages and fills in blanks (`{time+4h}`, `{name|h:mm a}`).
   - `fill/` steps through the blanks one at a time.
-  - `model/` has shortcuts, folders, and the folder rules (`Library`).
-  - `data/` saves shortcuts as JSON in app storage, and does backups.
+  - `model/` has quiKeys, folders, and the folder rules (`Library`).
+  - `data/` saves quiKeys as JSON in app storage, and does backups.
   - `look/` has the three looks (colours, shapes, text sizes) and the chosen one.
-  - `ime/` is the tile keyboard (grid, drag, question screens). `ui/` is the app screens; `ui/editor/` is the shortcut editor.
+  - `ime/` is the tile keyboard (grid, drag, question screens). `ui/` is the app screens; `ui/editor/` is the quiKey editor.
   - All screens are built in code from the current look.
 - Unit tests are plain JVM tests (JUnit 4). Tests under `robolectric/` start the real screens and keyboard.
 - Every push builds the app on GitHub Actions (`.github/workflows/build.yml`).

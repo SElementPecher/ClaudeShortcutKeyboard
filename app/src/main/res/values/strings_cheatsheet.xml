@@ -64,6 +64,6 @@
 
     <string name="cheat_tips_title">Good to know</string>
     <string name="cheat_tip_1">The name you give a changing part is the question the keyboard asks. Keep it short, like “Who?” or “When?”.</string>
-    <string name="cheat_tip_2">You can change a shortcut any time. Open it and tap “Edit shortcut”.</string>
+    <string name="cheat_tip_2">You can change a quiKey any time. Open it and tap “Edit quiKey”.</string>
     <string name="cheat_tip_3">Nothing to change in a message? That is fine. The keyboard just adds it.</string>
 </resources>

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Screen titles -->
-    <string name="editor_title_new">New shortcut</string>
-    <string name="editor_title_change">Change shortcut</string>
+    <string name="editor_title_new">New quiKey</string>
+    <string name="editor_title_change">Change quiKey</string>
     <string name="editor_step_of">Step %1$d of %2$d</string>
     <string name="editor_next">Next</string>
     <string name="editor_cancel">Cancel</string>
@@ -57,15 +57,15 @@
     <string name="editor_check_always">Always %s</string>
     <string name="editor_check_row_desc">%1$s. Tap to change.</string>
     <string name="editor_save">Save</string>
-    <string name="editor_change_words">Edit shortcut</string>
+    <string name="editor_change_words">Edit quiKey</string>
     <string name="editor_change_answers">Edit answers</string>
     <string name="editor_change_answers_hint">Tap a coloured part to change it.</string>
     <string name="editor_name_row_hint">Tap to change the name or picture</string>
     <string name="editor_edit_name_title">Name and picture</string>
 
     <!-- Delete, saving, leaving -->
-    <string name="editor_delete">Delete this shortcut</string>
-    <string name="editor_delete_title">Delete this shortcut?</string>
+    <string name="editor_delete">Delete this quiKey</string>
+    <string name="editor_delete_title">Delete this quiKey?</string>
     <string name="editor_delete_message">“%s” will be gone for good.</string>
     <string name="editor_delete_confirm">Delete</string>
     <string name="editor_saved">Saved</string>

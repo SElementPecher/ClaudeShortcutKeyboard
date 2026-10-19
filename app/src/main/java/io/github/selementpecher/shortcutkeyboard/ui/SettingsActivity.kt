@@ -77,11 +77,29 @@ class SettingsActivity : Activity() {
         content.add(textSizeCard(), top = 8)
         content.add(lookCard(), top = 16)
         content.add(cheatCard(), top = 16)
+        content.add(examplesCard(), top = 16)
         content.add(tourCard(), top = 16)
         content.add(backupCard(), top = 16)
         content.add(tryCard(), top = 16)
         content.add(helpCard(), top = 16)
         content.add(aboutCard(), top = 16)
+    }
+
+    private fun examplesCard(): View = with(ui) {
+        val card = card()
+        card.add(heading(getString(R.string.examples_title)))
+        card.add(small(getString(R.string.examples_help)), top = 4)
+        card.add(secondaryButton(getString(R.string.examples_button)) {
+            val before = ShortcutRepository.library(this@SettingsActivity).shortcuts.size
+            try {
+                ShortcutRepository.addExamples(this@SettingsActivity)
+                val added = ShortcutRepository.library(this@SettingsActivity).shortcuts.size - before
+                screen.snack(if (added > 0) resources.getQuantityString(R.plurals.examples_added, added, added) else getString(R.string.examples_none))
+            } catch (e: Exception) {
+                screen.snack(getString(R.string.edit_save_failed), error = true)
+            }
+        }, top = 14)
+        card
     }
 
     private fun tourCard(): View = with(ui) {

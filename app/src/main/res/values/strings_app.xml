@@ -14,20 +14,20 @@
     <string name="setup_step2_button">Pick keyboard</string>
     <string name="setup_step_done">Done: %1$s</string>
     <string name="setup_step_todo">To do: %1$s</string>
-    <string name="setup_how_to">To type a shortcut: tap the keyboard icon at the bottom of your screen, then choose quiKey.</string>
+    <string name="setup_how_to">To type a quiKey: tap the keyboard icon at the bottom of your screen, then choose quiKey.</string>
     <string name="setup_privacy">This keyboard has no internet access. What you type stays on your phone.</string>
     <string name="setup_no_settings">Could not open settings. Go to Settings, then System, then Keyboard.</string>
 
     <!-- Main screen: try it -->
     <string name="try_hint">Tap here to try your keyboard</string>
-    <string name="try_tip">Tap the keyboard icon at the bottom of your screen and choose quiKey. Pick a shortcut. It is typed here.</string>
+    <string name="try_tip">Tap the keyboard icon at the bottom of your screen and choose quiKey. Pick a quiKey. It is typed here.</string>
 
     <!-- Main screen: list -->
-    <string name="shortcuts_empty">Make your first shortcut. It takes a minute.</string>
-    <string name="folder_empty">This folder is empty. Add a shortcut to it.</string>
-    <string name="shortcut_new">New shortcut</string>
+    <string name="shortcuts_empty">Make your first quiKey. It takes a minute.</string>
+    <string name="folder_empty">This folder is empty. Add a quiKey to it.</string>
+    <string name="shortcut_new">New quiKey</string>
     <string name="shortcut_no_name">(No name)</string>
-    <string name="shortcut_row_description">Shortcut %1$s. %2$s. Tap to change it. Press and hold for more.</string>
+    <string name="shortcut_row_description">quiKey %1$s. %2$s. Tap to change it. Press and hold for more.</string>
     <string name="folder_row_description">Folder %1$s. %2$s. Tap to open it. Press and hold for more.</string>
     <plurals name="folder_items">
         <item quantity="one">%d item</item>
@@ -57,31 +57,31 @@
     <string name="shortcut_deleted">Deleted</string>
 
     <!-- Backup and restore -->
-    <string name="backup_file_name" translatable="false">shortcuts-backup.json</string>
+    <string name="backup_file_name" translatable="false">quiKeys-backup.json</string>
     <string name="backup_failed">Could not save the backup. Please try again.</string>
     <string name="no_file_app">Your phone has no app for picking files.</string>
     <string name="restore_failed">Could not open that file. Please try again.</string>
-    <string name="restore_bad_file">That file is not a shortcuts backup.</string>
-    <string name="restore_empty">There are no shortcuts in that file.</string>
-    <string name="restore_message">Add them to the shortcuts and folders you have now?\n\nOr replace everything you have now with them? This removes what you have now.</string>
-    <string name="restore_add">Add to my shortcuts</string>
+    <string name="restore_bad_file">That file is not a quiKeys backup.</string>
+    <string name="restore_empty">There are no quiKeys in that file.</string>
+    <string name="restore_message">Add them to the quiKeys and folders you have now?\n\nOr replace everything you have now with them? This removes what you have now.</string>
+    <string name="restore_add">Add to my quiKeys</string>
     <string name="restore_replace">Replace all</string>
     <string name="restore_save_failed">Could not restore. Please try again.</string>
     <plurals name="backup_saved">
-        <item quantity="one">Saved %d shortcut to the backup.</item>
-        <item quantity="other">Saved %d shortcuts to the backup.</item>
+        <item quantity="one">Saved %d quiKey to the backup.</item>
+        <item quantity="other">Saved %d quiKeys to the backup.</item>
     </plurals>
     <plurals name="restore_found">
-        <item quantity="one">Found %d shortcut</item>
-        <item quantity="other">Found %d shortcuts</item>
+        <item quantity="one">Found %d quiKey</item>
+        <item quantity="other">Found %d quiKeys</item>
     </plurals>
     <plurals name="restore_added">
-        <item quantity="one">Added %d shortcut.</item>
-        <item quantity="other">Added %d shortcuts.</item>
+        <item quantity="one">Added %d quiKey.</item>
+        <item quantity="other">Added %d quiKeys.</item>
     </plurals>
     <plurals name="restore_replaced">
-        <item quantity="one">You now have %d shortcut.</item>
-        <item quantity="other">You now have %d shortcuts.</item>
+        <item quantity="one">You now have %d quiKey.</item>
+        <item quantity="other">You now have %d quiKeys.</item>
     </plurals>
 
     <!-- How blanks work -->
@@ -122,15 +122,15 @@
     <string name="look_preview_shortcut_2">Running late</string>
     <string name="look_preview_folder">Kids</string>
     <string name="settings_backup_title">Back up and restore</string>
-    <string name="settings_backup_help">Save your shortcuts in a file. You can get them back from it later.</string>
-    <string name="settings_backup_button">Back up my shortcuts</string>
+    <string name="settings_backup_help">Save your quiKeys in a file. You can get them back from it later.</string>
+    <string name="settings_backup_button">Back up my quiKeys</string>
     <string name="settings_restore_button">Restore from a backup</string>
     <string name="settings_try_title">Try the keyboard</string>
     <string name="settings_help_title">How it works</string>
-    <string name="settings_help_1">Make a shortcut for a message you send a lot.</string>
+    <string name="settings_help_1">Make a quiKey for a message you send a lot.</string>
     <string name="settings_help_2">Tap the words that change each time, like a name or a time.</string>
     <string name="settings_help_3">To use it, tap the keyboard icon at the bottom of your screen and choose quiKey.</string>
-    <string name="settings_help_4">Pick a shortcut. The keyboard asks you for the words that change, one at a time.</string>
+    <string name="settings_help_4">Pick a quiKey. The keyboard asks you for the words that change, one at a time.</string>
     <string name="settings_help_5">Tap Add. Your message is typed for you.</string>
     <string name="settings_about_title">About</string>
     <string name="settings_about_version">Version %1$s</string>

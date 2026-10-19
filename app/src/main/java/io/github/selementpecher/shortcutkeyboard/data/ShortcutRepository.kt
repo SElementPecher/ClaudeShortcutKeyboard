@@ -52,6 +52,9 @@ object ShortcutRepository {
 
     fun delete(context: Context, id: String) = update(context) { it.withoutShortcut(id) }
 
+    /** Adds the starter folders and quiKeys that are missing, without touching anything you have. */
+    fun addExamples(context: Context) = update(context) { it.withExamples(SampleShortcuts.library) }
+
     /** Deletes several shortcuts and folders in one go (one save). */
     fun deleteMany(context: Context, ids: Set<String>) = update(context) { it.withoutAll(ids) }
 

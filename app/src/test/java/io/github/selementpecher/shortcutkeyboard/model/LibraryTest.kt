@@ -170,4 +170,27 @@ class LibraryTest {
         assertNull(without.shortcut("giddy"))
         assertNull(without.shortcut("zippy"))
     }
+
+    @Test
+    fun `withExamples adds only what is missing and keeps what exists`() {
+        val examples = Library(
+            folders = listOf(Folder("kids", "Kids", null, 0), Folder("new-folder", "Late", null, 1)),
+            shortcuts = listOf(
+                shortcut("late", null, 2),
+                shortcut("fresh-top", null, 3),
+                shortcut("fresh-in-late", "new-folder", 0),
+                shortcut("fresh-in-kids", "kids", 0),
+            ),
+        )
+        val merged = library.withExamples(examples)
+        // Existing ones are untouched.
+        assertEquals(library.folder("kids"), merged.folder("kids"))
+        assertEquals(library.shortcut("late"), merged.shortcut("late"))
+        // New ones arrive after what was already in each folder.
+        assertTrue(ids(null, merged).containsAll(listOf("kids", "late", "new-folder", "fresh-top")))
+        assertEquals(listOf("meds", "other", "fresh-in-kids"), ids("kids", merged))
+        assertEquals(listOf("fresh-in-late"), ids("new-folder", merged))
+        // Asking again changes nothing.
+        assertEquals(merged, merged.withExamples(examples))
+    }
 }

@@ -73,6 +73,18 @@ data class Library(
 
     fun withoutShortcut(id: String): Library = copy(shortcuts = shortcuts.filterNot { it.id == id })
 
+    /**
+     * Adds the folders and shortcuts of [examples] that are not here yet (matched by id), after what is already
+     * in each folder. Nothing that exists is changed.
+     */
+    fun withExamples(examples: Library): Library {
+        fun after(parentId: String?): Int =
+            if (parentId == null || folder(parentId) != null) (children(parentId).maxOfOrNull { it.order } ?: -1) + 1 else 0
+        val newFolders = examples.folders.filter { f -> folders.none { it.id == f.id } }.map { it.copy(order = it.order + after(it.parentId)) }
+        val newShortcuts = examples.shortcuts.filter { s -> shortcuts.none { it.id == s.id } }.map { it.copy(order = it.order + after(it.parentId)) }
+        return Library(folders + newFolders, shortcuts + newShortcuts).repaired()
+    }
+
     /** Removes every shortcut and folder in [ids]. A folder's contents that are not in [ids] move up one level. */
     fun withoutAll(ids: Set<String>): Library =
         ids.fold(this) { lib, id -> if (lib.folder(id) != null) lib.withoutFolder(id) else lib.withoutShortcut(id) }
