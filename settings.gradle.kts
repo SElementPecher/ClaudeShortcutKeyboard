@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ShortcutKeyboard"
+rootProject.name = "quiKey"
 include(":app")

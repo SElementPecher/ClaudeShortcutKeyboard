@@ -8,6 +8,11 @@ plugins {
 // CI sets GITHUB_RUN_NUMBER so every build installs as an update over the last one.
 val buildNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
 
+// The file is called quiKey-debug.apk, not app-debug.apk.
+base {
+    archivesName.set("quiKey")
+}
+
 android {
     namespace = "io.github.selementpecher.shortcutkeyboard"
     compileSdk = 35
