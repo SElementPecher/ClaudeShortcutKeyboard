@@ -67,6 +67,22 @@ class ActivitySmokeTest {
         close(controller)
     }
 
+    @Test
+    fun editShortcutActivitySurvivesTurningThePhone() {
+        val newOne = Robolectric.buildActivity(EditShortcutActivity::class.java).setup()
+        newOne.recreate()
+        assertOpen(newOne.get())
+        close(newOne)
+
+        val context = RuntimeEnvironment.getApplication()
+        ShortcutRepository.save(context, Shortcut("turn-test", "Turn test", "Hi {who}", listOf(VariableDef("who", options = listOf("Sam")))))
+        val intent = Intent(context, EditShortcutActivity::class.java).putExtra(EXTRA_ID, "turn-test")
+        val saved = Robolectric.buildActivity(EditShortcutActivity::class.java, intent).setup()
+        saved.recreate()
+        assertOpen(saved.get())
+        close(saved)
+    }
+
     private fun assertOpen(activity: Activity) {
         assertNotNull(activity.window.decorView)
         assertFalse(activity.isFinishing)

@@ -48,6 +48,9 @@ class EditShortcutActivity : Activity() {
     private lateinit var sheets: WordSheets
 
     private var step = Step.NAME
+
+    /** Where the back arrow goes from the "tap the words" step. */
+    private var wordsBack = Step.MESSAGE
     private var stored: Shortcut? = null
     private var baseline: Shortcut? = null
     private lateinit var shortcutId: String
@@ -115,6 +118,7 @@ class EditShortcutActivity : Activity() {
         outState.putString(STATE_MESSAGE, messageText)
         outState.putString(STATE_DRAFT, draft.toJson())
         outState.putInt(STATE_LOST, lost)
+        outState.putString(STATE_WORDS_BACK, wordsBack.name)
     }
 
     private fun restore(state: Bundle) {
@@ -124,6 +128,7 @@ class EditShortcutActivity : Activity() {
         messageText = state.getString(STATE_MESSAGE, messageText)
         state.getString(STATE_DRAFT)?.let { json -> MessageDraft.fromJson(json)?.let { draft = it } }
         lost = state.getInt(STATE_LOST)
+        wordsBack = Step.entries.firstOrNull { it.name == state.getString(STATE_WORDS_BACK) } ?: wordsBack
     }
 
     override fun onDestroy() {
@@ -150,7 +155,10 @@ class EditShortcutActivity : Activity() {
         when (step) {
             Step.NAME -> leave()
             Step.MESSAGE -> if (isNew) goTo(Step.NAME) else { applyTypedMessage(); goTo(Step.CHECK) }
-            Step.WORDS -> goTo(Step.MESSAGE.also { messageText = draft.plainText() })
+            Step.WORDS -> {
+                if (wordsBack == Step.MESSAGE) messageText = draft.plainText()
+                goTo(wordsBack)
+            }
             Step.CHECK -> if (isNew) goTo(Step.WORDS) else leave()
         }
     }
@@ -298,7 +306,7 @@ class EditShortcutActivity : Activity() {
             content.add(
                 text(getString(R.string.editor_message_example), look.type.bodySp, 600, palette.ink).apply {
                     setPadding(dp(14), dp(12), dp(14), dp(12))
-                    background = shape(palette.surfaceAlt, 14f)
+                    background = shape(android.graphics.Color.TRANSPARENT, 14f, palette.outline, 1.5f, dashed = true)
                 },
                 top = 8,
             )
@@ -358,7 +366,7 @@ class EditShortcutActivity : Activity() {
                     val breaks = piece.text.contains('\n')
                     if (shown.isNotEmpty()) {
                         // Punctuation hugs the word before it; an opening bracket hugs the word after it.
-                        add(ui.text(shown, ui.look.type.bodySp + 2, 600, ui.palette.inkSoft), tight = !piece.text.first().isWhitespace())
+                        add(ui.text(shown, ui.look.type.bodySp + 4, 700, ui.palette.inkSoft), tight = !piece.text.first().isWhitespace())
                         tightNext = !piece.text.last().isWhitespace()
                     }
                     if (breaks) {
@@ -465,9 +473,12 @@ class EditShortcutActivity : Activity() {
                         },
                         lp(width = dp(40), height = dp(40), end = 12),
                     )
-                    line.addView(text(q.question + "?", look.type.bodySp, 600, palette.ink), lp(width = 0, weight = 1f))
+                    line.addView(text(q.question.replaceFirstChar { it.uppercase() } + "?", look.type.bodySp, 600, palette.ink), lp(width = 0, weight = 1f))
                     if (q.answerCount > 0) {
-                        line.addView(small(resources.getQuantityString(R.plurals.editor_check_answers, q.answerCount, q.answerCount)))
+                        line.addView(
+                            small(resources.getQuantityString(R.plurals.editor_check_answers, q.answerCount, q.answerCount)),
+                            lp(width = ViewGroup.LayoutParams.WRAP_CONTENT, start = 8),
+                        )
                     }
                     card.addView(line)
                 }
@@ -482,10 +493,16 @@ class EditShortcutActivity : Activity() {
             val problem = errorLine(R.string.editor_message_error, draft.plainText().isBlank())
             content.add(problem)
 
-            content.add(textButton(getString(R.string.editor_change_words)) { messageText = draft.plainText(); goTo(Step.MESSAGE) }, top = 16)
-            if (!draft.hasNoBlanks || !isNew) {
-                content.add(textButton(getString(R.string.editor_change_answers)) { goTo(Step.WORDS) }, top = 0)
-            }
+            val quiet = row()
+            quiet.addView(
+                textButton(getString(R.string.editor_change_words)) { messageText = draft.plainText(); goTo(Step.MESSAGE) },
+                lp(width = 0, weight = 1f, end = 4),
+            )
+            quiet.addView(
+                textButton(getString(R.string.editor_change_answers)) { wordsBack = Step.CHECK; goTo(Step.WORDS) },
+                lp(width = 0, weight = 1f, start = 4),
+            )
+            content.add(quiet, top = 12)
             if (!isNew) {
                 content.add(
                     textButton(getString(R.string.editor_delete)) { confirmDelete() }.also { it.setTextColor(palette.danger) },
@@ -517,6 +534,7 @@ class EditShortcutActivity : Activity() {
                     return
                 }
                 applyTypedMessage()
+                wordsBack = Step.MESSAGE
                 goTo(Step.WORDS)
             }
             Step.WORDS -> goTo(Step.CHECK)
@@ -617,5 +635,6 @@ class EditShortcutActivity : Activity() {
         private const val STATE_MESSAGE = "message"
         private const val STATE_DRAFT = "draft"
         private const val STATE_LOST = "lost"
+        private const val STATE_WORDS_BACK = "wordsBack"
     }
 }

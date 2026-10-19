@@ -72,14 +72,21 @@ Choose **Shortcut Keyboard**. Your normal keyboard comes back by itself after yo
 ## Make a shortcut
 
 1. Open the **Shortcut Keyboard** app.
-2. Tap **+ New shortcut**.
-3. **Name:** a short name, like **Medicine given**.
-4. **Message:** write your message.
-   Put blanks in **curly brackets**, like `{child}`.
-5. Tap **+ Add a blank** to add a blank without typing the brackets.
-6. Tap **Save**.
+2. Tap **＋ New shortcut**.
+3. **Name it.** You can pick a little picture too.
+4. **Type your message** like you would send it.
+   For example: *Sam, Calpol, 5ml, 20:20 next dose not before 00:20*
+5. **Tap the words that change.** For each one, pick:
+   **A list of answers**, **A time**, **A date** or **A number**.
+6. Tap a second time (like 00:20) and it offers **"4 hours after When"**.
+7. Tap **Save**.
 
-New names (like a new child) are added from the keyboard: tap **+ New**, type the name in the box, then go back to your message.
+No curly brackets to type. The app does that part for you.
+
+## Pick a look
+
+Open **Settings** (the ⚙ at the top of the app) and choose **Look**:
+**Calm**, **Bold** or **Squares**. It changes the app and the keyboard straight away.
 
 ### Folders
 
@@ -162,7 +169,9 @@ The APK is in `app/build/outputs/apk/debug/`.
   - `fill/` steps through the blanks one at a time.
   - `model/` has shortcuts, folders, and the folder rules (`Library`).
   - `data/` saves shortcuts as JSON in app storage, and does backups.
-  - `ime/` is the tile keyboard (grid, drag, question screens). `ui/` is the app screens.
+  - `look/` has the three looks (colours, shapes, text sizes) and the chosen one.
+  - `ime/` is the tile keyboard (grid, drag, question screens). `ui/` is the app screens; `ui/editor/` is the shortcut editor.
+  - All screens are built in code from the current look.
 - Unit tests are plain JVM tests (JUnit 4). Tests under `robolectric/` start the real screens and keyboard.
 - Every push builds the app on GitHub Actions (`.github/workflows/build.yml`).
   Pushes to the default branch (and to the owner's working branch) replace the **Latest build** release.

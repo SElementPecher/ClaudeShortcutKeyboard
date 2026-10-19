@@ -66,12 +66,27 @@ internal class WordSheets(
         panel.show()
     }
 
+    /**
+     * Puts [buttons] in a strip under the scrolling part of the sheet, so the main button is always
+     * in reach however long the form is. An empty list removes the strip.
+     */
+    private fun setFooter(panel: UiPanel, buttons: List<View>) {
+        val scroller = panel.body.parent as? ViewGroup ?: return
+        val surface = scroller.parent as? LinearLayout ?: return
+        surface.findViewWithTag<View>(FOOTER_TAG)?.let { surface.removeView(it) }
+        if (buttons.isEmpty()) return
+        val footer = ui.column().apply { tag = FOOTER_TAG }
+        buttons.forEachIndexed { i, b -> with(ui) { footer.add(b, top = if (i == 0) 12 else 4) } }
+        surface.addView(footer, ui.lp())
+    }
+
     // ---- first look: the word, how much of it, and what kind ----
 
     private fun choose(panel: UiPanel, selection: Selection, original: Selection) {
         val current = draft()
         val body = panel.body
         body.removeAllViews()
+        setFooter(panel, emptyList())
         with(ui) {
             // The words chosen so far, big.
             val phrase = text(current.textOf(selection), look.type.titleSp, look.type.headingWeight, palette.ink).apply {
@@ -119,7 +134,7 @@ internal class WordSheets(
                     },
                     top = 10,
                 )
-                if (relation.beforeMinutes != 0L) {
+                if (relation.beforeMinutes != 0L && -relation.beforeMinutes < relation.afterMinutes) {
                     body.add(
                         textButton(activity.getString(R.string.editor_time_choose_before, EditorText.duration(activity, relation.beforeMinutes), relation.question)) {
                             panel.dismiss()
@@ -247,15 +262,17 @@ internal class WordSheets(
         with(ui) {
             body.add(kindHeader(kind, word))
             body.add(form.view, top = 16)
-            body.add(
-                primaryButton(activity.getString(R.string.editor_make_it)) {
+        }
+        setFooter(
+            panel,
+            listOf(
+                ui.primaryButton(activity.getString(R.string.editor_make_it)) {
                     panel.dismiss()
                     onChange(draft().makeBlank(selection, kind, form.question, form.answers))
                 },
-                top = 20,
-            )
-            body.add(textButton(activity.getString(R.string.editor_back)) { choose(panel, selection, selection) }, top = 4)
-        }
+                ui.textButton(activity.getString(R.string.editor_back)) { choose(panel, selection, selection) },
+            ),
+        )
     }
 
     private fun kindHeader(kind: BlankKind, word: String): View = with(ui) {
@@ -276,23 +293,22 @@ internal class WordSheets(
         with(ui) {
             body.add(kindHeader(spec.kind, spec.example.ifBlank { spec.question }))
             body.add(form.view, top = 16)
-            body.add(
-                primaryButton(activity.getString(R.string.editor_done)) {
+        }
+        setFooter(
+            panel,
+            listOf(
+                ui.primaryButton(activity.getString(R.string.editor_done)) {
                     panel.dismiss()
                     var next = draft().renameQuestion(spec.id, form.question)
                     if (spec.kind == BlankKind.LIST) next = next.setAnswers(spec.id, form.answers)
                     onChange(next)
                 },
-                top = 20,
-            )
-            body.add(
-                textButton(activity.getString(R.string.editor_plain_again)) {
+                ui.textButton(activity.getString(R.string.editor_plain_again)) {
                     panel.dismiss()
                     onChange(draft().unmakeBlank(spec.id))
                 }.also { it.setTextColor(palette.danger) },
-                top = 4,
-            )
-        }
+            ),
+        )
     }
 
     private fun offsetEditor(panel: UiPanel, segment: Int, ref: Segment.Ref, spec: BlankSpec) {
@@ -302,15 +318,17 @@ internal class WordSheets(
         with(ui) {
             panel.body.add(kindHeader(BlankKind.TIME, ref.shown))
             panel.body.add(body(message), top = 12)
-            panel.body.add(primaryButton(activity.getString(R.string.editor_ok)) { panel.dismiss() }, top = 20)
-            panel.body.add(
-                textButton(activity.getString(R.string.editor_plain_again)) {
+        }
+        setFooter(
+            panel,
+            listOf(
+                ui.primaryButton(activity.getString(R.string.editor_ok)) { panel.dismiss() },
+                ui.textButton(activity.getString(R.string.editor_plain_again)) {
                     panel.dismiss()
                     onChange(draft().unmakeRef(segment))
                 }.also { it.setTextColor(palette.danger) },
-                top = 4,
-            )
-        }
+            ),
+        )
     }
 
     private fun fixedText(fixed: Segment.Fixed): Int = when (fixed.raw.trim().substringBefore('|').trim().lowercase().takeWhile { it.isLetter() }) {
@@ -322,7 +340,11 @@ internal class WordSheets(
     private fun info(panel: UiPanel, resId: Int) {
         with(ui) {
             panel.body.add(body(activity.getString(resId)), top = 4)
-            panel.body.add(primaryButton(activity.getString(R.string.editor_ok)) { panel.dismiss() }, top = 20)
         }
+        setFooter(panel, listOf(ui.primaryButton(activity.getString(R.string.editor_ok)) { panel.dismiss() }))
+    }
+
+    private companion object {
+        const val FOOTER_TAG = "sheet-footer"
     }
 }
