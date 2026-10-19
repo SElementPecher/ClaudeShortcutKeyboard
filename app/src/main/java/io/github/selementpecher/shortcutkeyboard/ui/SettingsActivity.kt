@@ -74,10 +74,21 @@ class SettingsActivity : Activity() {
     private fun build() = with(ui) {
         val content = screen.content
         content.add(lookCard(), top = 8)
+        content.add(cheatCard(), top = 16)
         content.add(backupCard(), top = 16)
         content.add(tryCard(), top = 16)
         content.add(helpCard(), top = 16)
         content.add(aboutCard(), top = 16)
+    }
+
+    private fun cheatCard(): View = with(ui) {
+        val card = card()
+        card.add(heading(getString(R.string.cheat_settings_title)))
+        card.add(small(getString(R.string.cheat_settings_help)), top = 4)
+        card.add(secondaryButton(getString(R.string.cheat_open_button)) {
+            startActivity(Intent(this@SettingsActivity, CheatSheetActivity::class.java))
+        }, top = 14)
+        card
     }
 
     private fun lookCard(): View = with(ui) {

@@ -34,6 +34,7 @@ import io.github.selementpecher.shortcutkeyboard.look.Look
 import io.github.selementpecher.shortcutkeyboard.look.LookStore
 import io.github.selementpecher.shortcutkeyboard.look.Palette
 import io.github.selementpecher.shortcutkeyboard.look.TileLayout
+import io.github.selementpecher.shortcutkeyboard.look.folderColors
 import io.github.selementpecher.shortcutkeyboard.look.tileColorsFor
 import io.github.selementpecher.shortcutkeyboard.look.typefaceOf
 import kotlin.math.max
@@ -372,14 +373,15 @@ internal class Ui(val context: Context, val look: Look) {
         icon: String,
         kind: TileKind,
         colorKey: String = name,
+        color: Int = -1,
         subtitle: String? = null,
         description: String = name,
         onClick: (() -> Unit)? = null,
         onLongClick: (() -> Unit)? = null,
     ): View {
         val colors = when (kind) {
-            TileKind.SHORTCUT -> palette.tileColorsFor(colorKey)
-            TileKind.FOLDER -> palette.folder
+            TileKind.SHORTCUT -> palette.tileColorsFor(colorKey, color)
+            TileKind.FOLDER -> palette.folderColors(color)
             TileKind.NEW -> io.github.selementpecher.shortcutkeyboard.look.TileColors(Color.TRANSPARENT, palette.inkSoft)
         }
         val radius = look.shape.tileRadiusDp.toFloat()

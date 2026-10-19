@@ -42,6 +42,7 @@ class LooksTest {
             check("$name danger on bg", p.danger, p.bg, 4.5)
             check("$name folder text", p.folder.fg, p.folder.bg)
             p.tiles.forEachIndexed { i, tile -> check("$name tile $i", tile.fg, tile.bg) }
+            p.swatches.forEachIndexed { i, tile -> check("$name swatch $i", tile.fg, tile.bg) }
         }
     }
 
@@ -68,5 +69,24 @@ class LooksTest {
         assertEquals(p.tileColorsFor("abc"), p.tileColorsFor("abc"))
         val used = (1..60).map { p.tileColorsFor("shortcut-$it") }.toSet()
         assertTrue("only ${used.size} colours used", used.size >= 5)
+    }
+
+    @Test
+    fun `there are 16 swatches in every palette and they are all different`() {
+        for ((name, p) in palettes()) {
+            assertEquals(name, SWATCH_COUNT, p.swatches.size)
+            assertEquals("$name has repeated swatch backgrounds", SWATCH_COUNT, p.swatches.map { it.bg }.toSet().size)
+        }
+    }
+
+    @Test
+    fun `a picked colour wins and automatic stays stable`() {
+        val p = Looks.BOLD.light
+        assertEquals(p.swatches[5], p.tileColorsFor("anything", 5))
+        assertEquals(p.swatches[0], p.folderColors(0))
+        assertEquals(p.folder, p.folderColors(-1))
+        assertEquals(p.folder, p.folderColors(99))
+        assertEquals(p.tileColorsFor("abc"), p.tileColorsFor("abc", -1))
+        assertEquals(p.tileColorsFor("abc"), p.tileColorsFor("abc", 16))
     }
 }

@@ -9,6 +9,9 @@ sealed interface Node {
 
     /** A single emoji shown on the tile, or empty (then the tile shows the name's first letter). */
     val icon: String
+
+    /** The tile colour the owner picked (0–15), or −1 to let the app choose. */
+    val color: Int
 }
 
 /** A folder. Folders can hold shortcuts and other folders. */
@@ -18,6 +21,7 @@ data class Folder(
     override val parentId: String? = null,
     override val order: Int = 0,
     override val icon: String = "",
+    override val color: Int = -1,
 ) : Node
 
 /**

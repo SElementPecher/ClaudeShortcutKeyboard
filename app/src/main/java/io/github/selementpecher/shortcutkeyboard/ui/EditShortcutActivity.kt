@@ -59,6 +59,7 @@ class EditShortcutActivity : Activity() {
 
     private var name = ""
     private var icon = ""
+    private var color = -1
     private var messageText = ""
     private var draft = MessageDraft(emptyList())
 
@@ -89,6 +90,7 @@ class EditShortcutActivity : Activity() {
             baseline = ShortcutDraft.normalise(existing)
             name = existing.name
             icon = existing.icon
+            color = existing.color
             draft = MessageDraft.fromShortcut(existing)
             step = Step.CHECK
         }
@@ -115,6 +117,7 @@ class EditShortcutActivity : Activity() {
         outState.putString(STATE_STEP, step.name)
         outState.putString(STATE_NAME, name)
         outState.putString(STATE_ICON, icon)
+        outState.putInt(STATE_COLOR, color)
         outState.putString(STATE_MESSAGE, messageText)
         outState.putString(STATE_DRAFT, draft.toJson())
         outState.putInt(STATE_LOST, lost)
@@ -125,6 +128,7 @@ class EditShortcutActivity : Activity() {
         step = Step.entries.firstOrNull { it.name == state.getString(STATE_STEP) } ?: step
         name = state.getString(STATE_NAME, name)
         icon = state.getString(STATE_ICON, icon)
+        color = state.getInt(STATE_COLOR, color)
         messageText = state.getString(STATE_MESSAGE, messageText)
         state.getString(STATE_DRAFT)?.let { json -> MessageDraft.fromJson(json)?.let { draft = it } }
         lost = state.getInt(STATE_LOST)
@@ -182,11 +186,11 @@ class EditShortcutActivity : Activity() {
         ).show()
     }
 
-    private fun currentShortcut(): Shortcut = draft.toShortcut(shortcutId, name, parentId, position, icon)
+    private fun currentShortcut(): Shortcut = draft.toShortcut(shortcutId, name, parentId, position, icon, color)
 
     private fun hasChanges(): Boolean {
         val typedElsewhere = step == Step.MESSAGE && messageText != draft.plainText()
-        val before = baseline ?: return name.isNotBlank() || icon.isNotBlank() || messageText.isNotBlank() ||
+        val before = baseline ?: return name.isNotBlank() || icon.isNotBlank() || color >= 0 || messageText.isNotBlank() ||
             draft.segments.isNotEmpty()
         return typedElsewhere || currentShortcut() != before
     }
@@ -291,6 +295,8 @@ class EditShortcutActivity : Activity() {
             line.addView(field, lp(width = 0, weight = 1f))
             content.add(line, top = 24)
             content.add(error)
+            content.add(label(getString(R.string.color_label)), top = 24)
+            content.add(ColorPicker.view(ui, color) { color = it }, top = 8)
 
             screen.bottomBar.addView(primaryButton(getString(R.string.editor_next)) { next() })
             if (isNew && name.isEmpty()) showKeyboardFor(field)
@@ -326,6 +332,9 @@ class EditShortcutActivity : Activity() {
         with(ui) {
             content.add(title(getString(R.string.editor_words_title)))
             content.add(body(getString(R.string.editor_words_hint)), top = 10)
+            content.add(textButton(getString(R.string.cheat_open_link)) {
+                startActivity(android.content.Intent(this@EditShortcutActivity, CheatSheetActivity::class.java))
+            }, top = 4)
             if (lost > 0) {
                 content.add(
                     text(resources.getQuantityString(R.plurals.editor_words_lost, lost, lost), look.type.bodySp, 600, palette.ink).apply {
@@ -632,6 +641,7 @@ class EditShortcutActivity : Activity() {
         private const val STATE_STEP = "step"
         private const val STATE_NAME = "name"
         private const val STATE_ICON = "icon"
+        private const val STATE_COLOR = "color"
         private const val STATE_MESSAGE = "message"
         private const val STATE_DRAFT = "draft"
         private const val STATE_LOST = "lost"

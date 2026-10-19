@@ -227,7 +227,7 @@ class ShortcutKeyboardService : InputMethodService() {
     private fun nodeTile(node: Node, highlighted: Boolean = false): TileSpec = when (node) {
         is Folder -> TileSpec(
             label = node.name.ifBlank { getString(R.string.kb_untitled) },
-            look = TileLook(TileLook.Kind.FOLDER, highlighted = highlighted),
+            look = TileLook(TileLook.Kind.FOLDER, highlighted = highlighted, custom = node.color),
             glyph = TileStyle.glyphFor(node.icon, node.name, isFolder = true),
             badge = TileStyle.folderBadge(TileStyle.glyphFor(node.icon, node.name, isFolder = true)),
             description = getString(R.string.kb_desc_folder, node.name),
@@ -237,7 +237,7 @@ class ShortcutKeyboardService : InputMethodService() {
         )
         is Shortcut -> TileSpec(
             label = node.name.ifBlank { getString(R.string.kb_untitled) },
-            look = TileLook(TileLook.Kind.SHORTCUT, colourKey = node.id),
+            look = TileLook(TileLook.Kind.SHORTCUT, colourKey = node.id, custom = node.color),
             glyph = TileStyle.glyphFor(node.icon, node.name, isFolder = false),
             description = getString(R.string.kb_desc_shortcut, node.name),
             draggable = true,

@@ -18,6 +18,8 @@ object FolderLogic {
         val depth: Int,
         /** True if the tile is already there, so moving it there would do nothing. */
         val isCurrent: Boolean,
+        /** The folder's own picture (an emoji), or empty. */
+        val icon: String = "",
     )
 
     /**
@@ -32,7 +34,7 @@ object FolderLogic {
         fun add(parentId: String?, depth: Int, seen: Set<String>) {
             for (node in library.children(parentId)) {
                 if (node !is Folder || node.id == nodeId || node.id in seen) continue
-                result += MoveTarget(node.id, node.name, depth, isCurrent = currentParent == node.id)
+                result += MoveTarget(node.id, node.name, depth, isCurrent = currentParent == node.id, icon = node.icon)
                 add(node.id, depth + 1, seen + node.id)
             }
         }

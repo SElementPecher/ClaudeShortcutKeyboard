@@ -177,14 +177,14 @@ class MainActivity : Activity() {
                 val count = FolderLogic.itemCount(library, node.id)
                 val items = if (count == 0) getString(R.string.folder_empty_row) else resources.getQuantityString(R.plurals.folder_items, count, count)
                 ui.tile(
-                    name = name, icon = node.icon, kind = TileKind.FOLDER, colorKey = node.id, subtitle = items,
+                    name = name, icon = node.icon, kind = TileKind.FOLDER, colorKey = node.id, color = node.color, subtitle = items,
                     description = getString(R.string.folder_row_description, name, items),
                     onClick = { openFolder(node.id) },
                     onLongClick = { showActions(node) },
                 )
             }
             is Shortcut -> ui.tile(
-                name = name, icon = node.icon, kind = TileKind.SHORTCUT, colorKey = node.id,
+                name = name, icon = node.icon, kind = TileKind.SHORTCUT, colorKey = node.id, color = node.color,
                 description = getString(R.string.shortcut_row_description, name, ""),
                 onClick = { openEditor(node.id) },
                 onLongClick = { showActions(node) },
@@ -361,7 +361,7 @@ class MainActivity : Activity() {
             targets.forEachIndexed { index, target ->
                 val base = target.name.ifBlank { noName }
                 val label = if (target.isCurrent) getString(R.string.move_here, base) else base
-                val glyph = if (target.folderId == null) "🏠" else "📁"
+                val glyph = if (target.folderId == null) "🏠" else target.icon.ifBlank { "📁" }
                 val rowView = row().apply {
                     minimumHeight = dp(56)
                     setPadding(dp(14 + 18 * target.depth), dp(8), dp(14), dp(8))
@@ -373,7 +373,7 @@ class MainActivity : Activity() {
                     contentDescription = label
                     setOnClickListener { sheet.dismiss(); moveTo(node, target.folderId) }
                 }
-                rowView.addView(text(glyph, look.type.bodySp, 400, palette.ink))
+                rowView.addView(text(glyph, look.type.bodySp + 3, 400, palette.ink).apply { layoutParams = lp(width = ViewGroup.LayoutParams.WRAP_CONTENT) })
                 rowView.addView(body(label).apply {
                     layoutParams = lp(width = 0, weight = 1f, start = 12)
                     maxLines = 1
@@ -430,6 +430,7 @@ class MainActivity : Activity() {
     private fun askFolder(existing: Folder?) {
         val dialog = ui.dialog(this, getString(if (existing == null) R.string.folder_new_title else R.string.folder_rename_title))
         var icon = existing?.icon.orEmpty()
+        var color = existing?.color ?: -1
         val name = ui.field(getString(R.string.folder_name_hint)).apply {
             existing?.let { setText(it.name); setSelection(length()) }
             imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_DONE
@@ -461,6 +462,8 @@ class MainActivity : Activity() {
             line.addView(name.apply { layoutParams = lp(width = 0, weight = 1f) })
             dialog.body.add(line, top = 12)
             dialog.body.add(error, top = 8)
+            dialog.body.add(label(getString(R.string.color_label)), top = 18)
+            dialog.body.add(ColorPicker.view(ui, color) { color = it }, top = 8)
             dialog.buttons(
                 listOf(
                     DialogButton(getString(if (existing == null) R.string.folder_create else R.string.folder_rename_save)) {
@@ -470,7 +473,7 @@ class MainActivity : Activity() {
                             name.requestFocus()
                             false
                         } else {
-                            saveFolder(existing, text, icon)
+                            saveFolder(existing, text, icon, color)
                         }
                     },
                     DialogButton(getString(R.string.dialog_cancel), ButtonStyle.TEXT),
@@ -481,14 +484,14 @@ class MainActivity : Activity() {
         name.requestFocus()
     }
 
-    private fun saveFolder(existing: Folder?, name: String, icon: String): Boolean {
+    private fun saveFolder(existing: Folder?, name: String, icon: String, color: Int): Boolean {
         try {
             if (existing == null) {
-                ShortcutRepository.saveFolder(this, Folder(ShortcutRepository.newId(), name, currentFolderId, icon = icon))
+                ShortcutRepository.saveFolder(this, Folder(ShortcutRepository.newId(), name, currentFolderId, icon = icon, color = color))
             } else {
                 // Use the stored copy, in case it was moved meanwhile.
                 val latest = ShortcutRepository.findFolder(this, existing.id) ?: existing
-                ShortcutRepository.saveFolder(this, latest.copy(name = name, icon = icon))
+                ShortcutRepository.saveFolder(this, latest.copy(name = name, icon = icon, color = color))
             }
         } catch (e: Exception) {
             Log.w(TAG, "Could not save folder", e)

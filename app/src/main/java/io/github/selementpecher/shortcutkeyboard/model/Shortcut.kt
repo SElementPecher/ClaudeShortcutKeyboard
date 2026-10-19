@@ -55,6 +55,7 @@ data class Shortcut(
     /** Position among its neighbours (lowest first). */
     override val order: Int = 0,
     override val icon: String = "",
+    override val color: Int = -1,
 ) : Node {
     fun variable(name: String): VariableDef? {
         val key = VariableDef.keyOf(name)

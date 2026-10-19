@@ -12,6 +12,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.selementpecher.shortcutkeyboard.look.TileColors
+import io.github.selementpecher.shortcutkeyboard.look.folderColors
 import io.github.selementpecher.shortcutkeyboard.look.tileColorsFor
 
 /** What a tile looks like. */
@@ -19,6 +20,8 @@ internal data class TileLook(
     val kind: Kind,
     /** For [Kind.SHORTCUT]: the shortcut's id, which picks a stable colour. */
     val colourKey: String = "",
+    /** For shortcuts and folders: the colour the owner picked (0–15), or −1 to let the Look choose. */
+    val custom: Int = -1,
     /** For [Kind.ANSWER]: which of the Look's tile colours. */
     val colourIndex: Int = 0,
     /** A ring round the tile: it would take the dragged tile. */
@@ -175,8 +178,8 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
     private fun coloursFor(l: TileLook): TileColors {
         val p = theme.palette
         return when (l.kind) {
-            TileLook.Kind.SHORTCUT -> p.tileColorsFor(l.colourKey)
-            TileLook.Kind.FOLDER -> p.folder
+            TileLook.Kind.SHORTCUT -> p.tileColorsFor(l.colourKey, l.custom)
+            TileLook.Kind.FOLDER -> p.folderColors(l.custom)
             TileLook.Kind.ANSWER ->
                 if (l.selected) TileColors(p.accent, p.onAccent) else p.tiles[Math.floorMod(l.colourIndex, p.tiles.size)]
             TileLook.Kind.OK -> TileColors(p.accent, p.onAccent)

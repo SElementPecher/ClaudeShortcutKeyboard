@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cheat_title">Cheat sheet</string>
+    <string name="cheat_intro">When you make a shortcut, you tap the words that change. For each one you pick a kind. This is what each kind does.</string>
+    <string name="cheat_open_button">Cheat sheet: what each kind does</string>
+    <string name="cheat_open_link">What can each kind do?</string>
+    <string name="cheat_settings_title">Cheat sheet</string>
+    <string name="cheat_settings_help">What each kind of changing word can do.</string>
+
+    <string name="cheat_label_keyboard">On the keyboard</string>
+    <string name="cheat_label_good_for">Good for</string>
+    <string name="cheat_label_example">Example</string>
+
+    <!-- A list of answers -->
+    <string name="cheat_list_name">A list of answers</string>
+    <string name="cheat_list_keyboard_1">Your answers are tiles. Tap one.</string>
+    <string name="cheat_list_keyboard_2">The one you used last is first, with a ★.</string>
+    <string name="cheat_list_keyboard_3">Need a new answer? Tap “+ New”, type it in the app, then go back to your message.</string>
+    <string name="cheat_list_good_for">Names, medicines, doses, places.</string>
+    <string name="cheat_list_example">Who? Sam or Alex</string>
+
+    <!-- A time -->
+    <string name="cheat_time_name">A time</string>
+    <string name="cheat_time_keyboard_1">Tiles: Now (with the time), 15 min ago, 30 min ago, 1 hour ago.</string>
+    <string name="cheat_time_keyboard_2">“Other” lets you move the time, 5 minutes or 1 hour at a time.</string>
+    <string name="cheat_time_keyboard_3">A later time: tap a second time in your message, like 00:20. Choose “4 hours after When”. The keyboard works it out for you, even past midnight.</string>
+    <string name="cheat_time_good_for">When a medicine was given. When you will arrive.</string>
+    <string name="cheat_time_example">Given at 20:20. Next dose not before 00:20.</string>
+
+    <!-- A date -->
+    <string name="cheat_date_name">A date</string>
+    <string name="cheat_date_keyboard_1">Tiles: Today, Yesterday, Tomorrow.</string>
+    <string name="cheat_date_keyboard_2">“Other” moves the date one day at a time.</string>
+    <string name="cheat_date_good_for">Appointments. The day something happened.</string>
+    <string name="cheat_date_example">Appointment on 19 Oct 2026</string>
+
+    <!-- A number -->
+    <string name="cheat_number_name">A number</string>
+    <string name="cheat_number_keyboard_1">A number pad, with a dot for things like 2.5.</string>
+    <string name="cheat_number_keyboard_2">It remembers the last number you used.</string>
+    <string name="cheat_number_keyboard_3">Only the number changes. Words next to it stay, like the “ml” in 5ml.</string>
+    <string name="cheat_number_good_for">Amounts and counts.</string>
+    <string name="cheat_number_example">How many? 5, then “ml” stays</string>
+
+    <!-- Words that do not change -->
+    <string name="cheat_plain_name">Words you do not tap</string>
+    <string name="cheat_plain_text">They stay exactly as you wrote them, every time.</string>
+
+    <string name="cheat_tips_title">Good to know</string>
+    <string name="cheat_tip_1">The name you give each changing word is the question the keyboard asks. Keep it short, like “Who?” or “When?”.</string>
+    <string name="cheat_tip_2">You can change a shortcut any time. Open it and tap “Change the answers”.</string>
+    <string name="cheat_tip_3">Nothing to change in a message? That is fine. The keyboard just adds it.</string>
+</resources>

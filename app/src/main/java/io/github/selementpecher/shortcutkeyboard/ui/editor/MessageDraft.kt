@@ -301,7 +301,7 @@ data class MessageDraft(
      * The shortcut to save. [id], [parentId], [order] and [icon] are carried through; only the
      * changing words that are still in the message are kept, in the order they appear.
      */
-    fun toShortcut(id: String, name: String, parentId: String? = null, order: Int = 0, icon: String = ""): Shortcut {
+    fun toShortcut(id: String, name: String, parentId: String? = null, order: Int = 0, icon: String = "", color: Int = -1): Shortcut {
         val template = StringBuilder()
         for (segment in segments) {
             when (segment) {
@@ -321,6 +321,7 @@ data class MessageDraft(
             parentId = parentId,
             order = order,
             icon = icon,
+            color = color,
         )
     }
 

@@ -34,6 +34,11 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".ui.CheatSheetActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.SettingsActivity" />
+
+        <activity
             android:name=".ui.AddOptionActivity"
             android:exported="false"
             android:excludeFromRecents="true"

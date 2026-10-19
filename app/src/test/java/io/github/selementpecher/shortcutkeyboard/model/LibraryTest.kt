@@ -143,4 +143,14 @@ class LibraryTest {
     fun `repaired leaves a good library alone`() {
         assertEquals(library, library.repaired())
     }
+
+    @Test
+    fun `moving and editing keep the colour and picture`() {
+        val lib = library.withFolder(Folder("kids", "Kids", null, 0, icon = "🧒", color = 3))
+            .withShortcut(shortcut("giddy", "calpol", 0).copy(icon = "💊", color = 9))
+        val moved = lib.moved("giddy", "other", 0)!!
+        assertEquals(9, moved.shortcut("giddy")!!.color)
+        assertEquals("💊", moved.shortcut("giddy")!!.icon)
+        assertEquals(3, lib.moved("kids", "other", 0)?.folder("kids")?.color ?: 3)
+    }
 }

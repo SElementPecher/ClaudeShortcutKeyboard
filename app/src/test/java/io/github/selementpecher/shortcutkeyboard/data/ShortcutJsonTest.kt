@@ -210,6 +210,18 @@ class ShortcutJsonTest {
     }
 
     @Test
+    fun `tile colours and pictures survive a round trip and old files default to automatic`() {
+        val lib = Library(
+            folders = listOf(Folder("f", "F", icon = "💊", color = 7)),
+            shortcuts = listOf(empty.copy(icon = "⏰", color = 15)),
+        )
+        val back = ShortcutJson.libraryFromJson(ShortcutJson.toJson(lib))
+        assertEquals(7, back.folders.single().color)
+        assertEquals(15, back.shortcuts.single().color)
+        assertEquals(-1, ShortcutJson.libraryFromJson("""{"shortcuts":[{"id":"a","template":"x"}]}""").shortcuts.single().color)
+    }
+
+    @Test
     fun `an old file without folders loads at the top level`() {
         val old = """{"version":1,"shortcuts":[{"id":"a","name":"A","trigger":"/a","template":"Hi"}]}"""
         val loaded = ShortcutJson.libraryFromJson(old)

@@ -83,6 +83,12 @@ Choose **Shortcut Keyboard**. Your normal keyboard comes back by itself after yo
 
 No curly brackets to type. The app does that part for you.
 
+## Colours and pictures
+
+- Give any **shortcut** or **folder** a **picture** and a **colour**.
+- Choose from **16 colours**, or leave it on **Automatic colour**.
+- For a folder: press and hold it, then tap **Rename**. For a shortcut: open it, on the first step.
+
 ## Pick a look
 
 Open **Settings** (the ⚙ at the top of the app) and choose **Look**:

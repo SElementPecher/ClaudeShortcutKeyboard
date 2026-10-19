@@ -32,6 +32,8 @@ class Palette(
     /** Colours for shortcut tiles; a shortcut always gets the same one (see [tileColorsFor]). */
     val tiles: List<TileColors>,
     val folder: TileColors,
+    /** The 16 colours an owner can pick for a tile (see [tileColorsFor]). */
+    val swatches: List<TileColors>,
 )
 
 /** Rounded corners and lines, in dp. */
@@ -73,8 +75,15 @@ class Look(
     }
 }
 
-/** A tile's colours, always the same for the same [key] (a shortcut's id). */
-fun Palette.tileColorsFor(key: String): TileColors {
+/** How many colours an owner can pick from. */
+const val SWATCH_COUNT = Swatches.COUNT
+
+/**
+ * A tile's colours. If the owner picked one ([color] 0–15) it is that swatch; otherwise (−1) it is
+ * always the same colour for the same [key] (a shortcut's id).
+ */
+fun Palette.tileColorsFor(key: String, color: Int = -1): TileColors {
+    swatches.getOrNull(color)?.let { return it }
     // Not String.hashCode alone: spread it so neighbouring ids do not share a colour so often.
     val spread = (key.hashCode().toLong() * 2654435761L) ushr 8
     return tiles[(spread % tiles.size).toInt().let { if (it < 0) it + tiles.size else it }]
@@ -84,6 +93,9 @@ fun Palette.tileColorsFor(key: String): TileColors {
 fun typefaceOf(weight: Int): Typeface =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) Typeface.create(Typeface.DEFAULT, weight, false)
     else Typeface.create(Typeface.DEFAULT, if (weight >= 600) Typeface.BOLD else Typeface.NORMAL)
+
+/** A folder's colours: the owner's pick if there is one, otherwise the Look's folder colour. */
+fun Palette.folderColors(color: Int = -1): TileColors = swatches.getOrNull(color) ?: folder
 
 private fun c(hex: Long) = (0xFF000000L or hex).toInt()
 private fun t(bg: Long, fg: Long) = TileColors(c(bg), c(fg))
@@ -105,6 +117,7 @@ object Looks {
                 t(0xF8D5D5, 0x5A1E1E), t(0xDDD6F5, 0x2F2563), t(0xFBDCC4, 0x5C2E0E),
             ),
             folder = t(0xE6DFCF, 0x3A3426),
+            swatches = Swatches.build(Swatches.Style.CALM_LIGHT),
         ),
         dark = Palette(
             bg = c(0x15181D), surface = c(0x1F242B), surfaceAlt = c(0x2A3038),
@@ -115,6 +128,7 @@ object Looks {
                 t(0x5E2E2E, 0xFADCDC), t(0x3F3870, 0xE4DFFA), t(0x62391C, 0xFDE6D2),
             ),
             folder = t(0x3A3528, 0xEDE6D4),
+            swatches = Swatches.build(Swatches.Style.CALM_DARK),
         ),
         shape = Shape(tileRadiusDp = 24, cardRadiusDp = 24, buttonRadiusDp = 999, strokeDp = 0f, elevationDp = 2f),
         type = Type(titleSp = 28f, headingSp = 20f, bodySp = 17f, smallSp = 14f, tileSp = 19f, tileWeight = 600, headingWeight = 700),
@@ -137,6 +151,7 @@ object Looks {
                 t(0x3DD9F2, 0x00181D), t(0xB69CFF, 0x150A3A), t(0xFF7AC6, 0x2B0A1C),
             ),
             folder = t(0x0B0C10, 0xFFFFFF),
+            swatches = Swatches.build(Swatches.Style.BOLD),
         ),
         dark = Palette(
             bg = c(0x0B0C10), surface = c(0x16181F), surfaceAlt = c(0x22252E),
@@ -147,6 +162,7 @@ object Looks {
                 t(0x3DD9F2, 0x00181D), t(0xB69CFF, 0x150A3A), t(0xFF7AC6, 0x2B0A1C),
             ),
             folder = t(0x2A2D38, 0xFFFFFF),
+            swatches = Swatches.build(Swatches.Style.BOLD),
         ),
         shape = Shape(tileRadiusDp = 20, cardRadiusDp = 20, buttonRadiusDp = 16, strokeDp = 0f, elevationDp = 0f),
         type = Type(titleSp = 32f, headingSp = 22f, bodySp = 18f, smallSp = 15f, tileSp = 21f, tileWeight = 800, headingWeight = 800),
@@ -169,6 +185,7 @@ object Looks {
                 t(0xFDE8EC, 0x111827), t(0xEFE9FE, 0x111827), t(0xE0F4F4, 0x111827),
             ),
             folder = t(0xEEF0F3, 0x111827),
+            swatches = Swatches.build(Swatches.Style.SQUARES_LIGHT),
         ),
         dark = Palette(
             bg = c(0x0F1115), surface = c(0x181B21), surfaceAlt = c(0x20242B),
@@ -179,6 +196,7 @@ object Looks {
                 t(0x44212B, 0xF3F4F6), t(0x2E2650, 0xF3F4F6), t(0x173B3B, 0xF3F4F6),
             ),
             folder = t(0x262A32, 0xF3F4F6),
+            swatches = Swatches.build(Swatches.Style.SQUARES_DARK),
         ),
         shape = Shape(tileRadiusDp = 14, cardRadiusDp = 14, buttonRadiusDp = 12, strokeDp = 1.5f, elevationDp = 0f),
         type = Type(titleSp = 24f, headingSp = 18f, bodySp = 16f, smallSp = 13f, tileSp = 14f, tileWeight = 500, headingWeight = 600),

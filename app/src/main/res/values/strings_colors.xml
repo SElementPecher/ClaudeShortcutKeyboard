@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="color_label">Colour</string>
+    <string name="color_auto">Automatic colour</string>
+    <string name="color_auto_chosen">✓ Automatic colour</string>
+    <string name="color_chosen">%1$s, chosen</string>
+    <string-array name="color_names">
+        <item>Red</item>
+        <item>Orange</item>
+        <item>Amber</item>
+        <item>Yellow</item>
+        <item>Lime</item>
+        <item>Green</item>
+        <item>Mint</item>
+        <item>Teal</item>
+        <item>Cyan</item>
+        <item>Sky</item>
+        <item>Blue</item>
+        <item>Indigo</item>
+        <item>Violet</item>
+        <item>Magenta</item>
+        <item>Pink</item>
+        <item>Slate</item>
+    </string-array>
+</resources>
