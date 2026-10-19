@@ -451,7 +451,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
         if (spec == null) return ChipStyle("", ref.shown, colours.bg, colours.fg, ring)
         val provisional = open != null && index == pending && (open.flow.preview() as? ChipPreview.Blank)?.named == false
         val label = when {
-            provisional -> getString(EditorText.kindName(spec.kind))
+            provisional -> spec.question.ifBlank { getString(EditorText.kindName(spec.kind)) }
             ref.offsetMinutes != 0L -> EditorText.referenceLabel(this, spec.question, ref.offsetMinutes)
             spec.fixed -> ref.shown
             else -> spec.question
