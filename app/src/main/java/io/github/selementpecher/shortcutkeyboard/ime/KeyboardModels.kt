@@ -41,12 +41,13 @@ internal sealed interface StepBody {
         val onNext: () -> Unit,
     ) : StepBody
 
-    /** The number pad. */
+    /** The number pad. With [relative] it is the "Other" screen of a "how long" question: digits only, plus unit tiles. */
     class Number(
         val value: String,
         val onKey: (Char) -> Unit,
         val onBackspace: () -> Unit,
         val onOk: () -> Unit,
+        val relative: RelativeEntry? = null,
     ) : StepBody
 
     /** A big value with nudge buttons and OK (the "Other" time and date screens). */
@@ -57,6 +58,18 @@ internal sealed interface StepBody {
         val ok: TileSpec,
     ) : StepBody
 }
+
+/**
+ * What the "Other" screen adds to the number pad: the Mins / Hours / Days tiles, the amount typed as it
+ * will print (shown big and live), and whether OK may be pressed yet.
+ */
+internal class RelativeEntry(
+    val units: List<TileSpec>,
+    val result: String,
+    /** The typed amount on its own ("30 mins"), for when [result] shows only the clock time. */
+    val typed: String?,
+    val okEnabled: Boolean,
+)
 
 /** The last screen: the finished message and the Add button. */
 internal class CheckModel(

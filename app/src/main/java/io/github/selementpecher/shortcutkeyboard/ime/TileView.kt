@@ -209,7 +209,7 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
         nameView.setTextSize(TypedValue.COMPLEX_UNIT_SP, shownSp)
         val centred = mode != Mode.BESIDE
         nameView.gravity = if (centred) Gravity.CENTER_HORIZONTAL else Gravity.START
-        nameView.maxLines = if (!picture && spec.look.kind == TileLook.Kind.SPECIAL) 1 else 2
+        nameView.maxLines = if (!picture && (spec.look.kind == TileLook.Kind.SPECIAL || spec.look.kind == TileLook.Kind.OK)) 1 else 2
 
         val showSub = !spec.subtitle.isNullOrEmpty()
         subtitleWanted = showSub

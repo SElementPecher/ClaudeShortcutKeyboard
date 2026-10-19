@@ -24,12 +24,15 @@ import io.github.selementpecher.shortcutkeyboard.model.Folder
 import io.github.selementpecher.shortcutkeyboard.model.Library
 import io.github.selementpecher.shortcutkeyboard.model.Node
 import io.github.selementpecher.shortcutkeyboard.model.Shortcut
+import io.github.selementpecher.shortcutkeyboard.model.RelativeShow
 import io.github.selementpecher.shortcutkeyboard.model.VariableDef
 import io.github.selementpecher.shortcutkeyboard.model.VariableType
+import io.github.selementpecher.shortcutkeyboard.template.RelativeUnit
 import io.github.selementpecher.shortcutkeyboard.template.Template
 import io.github.selementpecher.shortcutkeyboard.ui.AddOptionActivity
 import io.github.selementpecher.shortcutkeyboard.ui.MainActivity
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.util.Locale
 
@@ -60,6 +63,7 @@ class ShortcutKeyboardService : InputMethodService() {
     private var answerPage = 0
     private var otherOpen = false
     private var number: NumberEntry? = null
+    private var amountEntry: AmountEntry? = null
     private var pending: PendingFill? = null
     private var swallowBackUp = false
 
@@ -370,6 +374,7 @@ class ShortcutKeyboardService : InputMethodService() {
         answerPage = 0
         otherOpen = false
         number = null
+        amountEntry = null
     }
 
     private fun showQuestion() {
@@ -382,8 +387,8 @@ class ShortcutKeyboardService : InputMethodService() {
             VariableType.TIME -> if (otherOpen) timeAdjustBody(current, variable) else timeBody(current, variable)
             VariableType.DATE -> if (otherOpen) dateAdjustBody(current, variable) else dateBody(current, variable)
             VariableType.NUMBER -> numberBody(current, variable)
-            // Placeholder until the "how long" screens exist: show the saved amounts as a list.
-            VariableType.TIME_AHEAD, VariableType.TIME_AGO -> answersBody(current, variable)
+            VariableType.TIME_AHEAD, VariableType.TIME_AGO ->
+                if (otherOpen) amountOtherBody(current, variable) else amountBody(current, variable)
         }
         view.showStep(
             StepModel(
@@ -402,7 +407,7 @@ class ShortcutKeyboardService : InputMethodService() {
         val name = variable.name.trim().replaceFirstChar { it.titlecase(locale()) }
         return getString(
             when (variable.type) {
-                VariableType.TIME -> R.string.kb_question_time
+                VariableType.TIME, VariableType.TIME_AHEAD, VariableType.TIME_AGO -> R.string.kb_question_time
                 VariableType.DATE -> R.string.kb_question_date
                 VariableType.NUMBER -> R.string.kb_question_number
                 else -> R.string.kb_question
@@ -439,6 +444,85 @@ class ShortcutKeyboardService : InputMethodService() {
             hint = if (answers.isEmpty()) getString(R.string.kb_add_first_answer) else null,
             onPrevious = { flipAnswerPage(-1) },
             onNext = { flipAnswerPage(1) },
+        )
+    }
+
+    /** "How long" question: the owner's amounts (last used first), then Other. */
+    private fun amountBody(current: FillSession, variable: VariableDef): StepBody {
+        val choices = RelativeChoices.build(variable, LocalDateTime.now(), locale())
+        val entries: List<AmountChoice?> = choices + null
+        answerPage = GridPaging.clampPage(answerPage, entries.size)
+        val firstOnPage = GridPaging.globalIndex(answerPage, 0)
+        val tiles = GridPaging.pageItems(entries, answerPage).mapIndexed { slot, choice ->
+            if (choice == null) {
+                TileSpec(
+                    getString(R.string.kb_amount_other),
+                    TileLook(TileLook.Kind.SPECIAL),
+                    onClick = {
+                        amountEntry = AmountEntry(RelativeChoices.startUnit(variable))
+                        otherOpen = true
+                        showQuestion()
+                    },
+                )
+            } else {
+                val said = listOfNotNull(choice.label, choice.subtitle).joinToString(", ")
+                TileSpec(
+                    label = choice.label,
+                    look = TileLook(TileLook.Kind.ANSWER, colourIndex = firstOnPage + slot, selected = choice.isLast),
+                    glyph = if (choice.isLast) LAST_ANSWER_GLYPH else null,
+                    subtitle = choice.subtitle,
+                    description = if (choice.isLast) getString(R.string.kb_desc_last_answer, said) else said,
+                    onClick = {
+                        current.setValue(variable, choice.amount.text())
+                        advance()
+                    },
+                )
+            }
+        }
+        return StepBody.Tiles(
+            tiles = tiles,
+            page = answerPage,
+            pageCount = GridPaging.pageCount(entries.size),
+            hint = null,
+            onPrevious = { flipAnswerPage(-1) },
+            onNext = { flipAnswerPage(1) },
+        )
+    }
+
+    /** "Other": type a number, pick Mins / Hours / Days, see what the message will say. */
+    private fun amountOtherBody(current: FillSession, variable: VariableDef): StepBody {
+        val entry = amountEntry ?: AmountEntry(RelativeChoices.startUnit(variable)).also { amountEntry = it }
+        val amount = entry.amount
+        val printed = amount?.let { RelativeChoices.printed(variable, it, LocalDateTime.now(), locale()) }
+        val units = listOf(
+            RelativeUnit.MINS to R.string.kb_unit_mins,
+            RelativeUnit.HOURS to R.string.kb_unit_hours,
+            RelativeUnit.DAYS to R.string.kb_unit_days,
+        ).map { (unit, label) ->
+            TileSpec(
+                label = getString(label),
+                look = TileLook(if (unit == entry.unit) TileLook.Kind.OK else TileLook.Kind.SPECIAL),
+                textSp = UNIT_SP,
+                onClick = { entry.selectUnit(unit); showQuestion() },
+            )
+        }
+        val placeholder = if (variable.show == RelativeShow.CLOCK) PLACEHOLDER else "$PLACEHOLDER ${entry.unit.plural}"
+        return StepBody.Number(
+            value = entry.digits,
+            onKey = { key -> entry.press(key); showQuestion() },
+            onBackspace = { entry.backspace(); showQuestion() },
+            onOk = {
+                if (amount != null) {
+                    current.setValue(variable, amount.text())
+                    advance()
+                }
+            },
+            relative = RelativeEntry(
+                units = units,
+                result = printed ?: placeholder,
+                typed = if (variable.show == RelativeShow.CLOCK) (amount?.text() ?: entry.unit.plural) else null,
+                okEnabled = amount != null,
+            ),
         )
     }
 
@@ -736,6 +820,8 @@ class ShortcutKeyboardService : InputMethodService() {
         private const val TAG = "ShortcutKeyboard"
 
         private const val LAST_ANSWER_GLYPH = "★"
+        private const val UNIT_SP = 20f
+        private const val PLACEHOLDER = "–"
 
         /** Android 15, where apps (and keyboards) are always drawn edge to edge. */
         private const val VERSION_EDGE_TO_EDGE = 35

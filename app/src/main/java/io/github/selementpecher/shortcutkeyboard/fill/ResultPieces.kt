@@ -1,5 +1,6 @@
 package io.github.selementpecher.shortcutkeyboard.fill
 
+import io.github.selementpecher.shortcutkeyboard.model.VariableType
 import io.github.selementpecher.shortcutkeyboard.template.Template
 import java.time.LocalDateTime
 import java.util.Locale
@@ -22,20 +23,20 @@ data class ResultPiece(val text: String, val blank: Int = FIXED) {
  * which parts change. Plain Kotlin, no Android types.
  *
  * Joined together the pieces read exactly like [FillSession.result] (blanks with no value are left out).
+ * Values come from [FillSession.printedValues], so fixed and "how long" blanks print as the message does.
  */
 object ResultPieces {
 
     fun of(session: FillSession, now: LocalDateTime = LocalDateTime.now(), locale: Locale = Locale.getDefault()): List<ResultPiece> {
-        val values = HashMap<String, String>()
-        for (variable in session.variables) session.valueOf(variable)?.let { values[variable.key] = it }
-        val types = session.variables.associate { it.key to it.type }
-        return of(session.template, values, types, now, locale)
+        // Every changing part as it is printed, fixed "how long" ones included (they are not steps).
+        val types = FillSession.resolveVariables(session.shortcut, session.template).associate { it.key to it.type }
+        return of(session.template, session.printedValues(), types, now, locale)
     }
 
     fun of(
         template: Template,
         values: Map<String, String>,
-        types: Map<String, io.github.selementpecher.shortcutkeyboard.model.VariableType>,
+        types: Map<String, VariableType>,
         now: LocalDateTime,
         locale: Locale,
     ): List<ResultPiece> {

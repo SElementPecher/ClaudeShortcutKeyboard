@@ -2,17 +2,36 @@ package io.github.selementpecher.shortcutkeyboard.ui.editor
 
 import io.github.selementpecher.shortcutkeyboard.ui.ShortcutDraft
 
-/** The four kinds of changing word the owner can choose from. */
+/**
+ * The kinds of changing part. The owner picks one of four ([topLevel]); "A time" then opens a second
+ * choice, which is where [TIME_AHEAD] ("from now") and [TIME_AGO] come from.
+ */
 enum class BlankKind(val glyph: String) {
-    /** Pick from a list of answers. */
+    /** Pick one of a few answers. */
     LIST("☰"),
+
+    /** A clock time, starting at the time now. */
     TIME("🕒"),
     DATE("📅"),
     NUMBER("🔢"),
+
+    /** "How long from now": the keyboard works out the clock time. */
+    TIME_AHEAD("🕒"),
+
+    /** "How long ago". */
+    TIME_AGO("🕒");
+
+    /** True for the two "how long" kinds. */
+    val isRelative: Boolean get() = this == TIME_AHEAD || this == TIME_AGO
+
+    companion object {
+        /** The four kinds the owner chooses between. */
+        val topLevel: List<BlankKind> = listOf(LIST, TIME, DATE, NUMBER)
+    }
 }
 
 /**
- * The question a changing word asks, which is also the name the keyboard stores it under.
+ * The question a changing part asks, which is also the name the keyboard stores it under.
  * Plain Kotlin, no Android types.
  */
 object BlankQuestions {
@@ -24,6 +43,7 @@ object BlankQuestions {
         BlankKind.TIME -> listOf("When", "What time")
         BlankKind.DATE -> listOf("Date", "What day")
         BlankKind.NUMBER -> listOf("How many", "How much")
+        BlankKind.TIME_AHEAD, BlankKind.TIME_AGO -> listOf("How long", "When")
     }
 
     fun default(kind: BlankKind): String = suggestions(kind).first()

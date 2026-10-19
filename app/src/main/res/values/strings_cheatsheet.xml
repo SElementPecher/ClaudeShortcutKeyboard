@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="cheat_title">Cheat sheet</string>
-    <string name="cheat_intro">When you make a shortcut, you tap the words that change. For each one you pick a kind. This is what each kind does.</string>
+    <string name="cheat_intro">Type your message like you would send it. Where a word should change, tap “Add something that changes” and pick a kind. This is what each kind does.</string>
     <string name="cheat_open_button">What each kind does</string>
     <string name="cheat_open_link">What can each kind do?</string>
     <string name="cheat_settings_title">Cheat sheet</string>
@@ -23,9 +23,25 @@
     <string name="cheat_time_name">A time</string>
     <string name="cheat_time_keyboard_1">Tiles: Now (with the time), 15 min ago, 30 min ago, 1 hour ago.</string>
     <string name="cheat_time_keyboard_2">“Other” lets you move the time, 5 minutes or 1 hour at a time.</string>
-    <string name="cheat_time_keyboard_3">A later time: tap a second time in your message, like 00:20. Choose “4 hours after When”. The keyboard works it out for you, even past midnight.</string>
+    <string name="cheat_time_keyboard_3">A later time: add a time, then choose “After another time”. For example “4 hours after When”. The keyboard works it out, even past midnight.</string>
     <string name="cheat_time_good_for">When a medicine was given. When you will arrive.</string>
     <string name="cheat_time_example">Given at 20:20. Next dose not before 00:20.</string>
+
+    <!-- A length of time from now -->
+    <string name="cheat_ahead_name">A time from now</string>
+    <string name="cheat_ahead_keyboard_1">Pick “A time”, then “From now”, then Mins, Hours or Days, then type a number, like 10.</string>
+    <string name="cheat_ahead_keyboard_2">One amount: it is always used and the keyboard never asks.</string>
+    <string name="cheat_ahead_keyboard_3">Two or more amounts: the keyboard shows them as tiles, plus “Other”.</string>
+    <string name="cheat_ahead_keyboard_4">You choose what the message shows: the amount (10 mins), the time (20:35), or both (10 mins (20:35)).</string>
+    <string name="cheat_ahead_good_for">“Be there in…”. “Back at…”. A next dose.</string>
+    <string name="cheat_ahead_example">Be there in 10 mins. Or: Be there at 20:35.</string>
+
+    <!-- A length of time ago -->
+    <string name="cheat_ago_name">A time ago</string>
+    <string name="cheat_ago_keyboard_1">The same steps as “From now”, but it counts back from now.</string>
+    <string name="cheat_ago_keyboard_2">Show the amount (20 mins), the time it was (20:00), or both.</string>
+    <string name="cheat_ago_good_for">“Given…”. “It started…”.</string>
+    <string name="cheat_ago_example">Given 20 mins ago. Or: Given at 20:00.</string>
 
     <!-- A date -->
     <string name="cheat_date_name">A date</string>
@@ -43,11 +59,11 @@
     <string name="cheat_number_example">How many? 5, then “ml” stays</string>
 
     <!-- Words that do not change -->
-    <string name="cheat_plain_name">Words you do not tap</string>
-    <string name="cheat_plain_text">They stay exactly as you wrote them, every time.</string>
+    <string name="cheat_plain_name">Words you type</string>
+    <string name="cheat_plain_text">Everything you type stays exactly as you wrote it, every time. Only the chips change.</string>
 
     <string name="cheat_tips_title">Good to know</string>
-    <string name="cheat_tip_1">The name you give each changing word is the question the keyboard asks. Keep it short, like “Who?” or “When?”.</string>
-    <string name="cheat_tip_2">You can change a shortcut any time. Open it and tap “Change the answers”.</string>
+    <string name="cheat_tip_1">The name you give a changing part is the question the keyboard asks. Keep it short, like “Who?” or “When?”.</string>
+    <string name="cheat_tip_2">You can change a shortcut any time. Open it and tap “Edit words” or “Edit answers”.</string>
     <string name="cheat_tip_3">Nothing to change in a message? That is fine. The keyboard just adds it.</string>
 </resources>

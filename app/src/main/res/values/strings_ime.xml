@@ -53,6 +53,12 @@
     <string name="kb_minutes_later">+ 5 min</string>
     <string name="kb_later">Later: %1$s</string>
 
+    <!-- How long (from now / ago) -->
+    <string name="kb_amount_other">🕒 Other</string>
+    <string name="kb_unit_mins">Mins</string>
+    <string name="kb_unit_hours">Hours</string>
+    <string name="kb_unit_days">Days</string>
+
     <!-- Date -->
     <string name="kb_today">Today</string>
     <string name="kb_yesterday">Yesterday</string>

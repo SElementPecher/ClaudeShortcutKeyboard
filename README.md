@@ -72,31 +72,23 @@ Choose **Shortcut Keyboard**. Your normal keyboard comes back by itself after yo
 ## Make a shortcut
 
 1. Open the **Shortcut Keyboard** app.
-2. Tap **＋ New shortcut**.
-3. **Name it.** You can pick a little picture too.
+2. Tap **New shortcut**.
+3. **Name it.** Add a picture and a colour if you like.
 4. **Type your message** like you would send it.
-   For example: *Sam, Calpol, 5ml, 20:20 next dose not before 00:20*
-5. **Tap the words that change.** For each one, pick:
-   **A list of answers**, **A time**, **A date** or **A number**.
-6. Tap a second time (like 00:20) and it offers **"4 hours after When"**.
+5. Where a word should change, tap **＋ Add something that changes**.
+   A chip appears in your message. Pick:
+   - **A list**: answers you tap (names, medicines, doses).
+   - **A time**: a clock time, **From now** (mins, hours, days) or **Ago**.
+   - **A date**, or **A number**.
+6. For a time from now or ago, type the number (like **10**).
+   - **One amount** is always used. The keyboard does not ask.
+   - **More than one amount** shows as tiles on the keyboard.
+   - Choose what the message shows: the **amount** (10 mins), the **time** (20:35) or **both**.
 7. Tap **Save**.
 
+Tap a chip any time to change it or remove it. There is a **cheat sheet** in **Settings**.
+
 No curly brackets to type. The app does that part for you.
-
-## Colours and pictures
-
-- Give any **shortcut** or **folder** a **picture** and a **colour**.
-- Choose from **16 colours**, or leave it on **Automatic colour**.
-- For a folder: press and hold it, then tap **Rename**. For a shortcut: open it, on the first step.
-
-## Text size
-
-In **Settings → Text size** choose **Normal** or **Large**. It changes the app and the keyboard.
-
-## Pick a look
-
-Open **Settings** (the ⚙ at the top of the app) and choose **Look**:
-**Calm**, **Bold** or **Squares**. It changes the app and the keyboard straight away.
 
 ### Folders
 

@@ -1,6 +1,7 @@
 package io.github.selementpecher.shortcutkeyboard.ime
 
 import io.github.selementpecher.shortcutkeyboard.fill.FillSession
+import io.github.selementpecher.shortcutkeyboard.model.RelativeShow
 import io.github.selementpecher.shortcutkeyboard.model.Shortcut
 import io.github.selementpecher.shortcutkeyboard.model.VariableDef
 import io.github.selementpecher.shortcutkeyboard.model.VariableType
@@ -93,5 +94,28 @@ class PendingFillTest {
         val restored = p.restore(latest, Locale.UK)
         assertEquals("Ann only", restored.session.result())
         assertFalse(restored.finished)
+    }
+
+    @Test
+    fun howLongAmountsSurviveAsText() {
+        val sc = Shortcut(
+            "r", "Relative", "{child} in {How long}, wait {Fixed}",
+            listOf(
+                VariableDef("child", options = listOf("Ann")),
+                VariableDef("How long", VariableType.TIME_AHEAD, listOf("5 mins", "1 hour"), show = RelativeShow.BOTH),
+                VariableDef("Fixed", VariableType.TIME_AGO, listOf("10 mins"), fixed = true),
+            ),
+        )
+        val session = FillSession(sc, { now }, Locale.UK)
+        session.setValue(session.variables[1], "1 hour")
+        session.goTo(1)
+        val p = PendingFill.capture(session, "child", listOf("Ann"), nowMs = 0)
+        assertEquals(mapOf("how long" to "1 hour"), p.values)
+        val restored = p.restore(sc, Locale.UK).session
+        assertEquals("1 hour", restored.valueOf(restored.variables[1]))
+        assertEquals(2, restored.variables.size)
+        // The clock part follows the real time when restored, so only check the amount part.
+        assertTrue(restored.printedValues().getValue("how long").startsWith("1 hour ("))
+        assertEquals("10 mins", restored.printedValues()["fixed"])
     }
 }

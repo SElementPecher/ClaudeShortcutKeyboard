@@ -1,5 +1,6 @@
 package io.github.selementpecher.shortcutkeyboard.fill
 
+import io.github.selementpecher.shortcutkeyboard.model.RelativeShow
 import io.github.selementpecher.shortcutkeyboard.model.Shortcut
 import io.github.selementpecher.shortcutkeyboard.model.VariableDef
 import io.github.selementpecher.shortcutkeyboard.model.VariableType
@@ -82,5 +83,32 @@ class ResultPiecesTest {
         val result = pieces(s)
         assertEquals("Use {this} for a", result.joinToString("") { it.text })
         assertEquals(ResultPiece("a", 0), result.last())
+    }
+
+    @Test
+    fun fixedAndAskedHowLongBlanksPrintLikeTheMessage() {
+        val s = session(
+            "Back in {How long}, taken {Ago} ago",
+            VariableDef("How long", VariableType.TIME_AHEAD, listOf("10 mins"), show = RelativeShow.BOTH, fixed = true),
+            VariableDef("Ago", VariableType.TIME_AGO, listOf("5 mins", "15 mins"), show = RelativeShow.CLOCK),
+        )
+        // The fixed blank is not a step, but it still prints and is highlighted.
+        assertEquals(1, s.variables.size)
+        s.setValue(s.variables[0], "15 mins")
+        val result = pieces(s)
+        assertEquals(s.result(), result.joinToString("") { it.text })
+        assertEquals(
+            listOf(
+                ResultPiece("Back in "), ResultPiece("10 mins (20:30)", 0), ResultPiece(", taken "),
+                ResultPiece("20:05", 1), ResultPiece(" ago"),
+            ),
+            result,
+        )
+    }
+
+    @Test
+    fun anUnansweredHowLongBlankIsLeftOut() {
+        val s = session("In {n}!", VariableDef("n", VariableType.TIME_AHEAD, listOf("5 mins", "10 mins")))
+        assertEquals(listOf(ResultPiece("In !")), pieces(s))
     }
 }

@@ -113,6 +113,19 @@ class CheatSheetActivity : Activity() {
                 R.string.cheat_time_good_for, R.string.cheat_time_example,
             ),
             Entry(
+                "⏩", R.string.cheat_ahead_name,
+                listOf(
+                    R.string.cheat_ahead_keyboard_1, R.string.cheat_ahead_keyboard_2,
+                    R.string.cheat_ahead_keyboard_3, R.string.cheat_ahead_keyboard_4,
+                ),
+                R.string.cheat_ahead_good_for, R.string.cheat_ahead_example,
+            ),
+            Entry(
+                "⏪", R.string.cheat_ago_name,
+                listOf(R.string.cheat_ago_keyboard_1, R.string.cheat_ago_keyboard_2),
+                R.string.cheat_ago_good_for, R.string.cheat_ago_example,
+            ),
+            Entry(
                 "📅", R.string.cheat_date_name,
                 listOf(R.string.cheat_date_keyboard_1, R.string.cheat_date_keyboard_2),
                 R.string.cheat_date_good_for, R.string.cheat_date_example,

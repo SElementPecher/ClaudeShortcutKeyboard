@@ -81,11 +81,16 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
     fun showStep(model: StepModel) {
         content.removeAllViews()
         val column = column()
-        val numberValue = (model.body as? StepBody.Number)?.value
+        val numberBody = model.body as? StepBody.Number
+        val numberValue = numberBody?.relative?.result ?: numberBody?.value
         val questionText = if (numberValue != null && compact) "${model.question}  $numberValue" else model.question
 
         column.addView(stepTopBar(model, if (compact) questionText else null), LinearLayout.LayoutParams(MATCH, topBarHeight))
-        if (!compact) column.addView(questionRow(model.question, numberValue), LinearLayout.LayoutParams(MATCH, px(R.dimen.kb_question_height)))
+        if (!compact) {
+            val typed = numberBody?.relative?.typed
+            val rowHeight = px(R.dimen.kb_question_height) + if (typed != null) theme.dp(14) else 0
+            column.addView(questionRow(model.question, numberValue, typed), LinearLayout.LayoutParams(MATCH, rowHeight))
+        }
         when (val body = model.body) {
             is StepBody.Tiles -> addTilesBody(column, body)
             is StepBody.Number -> addNumberBody(column, body)
@@ -336,7 +341,8 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         return top
     }
 
-    private fun questionRow(question: String, value: String?): View {
+    /** The question, and on the number screens the value as typed (for "how long": as it will print, with [typed] under it). */
+    private fun questionRow(question: String, value: String?, typed: String? = null): View {
         val row = row()
         row.addView(
             label(question, look.type.headingSp + 2f, heading = true, gravity = Gravity.CENTER_VERTICAL or Gravity.START),
@@ -345,7 +351,17 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         if (value != null) {
             val shown = label(value, look.type.headingSp + 2f, heading = true, gravity = Gravity.CENTER_VERTICAL or Gravity.END)
             shown.contentDescription = value
-            row.addView(shown, LinearLayout.LayoutParams(WRAP, MATCH))
+            if (typed == null) {
+                row.addView(shown, LinearLayout.LayoutParams(WRAP, MATCH))
+            } else {
+                val stack = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_VERTICAL or Gravity.END }
+                stack.addView(shown, LinearLayout.LayoutParams(WRAP, WRAP))
+                stack.addView(
+                    label(typed, look.type.smallSp, heading = false, gravity = Gravity.END).apply { setTextColor(palette.inkSoft) },
+                    LinearLayout.LayoutParams(WRAP, WRAP),
+                )
+                row.addView(stack, LinearLayout.LayoutParams(WRAP, MATCH))
+            }
         }
         return row
     }
@@ -382,6 +398,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
     }
 
     private fun addNumberBody(column: LinearLayout, body: StepBody.Number) {
+        body.relative?.let { return addAmountBody(column, body, it) }
         val keys = listOf("1", "2", "3", "⌫", "4", "5", "6", ".", "7", "8", "9", "0")
         val pad = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; clipChildren = false }
         for (r in 0 until 3) {
@@ -420,6 +437,58 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
                 addView(pad, LinearLayout.LayoutParams(MATCH, 0, 3f))
                 addView(ok, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { topMargin = gap })
             }
+        }
+        column.addView(holder, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { setMargins(0, gap / 4, 0, gap / 4) })
+    }
+
+    /**
+     * The "Other" screen of a "how long" question. Digits only: three columns of digits, and a fourth with
+     * delete, 0 and OK. The Mins / Hours / Days tiles go in a row above (portrait) or a column beside (short screens).
+     */
+    private fun addAmountBody(column: LinearLayout, body: StepBody.Number, relative: RelativeEntry) {
+        fun key(label: String, desc: String = label, onClick: () -> Unit) = TileView(context, theme).also {
+            it.bind(TileSpec(label, TileLook(TileLook.Kind.SPECIAL), description = desc, textSp = PAD_SP, onClick = onClick))
+        }
+        val ok = TileView(context, theme).also {
+            it.bind(
+                TileSpec(
+                    getString(R.string.kb_ok), TileLook(TileLook.Kind.OK), icon = Icons.Kind.CHECK, enabled = relative.okEnabled,
+                    textSp = OK_SP, onClick = body.onOk,
+                ),
+            )
+        }
+        val cells = listOf(
+            key("1") { body.onKey('1') }, key("2") { body.onKey('2') }, key("3") { body.onKey('3') },
+            key("⌫", getString(R.string.kb_desc_delete_digit), body.onBackspace),
+            key("4") { body.onKey('4') }, key("5") { body.onKey('5') }, key("6") { body.onKey('6') },
+            key("0") { body.onKey('0') },
+            key("7") { body.onKey('7') }, key("8") { body.onKey('8') }, key("9") { body.onKey('9') },
+            ok,
+        )
+        val pad = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; clipChildren = false }
+        for (r in 0 until 3) {
+            val line = row().apply { clipChildren = false }
+            for (c in 0 until 4) {
+                // The OK tile is a little wider than the keys, so it reads as the way forward.
+                val weight = if (c == 3) 1.5f else 1f
+                line.addView(cells[r * 4 + c], LinearLayout.LayoutParams(0, MATCH, weight).apply { if (c > 0) marginStart = gap })
+            }
+            pad.addView(line, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { if (r > 0) topMargin = gap })
+        }
+        val unitViews = relative.units.map { spec -> TileView(context, theme).also { it.bind(spec) } }
+        val holder = LinearLayout(context).apply { clipChildren = false }
+        if (compact) {
+            holder.orientation = LinearLayout.HORIZONTAL
+            holder.addView(pad, LinearLayout.LayoutParams(0, MATCH, 4f))
+            val units = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; clipChildren = false }
+            unitViews.forEachIndexed { i, v -> units.addView(v, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { if (i > 0) topMargin = gap }) }
+            holder.addView(units, LinearLayout.LayoutParams(0, MATCH, 1.4f).apply { marginStart = gap })
+        } else {
+            holder.orientation = LinearLayout.VERTICAL
+            val units = row().apply { clipChildren = false }
+            unitViews.forEachIndexed { i, v -> units.addView(v, LinearLayout.LayoutParams(0, MATCH, 1f).apply { if (i > 0) marginStart = gap }) }
+            holder.addView(units, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { bottomMargin = gap })
+            holder.addView(pad, LinearLayout.LayoutParams(MATCH, 0, 3.3f))
         }
         column.addView(holder, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { setMargins(0, gap / 4, 0, gap / 4) })
     }
@@ -508,6 +577,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         private const val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
         private const val MAX_DOTS = 10
         private const val PAD_SP = 26f
+        private const val OK_SP = 20f
         private const val SMALL_TITLE_SP = 15f
         private const val EMPTY_EMOJI_SP = 40f
         private const val READING_LINE_SPACING = 1.3f
