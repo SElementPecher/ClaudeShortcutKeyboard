@@ -442,11 +442,14 @@ internal class ChainPanel(
         val presets = if (isDate) QuickChoices.presets(VariableType.DATE) else QuickChoices.presets(VariableType.TIME)
 
         // A pill with a small sign at its end: − (tap to take out) or + (tap to add).
-        fun pill(text: String, sign: String, selected: Boolean, onClick: (() -> Unit)?): TextView {
+        // Now / Today (and whatever is picked first) get a soft tint of the accent colour, a little different from the rest.
+        fun pill(text: String, sign: String, tinted: Boolean, onClick: (() -> Unit)?): TextView {
             val shown = android.text.SpannableString("$text  $sign").apply {
                 setSpan(android.text.style.RelativeSizeSpan(1.3f), length - 1, length, 0)
             }
-            return chip(shown, selected = selected, onClick = onClick)
+            return chip(shown, onClick = onClick).apply {
+                if (tinted) background = rippled(shape((palette.accent and 0x00FFFFFF) or (0x40 shl 24), 999f), 999f)
+            }
         }
         fun cell(view: View, span: Int = 1) = LinearLayout.LayoutParams(0, dp(52), span.toFloat())
 
@@ -455,7 +458,7 @@ internal class ChainPanel(
         val odd = QuickChoices.firstIsWide(chosen.size)
         var rowView: LinearLayout? = null
         chosen.forEachIndexed { i, value ->
-            val pill = pill(name(value), "−", value == QuickChoices.default(chosen)) {
+            val pill = pill(name(value), "−", value == 0L || value == QuickChoices.default(chosen)) {
                 if (chosen.size > 1) {
                     flow.toggleQuick(value)
                     render()
@@ -483,7 +486,7 @@ internal class ChainPanel(
             val line = row()
             pair.forEachIndexed { c, value ->
                 val used = value in chosen
-                val pill = if (used) pill(name(value), "✓", false, null) else pill(name(value), "+", false) {
+                val pill = if (used) pill(name(value), "✓", value == 0L, null) else pill(name(value), "+", value == 0L) {
                     flow.toggleQuick(value)
                     render()
                 }
