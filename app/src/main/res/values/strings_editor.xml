@@ -4,7 +4,6 @@
     <string name="editor_title_new">New shortcut</string>
     <string name="editor_title_change">Change shortcut</string>
     <string name="editor_step_of">Step %1$d of %2$d</string>
-    <string name="editor_back">Back</string>
     <string name="editor_next">Next</string>
     <string name="editor_cancel">Cancel</string>
     <string name="editor_ok">OK</string>
@@ -15,7 +14,6 @@
     <string name="editor_name_help">Give it a short name. Tap the circle to add a picture.</string>
     <string name="editor_name_hint">Medicine given</string>
     <string name="editor_name_error">Please give it a name.</string>
-    <string name="editor_picture">Picture</string>
     <string name="editor_picture_desc">Choose a picture</string>
 
     <!-- Step 2: the message -->
@@ -27,7 +25,6 @@
     <string name="editor_add">Add something that changes</string>
     <string name="editor_chip_later">%1$s + %2$s</string>
     <string name="editor_chip_earlier">%1$s − %2$s</string>
-    <string name="editor_chip_desc">%1$s. Tap to change.</string>
     <string name="editor_message_desc">Your message. Coloured parts change each time.</string>
     <plurals name="editor_days">
         <item quantity="one">%d day</item>

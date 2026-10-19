@@ -465,7 +465,7 @@ internal class ChainPanel(
 
     private fun editExtras() = with(ui) {
         view.add(textButton(str(R.string.chain_make_plain)) { listener.onMakePlain() }, top = 20)
-        view.add(dangerButton(str(R.string.chain_remove), Icons.Kind.TRASH) { listener.onRemove() }, top = 0)
+        view.add(dangerButton(str(R.string.chain_remove)) { listener.onRemove() }, top = 0)
     }
 
     // ---- big tiles ----

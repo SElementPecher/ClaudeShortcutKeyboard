@@ -58,7 +58,6 @@
 
     <!-- The question and the answers -->
     <string name="chain_title_question">What will the keyboard ask?</string>
-    <string name="chain_question_hint">Or write your own question</string>
     <string name="chain_title_answers">What are the answers?</string>
     <string name="chain_answers_help">The keyboard shows them as buttons.</string>
     <string name="chain_answer_hint">An answer</string>
