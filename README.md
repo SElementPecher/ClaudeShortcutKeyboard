@@ -92,7 +92,7 @@ No curly brackets to type. The app does that part for you.
 
 - In the app, tap **+ New folder**. Folders can go **inside** folders.
 - Press and **hold** a row for **Rename**, **Move to…** or **Delete**.
-- Deleting a folder does **not** delete what is inside. It moves up one level.
+- Deleting a folder **deletes everything inside it** too. You are asked first.
 
 ### Use a quiKey
 
@@ -116,7 +116,7 @@ to move it up a folder. Let go without moving to see the menu (edit, move, delet
 
 1. In the app, tap the **✓** at the top right (or press and hold a tile and choose **Select several**).
 2. Tap the tiles you want. A tick shows on each one. **Select all** picks everything on the screen.
-3. Tap **Delete**, then confirm. Anything inside a deleted folder that you did not pick moves up a level.
+3. Tap **Delete**, then confirm. A deleted folder takes everything inside it too.
 
 The keyboard **remembers** your answers. New answers are added to the list for next time.
 

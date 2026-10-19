@@ -52,7 +52,7 @@
     <string name="move_here">%1$s (here)</string>
     <string name="move_failed">It could not be moved there.</string>
     <string name="folder_delete_title">Delete the folder “%1$s”?</string>
-    <string name="folder_delete_message">Everything inside moves up one level.</string>
+    <string name="folder_delete_message">Everything inside it is deleted too. This cannot be undone.</string>
     <string name="folder_deleted">Folder deleted</string>
     <string name="shortcut_deleted">Deleted</string>
 
@@ -157,7 +157,7 @@
         <item quantity="other">Delete %d items?</item>
     </plurals>
     <string name="delete_many_message">This cannot be undone.</string>
-    <string name="delete_many_message_folders">This cannot be undone. Anything inside a deleted folder that you did not select moves up one level.</string>
+    <string name="delete_many_message_folders">This cannot be undone. A deleted folder takes everything inside it too.</string>
     <plurals name="deleted_many">
         <item quantity="one">%d item deleted</item>
         <item quantity="other">%d items deleted</item>

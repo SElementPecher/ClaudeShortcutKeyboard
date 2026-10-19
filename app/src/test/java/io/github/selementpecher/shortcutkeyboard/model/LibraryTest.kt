@@ -119,19 +119,21 @@ class LibraryTest {
     }
 
     @Test
-    fun `deleting a folder moves what was inside up one level`() {
+    fun `deleting a folder deletes what was inside`() {
         val without = library.withoutFolder("calpol")
         assertNull(without.folder("calpol"))
-        assertEquals(listOf("giddy", "zippy"), ids("meds", without))
-        assertEquals(setOf("giddy", "zippy", "thinking", "late"), without.shortcuts.map { it.id }.toSet())
+        assertNull(without.shortcut("giddy"))
+        assertNull(without.shortcut("zippy"))
+        assertEquals(setOf("thinking", "late"), without.shortcuts.map { it.id }.toSet())
+        assertEquals(listOf("meds", "other"), ids("kids", without))
     }
 
     @Test
-    fun `deleting a top level folder moves its contents to the top level`() {
+    fun `deleting a top level folder deletes every folder and shortcut inside`() {
         val without = library.withoutFolder("kids")
-        assertEquals(setOf("meds", "other", "late"), ids(null, without).toSet())
-        assertEquals(listOf("meds", "calpol"), without.path("calpol").map { it.id }.drop(0))
-        assertNotNull(without.folder("calpol"))
+        assertEquals(listOf("late"), ids(null, without))
+        assertEquals(emptyList<String>(), without.folders.map { it.id })
+        assertEquals(listOf("late"), without.shortcuts.map { it.id })
     }
 
     @Test
@@ -158,17 +160,18 @@ class LibraryTest {
     fun `withoutAll removes shortcuts and folders in one go`() {
         val without = library.withoutAll(setOf("giddy", "other", "late", "nothing"))
         assertEquals(listOf("zippy"), ids("calpol", without))
-        // "other" is gone and its shortcut moved up into Kids.
-        assertEquals(listOf("meds", "thinking"), ids("kids", without))
-        assertTrue(without.shortcut("late") == null)
+        // "other" went with its shortcut.
+        assertEquals(listOf("meds"), ids("kids", without))
+        assertNull(without.shortcut("thinking"))
+        assertNull(without.shortcut("late"))
     }
 
     @Test
-    fun `withoutAll takes a folder and everything chosen inside it`() {
-        val without = library.withoutAll(setOf("calpol", "giddy", "zippy"))
-        assertTrue(ids("meds", without).isEmpty())
+    fun `withoutAll takes a folder and everything inside it`() {
+        val without = library.withoutAll(setOf("meds"))
+        assertEquals(listOf("other"), ids("kids", without))
+        assertNull(without.folder("calpol"))
         assertNull(without.shortcut("giddy"))
-        assertNull(without.shortcut("zippy"))
     }
 
     @Test

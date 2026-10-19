@@ -58,7 +58,7 @@ object ShortcutRepository {
     /** Deletes several shortcuts and folders in one go (one save). */
     fun deleteMany(context: Context, ids: Set<String>) = update(context) { it.withoutAll(ids) }
 
-    /** Deletes a folder. What was inside moves up one level. */
+    /** Deletes a folder and everything inside it. */
     fun deleteFolder(context: Context, id: String) = update(context) { it.withoutFolder(id) }
 
     /** Moves a tile to [newParentId] (null = top level) at [index]. Returns false if that is not allowed. */

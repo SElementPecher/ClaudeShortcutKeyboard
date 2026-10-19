@@ -85,16 +85,23 @@ data class Library(
         return Library(folders + newFolders, shortcuts + newShortcuts).repaired()
     }
 
-    /** Removes every shortcut and folder in [ids]. A folder's contents that are not in [ids] move up one level. */
+    /** Removes every shortcut and folder in [ids]. A folder takes everything inside it with it. */
     fun withoutAll(ids: Set<String>): Library =
         ids.fold(this) { lib, id -> if (lib.folder(id) != null) lib.withoutFolder(id) else lib.withoutShortcut(id) }
 
-    /** Removes a folder. What was inside moves up into the folder's own parent, so nothing is lost. */
+    /** Removes a folder and everything inside it: its shortcuts, its folders, and what those hold. */
     fun withoutFolder(id: String): Library {
-        val removed = folder(id) ?: return this
-        val moved = children(id)
-        val without = copy(folders = folders.filterNot { it.id == id })
-        return moved.fold(without) { lib, node -> lib.moved(node.id, removed.parentId, Int.MAX_VALUE) ?: lib }
+        if (folder(id) == null) return this
+        val goneFolders = LinkedHashSet<String>()
+        fun collect(folderId: String) {
+            if (!goneFolders.add(folderId)) return
+            folders.filter { it.parentId == folderId }.forEach { collect(it.id) }
+        }
+        collect(id)
+        return Library(
+            folders = folders.filterNot { it.id in goneFolders },
+            shortcuts = shortcuts.filterNot { it.parentId in goneFolders },
+        )
     }
 
     /**
