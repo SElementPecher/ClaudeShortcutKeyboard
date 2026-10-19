@@ -3,26 +3,28 @@ package io.github.selementpecher.shortcutkeyboard.ime
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
-import android.text.SpannableStringBuilder
-import android.text.Spanned
 import android.text.TextUtils
-import android.text.style.ForegroundColorSpan
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
+import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import io.github.selementpecher.shortcutkeyboard.R
+import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.Look
 
 /**
  * The whole keyboard: one fixed-height area that shows the grid, a question, or the check screen,
  * plus the ghost tile that follows the finger while dragging. Everything is laid out in code
  * from the current [Look].
+ *
+ * Quiet chrome: icon buttons have no box, page and question progress are little dots, and
+ * colour is kept for the tiles and the one main button on each screen.
  */
 internal class KeyboardView(context: Context, private val compact: Boolean, val look: Look) : FrameLayout(context) {
 
@@ -32,6 +34,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
     private val ghost = TileView(context, theme).apply { visibility = GONE }
     private val rootPosition = IntArray(2)
     private var gridScreen: GridScreen? = null
+    private var shownKey: String? = null
 
     var gridDragCallbacks: TileGrid.DragCallbacks? = null
         set(value) {
@@ -39,9 +42,11 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
             gridScreen?.grid?.dragCallbacks = value
         }
 
-    private val topBarHeight = px(R.dimen.kb_top_bar_height)
+    // With big text the bars get a little taller too, so titles are never cut.
+    private val barExtra = theme.dp(minOf(KeyboardMetrics.panelHeightDp(0, theme.combinedScale) / 2, MAX_BAR_EXTRA_DP))
+    private val topBarHeight = px(R.dimen.kb_top_bar_height) + barExtra
     private val stripHeight = px(if (compact) R.dimen.kb_strip_height_compact else R.dimen.kb_strip_height)
-    private val buttonWidth = px(R.dimen.kb_button_width)
+    private val iconSize = px(R.dimen.kb_icon_button)
     private val gap = theme.dp(TileGrid.TILE_GAP_DP)
     private val padding = px(R.dimen.kb_padding)
 
@@ -50,7 +55,8 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         setBackgroundColor(palette.bg)
         clipChildren = false
         content.clipChildren = false
-        val height = px(if (compact) R.dimen.kb_panel_height_compact else R.dimen.kb_panel_height)
+        val base = px(if (compact) R.dimen.kb_panel_height_compact else R.dimen.kb_panel_height)
+        val height = base + theme.dp(KeyboardMetrics.panelHeightDp(0, theme.combinedScale))
         addView(content, LayoutParams(LayoutParams.MATCH_PARENT, height))
         addView(ghost, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
         setBottomPadding(0, 0, 0)
@@ -66,9 +72,10 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         }
         if (screen.root.parent !== content) {
             content.removeAllViews()
-            content.addView(screen.root, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+            content.addView(screen.root, LayoutParams(MATCH, MATCH))
         }
         screen.bind(model)
+        reveal("grid:${model.pathText}:${model.page}:${model.isEmpty}")
     }
 
     fun showStep(model: StepModel) {
@@ -85,62 +92,97 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
             is StepBody.Adjust -> addAdjustBody(column, body)
         }
         content.addView(column, LayoutParams(MATCH, MATCH))
+        val page = (model.body as? StepBody.Tiles)?.page ?: 0
+        reveal("step:${model.step}:${model.body::class.simpleName}:$page")
     }
 
     fun showCheck(model: CheckModel) {
         content.removeAllViews()
         val column = column()
-        val top = row()
-        top.addView(buttonTile("◀", getString(R.string.kb_desc_back), model.onBack), LinearLayout.LayoutParams(buttonWidth, MATCH))
-        top.addView(
-            label(model.shortcutName, 17f, heading = true, gravity = Gravity.CENTER),
-            LinearLayout.LayoutParams(0, MATCH, 1f).apply { setMargins(gap, 0, gap, 0) },
+        val bar = row()
+        bar.addView(iconButton(Icons.Kind.BACK, R.string.kb_desc_back, model.onBack), iconParams(start = -padding))
+        bar.addView(
+            label(model.shortcutName, SMALL_TITLE_SP, heading = true, gravity = Gravity.CENTER).apply { setTextColor(palette.inkSoft) },
+            LinearLayout.LayoutParams(0, MATCH, 1f),
         )
-        top.addView(buttonTile("✕", getString(R.string.kb_desc_close), model.onCancel), LinearLayout.LayoutParams(buttonWidth, MATCH))
-        column.addView(top, LinearLayout.LayoutParams(MATCH, topBarHeight))
+        bar.addView(iconButton(Icons.Kind.CLOSE, R.string.kb_desc_close, model.onCancel), iconParams(end = -padding))
+        column.addView(bar, LinearLayout.LayoutParams(MATCH, topBarHeight))
 
-        val card = ScrollView(context).apply {
+        // The message sits in a card as tall as the message itself; what changes is highlighted.
+        val plain = model.pieces.joinToString("") { it.text }
+        val message = TextView(context).apply {
+            text = ResultSpans.build(model.pieces, palette.tiles, theme.dp(7).toFloat(), theme.dp(4).toFloat(), theme.dp(2).toFloat())
+            gravity = Gravity.START
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, theme.sp(look.type.bodySp + if (compact) 1f else 4f))
+            setTextColor(palette.ink)
+            typeface = theme.bodyTypeface
+            letterSpacing = KeyboardTheme.LETTER_SPACING
+            setLineSpacing(0f, READING_LINE_SPACING)
+            setPadding(theme.dp(20), theme.dp(if (compact) 12 else 18), theme.dp(20), theme.dp(if (compact) 12 else 18))
+            contentDescription = plain
+        }
+        val card = FrameLayout(context).apply {
             background = GradientDrawable().apply {
                 cornerRadius = theme.cardRadius
                 setColor(palette.surface)
                 if (theme.strokePx > 0) setStroke(theme.strokePx, palette.outline)
             }
             if (theme.elevationPx > 0f) elevation = theme.elevationPx
-            isFillViewport = true
-            clipToOutline = true
+            addView(message, LayoutParams(MATCH, WRAP))
         }
-        val message = label(model.text, look.type.bodySp + if (compact) 1f else 4f, heading = false, gravity = Gravity.CENTER_VERTICAL or Gravity.START).apply {
-            setTextColor(palette.ink)
-            typeface = theme.nameTypeface
-            maxLines = Int.MAX_VALUE
-            ellipsize = null
-            setLineSpacing(0f, 1.1f)
-            setPadding(padding * 2, padding, padding * 2, padding)
+        val scroll = ScrollView(context).apply {
+            isVerticalScrollBarEnabled = false
+            clipToPadding = false
+            clipChildren = false
+            setPadding(0, theme.dp(4), 0, theme.dp(8))
+            addView(card, ViewGroup.LayoutParams(MATCH, WRAP))
         }
-        card.addView(message, ViewGroup.LayoutParams(MATCH, ViewGroup.LayoutParams.WRAP_CONTENT))
-        card.contentDescription = model.text
-        column.addView(card, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { setMargins(0, gap / 2, 0, gap + gap / 2) })
+        val holder = FrameLayout(context).apply { clipChildren = false }
+        holder.addView(scroll, FrameLayout.LayoutParams(MATCH, WRAP, Gravity.CENTER_VERTICAL))
+        column.addView(holder, LinearLayout.LayoutParams(MATCH, 0, 1f))
 
         val add = TileView(context, theme)
         add.bind(
             TileSpec(
-                getString(R.string.kb_add), TileLook(TileLook.Kind.OK),
-                onClick = model.onAdd, textSp = look.type.headingSp + 3f,
+                getString(R.string.kb_add), TileLook(TileLook.Kind.OK, pill = true),
+                icon = Icons.Kind.CHECK, onClick = model.onAdd, textSp = look.type.headingSp + 3f,
             ),
         )
-        column.addView(add, LinearLayout.LayoutParams(MATCH, px(if (compact) R.dimen.kb_check_tile_height_compact else R.dimen.kb_check_tile_height)))
+        column.addView(add, LinearLayout.LayoutParams(MATCH, px(if (compact) R.dimen.kb_check_tile_height_compact else R.dimen.kb_check_tile_height)).apply { topMargin = gap / 2 })
         content.addView(column, LayoutParams(MATCH, MATCH))
+        reveal("check")
+    }
+
+    /** A short fade-and-rise when a different screen appears (skipped when the phone has animations off). */
+    private fun reveal(key: String) {
+        if (key == shownKey) return
+        shownKey = key
+        content.animate().cancel()
+        if (!theme.animations) {
+            content.alpha = 1f
+            content.translationY = 0f
+            return
+        }
+        content.alpha = 0f
+        content.translationY = theme.dp(6).toFloat()
+        content.animate().alpha(1f).translationY(0f).setDuration(Motion.POP_MS).setInterpolator(DecelerateInterpolator()).start()
     }
 
     // ---- Drag ghost ----
 
+    /** The tile "lifts": a little bigger, nearly solid and with a deep shadow under it. */
     fun showGhost(spec: TileSpec, width: Int, height: Int, rawX: Float, rawY: Float) {
         ghost.layoutParams = LayoutParams(width, height)
         ghost.bind(spec)
-        ghost.alpha = 0.92f
-        ghost.scaleX = 1.06f
-        ghost.scaleY = 1.06f
-        ghost.elevation = theme.dp(10).toFloat()
+        ghost.alpha = 0.95f
+        ghost.scaleX = 1.07f
+        ghost.scaleY = 1.07f
+        ghost.elevation = theme.dp(LIFT_DP).toFloat()
+        ghost.translationZ = theme.dp(LIFT_DP / 2).toFloat()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            ghost.outlineSpotShadowColor = SHADOW_COLOUR
+            ghost.outlineAmbientShadowColor = SHADOW_COLOUR
+        }
         ghost.visibility = VISIBLE
         moveGhost(rawX, rawY)
     }
@@ -165,89 +207,96 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
     private inner class GridScreen {
         val root = column()
         val grid = TileGrid(context, theme)
-        private val backTile = TileView(context, theme)
+        private val back = iconButton(Icons.Kind.BACK, R.string.kb_desc_up) { onBack() }
         private val title = label("", look.type.headingSp, heading = true, gravity = Gravity.CENTER_VERTICAL or Gravity.START)
-        private val pageText = label("", look.type.smallSp, heading = false, gravity = Gravity.CENTER).apply { setTextColor(palette.inkSoft) }
+        private val settings = iconButton(Icons.Kind.GEAR, R.string.kb_desc_open_app) { onSettings() }
         private val abc = TileView(context, theme)
-        private val previous = TileView(context, theme)
-        private val next = TileView(context, theme)
-        private val settings = TileView(context, theme)
+        private val dots = DotsView(context, theme)
+        private val previous = iconButton(Icons.Kind.BACK, R.string.kb_desc_prev_page) { onPrevious() }
+        private val next = iconButton(Icons.Kind.FORWARD, R.string.kb_desc_next_page) { onNext() }
+        private val emptyEmoji = label(getString(R.string.kb_empty_emoji), EMPTY_EMOJI_SP, heading = false, gravity = Gravity.CENTER)
         private val emptyTitle = label(getString(R.string.kb_empty_title), look.type.headingSp, heading = true, gravity = Gravity.CENTER)
         private val emptyHint = label(getString(R.string.kb_empty_hint), look.type.bodySp, heading = false, gravity = Gravity.CENTER)
             .apply { setTextColor(palette.inkSoft); maxLines = 2 }
         private val emptyNew = TileView(context, theme)
         private val emptyBox = LinearLayout(context)
         private val backPosition = IntArray(2)
+        private var model: GridModel? = null
+
+        private fun onBack() = model?.onBack?.invoke()
+        private fun onSettings() = model?.onSettings?.invoke()
+        private fun onPrevious() = model?.onPrevious?.invoke()
+        private fun onNext() = model?.onNext?.invoke()
 
         init {
             val top = row()
-            top.addView(backTile, LinearLayout.LayoutParams(buttonWidth, MATCH).apply { marginEnd = gap })
-            top.addView(title, LinearLayout.LayoutParams(0, MATCH, 1f).apply { marginStart = theme.dp(4) })
-            top.addView(pageText, LinearLayout.LayoutParams(WRAP, MATCH).apply { marginStart = gap })
-            top.addView(settings, LinearLayout.LayoutParams(buttonWidth, MATCH).apply { marginStart = gap })
+            top.addView(back, iconParams(start = -padding))
+            top.addView(title, LinearLayout.LayoutParams(0, MATCH, 1f))
+            top.addView(settings, iconParams(end = -padding))
             title.ellipsize = TextUtils.TruncateAt.START
             title.isSingleLine = true
             root.addView(top, LinearLayout.LayoutParams(MATCH, topBarHeight))
 
             val (columns, rows) = KeyboardMetrics.gridShape(look, compact)
             grid.setLayoutShape(columns, rows)
-            grid.isOverBack = { x, y -> isOver(backTile, x, y) }
+            grid.isOverBack = { x, y -> isOver(back, x, y) }
 
             emptyBox.orientation = LinearLayout.VERTICAL
             emptyBox.gravity = Gravity.CENTER
-            emptyBox.addView(emptyTitle, LinearLayout.LayoutParams(MATCH, WRAP))
+            if (!compact) emptyBox.addView(emptyEmoji, LinearLayout.LayoutParams(MATCH, WRAP))
+            emptyBox.addView(emptyTitle, LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = theme.dp(2) })
             emptyBox.addView(emptyHint, LinearLayout.LayoutParams(MATCH, WRAP).apply { topMargin = theme.dp(2) })
-            emptyBox.addView(emptyNew, LinearLayout.LayoutParams(MATCH, px(R.dimen.kb_check_tile_height)).apply { topMargin = theme.dp(12) })
+            emptyBox.addView(emptyNew, LinearLayout.LayoutParams(MATCH, px(R.dimen.kb_check_tile_height)).apply { topMargin = theme.dp(14) })
 
             val body = FrameLayout(context).apply { clipChildren = false }
             body.addView(grid, FrameLayout.LayoutParams(MATCH, MATCH))
             body.addView(emptyBox, FrameLayout.LayoutParams(MATCH, MATCH))
-            root.addView(body, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { setMargins(0, gap / 2, 0, gap / 2) })
+            root.addView(body, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { setMargins(0, gap / 4, 0, gap / 4) })
 
             val strip = row()
-            strip.addView(abc, LinearLayout.LayoutParams(0, MATCH, 3f))
-            strip.addView(previous, LinearLayout.LayoutParams(0, MATCH, 1f).apply { marginStart = gap })
-            strip.addView(next, LinearLayout.LayoutParams(0, MATCH, 1f).apply { marginStart = gap })
+            abc.minimumWidth = theme.dp(ABC_MIN_WIDTH_DP)
+            strip.addView(abc, LinearLayout.LayoutParams(WRAP, MATCH))
+            strip.addView(dots, LinearLayout.LayoutParams(0, MATCH, 1f))
+            strip.addView(previous, iconParams())
+            strip.addView(next, iconParams(end = -theme.dp(8)))
             root.addView(strip, LinearLayout.LayoutParams(MATCH, stripHeight))
         }
 
         fun bind(model: GridModel) {
-            backTile.visibility = if (model.inFolder) VISIBLE else GONE
-            backTile.bind(
-                TileSpec("◀", TileLook(TileLook.Kind.SPECIAL, highlighted = model.backHighlighted),
-                    description = getString(R.string.kb_desc_up), onClick = model.onBack),
-            )
+            this.model = model
+            back.visibility = if (model.inFolder) VISIBLE else GONE
+            back.setHighlighted(model.backHighlighted)
+            (title.layoutParams as LinearLayout.LayoutParams).marginStart = if (model.inFolder) -theme.dp(4) else 0
             title.text = if (model.inFolder) model.pathText else getString(R.string.kb_title)
             title.contentDescription = title.text
             val paged = model.pageCount > 1
-            pageText.visibility = if (paged) VISIBLE else GONE
-            pageText.text = getString(R.string.kb_page_indicator, model.page + 1, model.pageCount)
 
             grid.visibility = if (model.isEmpty) INVISIBLE else VISIBLE
             emptyBox.visibility = if (model.isEmpty) VISIBLE else GONE
             grid.bind(if (model.isEmpty) emptyList() else model.tiles)
             if (model.isEmpty) {
                 emptyNew.bind(
-                    TileSpec(getString(R.string.kb_new_big), TileLook(TileLook.Kind.NEW),
-                        description = getString(R.string.kb_desc_new_shortcut), onClick = model.onSettings),
+                    TileSpec(
+                        getString(R.string.kb_new_big), TileLook(TileLook.Kind.OK, pill = true),
+                        description = getString(R.string.kb_desc_new_shortcut), icon = Icons.Kind.PLUS,
+                        textSp = look.type.headingSp, onClick = model.onSettings,
+                    ),
                 )
             }
 
             abc.bind(
-                TileSpec(getString(R.string.kb_abc), TileLook(TileLook.Kind.SPECIAL), getString(R.string.kb_desc_abc), onClick = model.onAbc),
+                TileSpec(
+                    getString(R.string.kb_abc), TileLook(TileLook.Kind.SPECIAL, pill = true), getString(R.string.kb_desc_abc),
+                    icon = Icons.Kind.KEYBOARD, textSp = look.type.bodySp, onClick = model.onAbc,
+                ),
             )
+            dots.visibility = if (paged) VISIBLE else INVISIBLE
+            dots.set(model.pageCount, model.page)
+            dots.contentDescription = getString(R.string.kb_desc_page, model.page + 1, model.pageCount)
             previous.visibility = if (paged) VISIBLE else GONE
             next.visibility = if (paged) VISIBLE else GONE
-            previous.bind(
-                TileSpec("◀", TileLook(TileLook.Kind.SPECIAL), getString(R.string.kb_desc_prev_page), enabled = model.page > 0, onClick = model.onPrevious),
-            )
-            next.bind(
-                TileSpec("▶", TileLook(TileLook.Kind.SPECIAL), getString(R.string.kb_desc_next_page), enabled = model.page < model.pageCount - 1, onClick = model.onNext),
-            )
-            // The settings button lives at the right end of the top bar, well away from the system's switcher icons.
-            settings.bind(
-                TileSpec("⚙", TileLook(TileLook.Kind.SPECIAL), getString(R.string.kb_desc_open_app), textSp = 20f, onClick = model.onSettings),
-            )
+            previous.setActive(model.page > 0)
+            next.setActive(model.page < model.pageCount - 1)
         }
 
         private fun isOver(view: View, rawX: Float, rawY: Float): Boolean {
@@ -262,45 +311,41 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
 
     private fun stepTopBar(model: StepModel, compactTitle: String?): View {
         val top = row()
-        top.addView(buttonTile("◀", getString(R.string.kb_desc_back), model.onBack), LinearLayout.LayoutParams(buttonWidth, MATCH))
+        top.addView(iconButton(Icons.Kind.BACK, R.string.kb_desc_back, model.onBack), iconParams(start = -padding))
         val middle = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER }
-        val dots = label(dotsText(model.step, model.steps), look.type.smallSp, heading = false, gravity = Gravity.CENTER)
         if (compactTitle != null) {
-            middle.addView(label(compactTitle, look.type.bodySp, heading = true, gravity = Gravity.CENTER), LinearLayout.LayoutParams(MATCH, 0, 1f))
+            middle.addView(label(compactTitle, look.type.bodySp, heading = true, gravity = Gravity.CENTER), LinearLayout.LayoutParams(MATCH, WRAP))
         } else {
-            middle.addView(label(model.shortcutName, look.type.bodySp, heading = true, gravity = Gravity.CENTER), LinearLayout.LayoutParams(MATCH, WRAP))
+            middle.addView(
+                label(model.shortcutName, SMALL_TITLE_SP, heading = true, gravity = Gravity.CENTER).apply { setTextColor(palette.inkSoft) },
+                LinearLayout.LayoutParams(MATCH, WRAP),
+            )
         }
-        middle.addView(dots, LinearLayout.LayoutParams(MATCH, WRAP))
+        if (model.steps <= MAX_DOTS) {
+            val dots = DotsView(context, theme).also { it.set(model.steps, model.step, cumulative = true) }
+            middle.addView(dots, LinearLayout.LayoutParams(MATCH, WRAP))
+        } else {
+            middle.addView(
+                label("${model.step + 1} / ${model.steps}", look.type.smallSp, heading = false, gravity = Gravity.CENTER).apply { setTextColor(palette.inkSoft) },
+                LinearLayout.LayoutParams(MATCH, WRAP),
+            )
+        }
         middle.contentDescription = getString(R.string.kb_desc_step, model.step + 1, model.steps)
-        top.addView(middle, LinearLayout.LayoutParams(0, MATCH, 1f).apply { setMargins(gap, 0, gap, 0) })
-        top.addView(buttonTile("✕", getString(R.string.kb_desc_close), model.onCancel), LinearLayout.LayoutParams(buttonWidth, MATCH))
+        top.addView(middle, LinearLayout.LayoutParams(0, MATCH, 1f))
+        top.addView(iconButton(Icons.Kind.CLOSE, R.string.kb_desc_close, model.onCancel), iconParams(end = -padding))
         return top
-    }
-
-    /** Dots for the steps so far in the accent colour, the rest quiet. */
-    private fun dotsText(step: Int, steps: Int): CharSequence {
-        if (steps > MAX_DOTS) return "${step + 1} / $steps"
-        val text = SpannableStringBuilder()
-        for (i in 0 until steps) {
-            if (i > 0) text.append(' ')
-            val start = text.length
-            text.append(if (i <= step) "●" else "○")
-            val colour = if (i <= step) palette.ink else palette.inkSoft
-            text.setSpan(ForegroundColorSpan(colour), start, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        }
-        return text
     }
 
     private fun questionRow(question: String, value: String?): View {
         val row = row()
         row.addView(
-            label(question, look.type.headingSp + 2f, heading = true, gravity = Gravity.CENTER_VERTICAL or Gravity.START).apply { setPadding(theme.dp(4), 0, 0, 0) },
+            label(question, look.type.headingSp + 2f, heading = true, gravity = Gravity.CENTER_VERTICAL or Gravity.START),
             LinearLayout.LayoutParams(0, MATCH, 1f),
         )
         if (value != null) {
             val shown = label(value, look.type.headingSp + 2f, heading = true, gravity = Gravity.CENTER_VERTICAL or Gravity.END)
             shown.contentDescription = value
-            row.addView(shown, LinearLayout.LayoutParams(WRAP, MATCH).apply { marginEnd = theme.dp(4) })
+            row.addView(shown, LinearLayout.LayoutParams(WRAP, MATCH))
         }
         return row
     }
@@ -308,7 +353,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
     private fun addTilesBody(column: LinearLayout, body: StepBody.Tiles) {
         if (body.hint != null) {
             column.addView(
-                label(body.hint, look.type.bodySp, heading = false, gravity = Gravity.CENTER_VERTICAL).apply { setTextColor(palette.inkSoft); setPadding(theme.dp(4), 0, 0, 0) },
+                label(body.hint, look.type.bodySp, heading = false, gravity = Gravity.CENTER_VERTICAL).apply { setTextColor(palette.inkSoft) },
                 LinearLayout.LayoutParams(MATCH, WRAP),
             )
         }
@@ -316,21 +361,21 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         val (columns, rows) = KeyboardMetrics.gridShape(look, compact)
         grid.setLayoutShape(columns, rows)
         grid.bind(body.tiles)
-        column.addView(grid, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { setMargins(0, gap / 2, 0, gap / 2) })
+        column.addView(grid, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { setMargins(0, gap / 4, 0, gap / 4) })
         if (body.pageCount > 1) {
             val strip = row()
             strip.addView(
-                buttonTile("◀", getString(R.string.kb_desc_prev_page), body.onPrevious, enabled = body.page > 0),
-                LinearLayout.LayoutParams(0, MATCH, 1f),
+                iconButton(Icons.Kind.BACK, R.string.kb_desc_prev_page, body.onPrevious).also { it.setActive(body.page > 0) },
+                iconParams(start = -padding),
             )
+            val dots = DotsView(context, theme).also {
+                it.set(body.pageCount, body.page)
+                it.contentDescription = getString(R.string.kb_desc_page, body.page + 1, body.pageCount)
+            }
+            strip.addView(dots, LinearLayout.LayoutParams(0, MATCH, 1f))
             strip.addView(
-                label(getString(R.string.kb_page_indicator, body.page + 1, body.pageCount), look.type.smallSp, heading = false, gravity = Gravity.CENTER)
-                    .apply { setTextColor(palette.inkSoft) },
-                LinearLayout.LayoutParams(0, MATCH, 1f),
-            )
-            strip.addView(
-                buttonTile("▶", getString(R.string.kb_desc_next_page), body.onNext, enabled = body.page < body.pageCount - 1),
-                LinearLayout.LayoutParams(0, MATCH, 1f),
+                iconButton(Icons.Kind.FORWARD, R.string.kb_desc_next_page, body.onNext).also { it.setActive(body.page < body.pageCount - 1) },
+                iconParams(end = -padding),
             )
             column.addView(strip, LinearLayout.LayoutParams(MATCH, stripHeight))
         }
@@ -359,7 +404,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
             pad.addView(line, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { if (r > 0) topMargin = gap })
         }
         val ok = TileView(context, theme).also {
-            it.bind(TileSpec(getString(R.string.kb_ok), TileLook(TileLook.Kind.OK), onClick = body.onOk, textSp = PAD_SP))
+            it.bind(TileSpec(getString(R.string.kb_ok), TileLook(TileLook.Kind.OK, pill = !compact), icon = Icons.Kind.CHECK, onClick = body.onOk, textSp = PAD_SP))
         }
         val holder = if (compact) {
             // Short screen: OK sits beside the pad so every tile stays big.
@@ -376,7 +421,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
                 addView(ok, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { topMargin = gap })
             }
         }
-        column.addView(holder, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { setMargins(0, gap / 2, 0, gap / 2) })
+        column.addView(holder, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { setMargins(0, gap / 4, 0, gap / 4) })
     }
 
     private fun addAdjustBody(column: LinearLayout, body: StepBody.Adjust) {
@@ -395,8 +440,8 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         body.buttons.forEachIndexed { i, spec ->
             buttons.addView(TileView(context, theme).also { it.bind(spec) }, LinearLayout.LayoutParams(0, MATCH, 1f).apply { if (i > 0) marginStart = gap })
         }
-        column.addView(buttons, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { setMargins(0, gap / 2, 0, gap / 2) })
-        column.addView(TileView(context, theme).also { it.bind(body.ok) }, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { setMargins(0, gap / 2, 0, gap / 2) })
+        column.addView(buttons, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { setMargins(0, gap / 4, 0, gap / 2) })
+        column.addView(TileView(context, theme).also { it.bind(body.ok) }, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { setMargins(0, gap / 4, 0, gap / 4) })
     }
 
     // ---- Small helpers ----
@@ -404,25 +449,32 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
     private fun column() = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
         clipChildren = false
-        setPadding(padding, padding / 2, padding, padding / 2)
+        setPadding(padding, theme.dp(4), padding, theme.dp(4))
     }
 
     private fun row() = LinearLayout(context).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
+        clipChildren = false
     }
 
-    private fun buttonTile(text: String, description: String, onClick: () -> Unit, enabled: Boolean = true): TileView =
-        TileView(context, theme).also {
-            it.bind(TileSpec(text, TileLook(TileLook.Kind.SPECIAL), description, enabled = enabled, onClick = onClick))
-        }
+    private fun iconButton(kind: Icons.Kind, description: Int, onClick: () -> Unit) =
+        IconButton(context, theme, kind, getString(description), onClick)
 
+    /** A 48dp square button slot. Negative margins pull the icon out towards the panel edge, where the eye expects it. */
+    private fun iconParams(start: Int = 0, end: Int = 0) = LinearLayout.LayoutParams(iconSize, iconSize).apply {
+        marginStart = start
+        marginEnd = end
+    }
+
+    /** [sizeSp] is the Look's size; the owner's text size is applied here. */
     private fun label(text: CharSequence, sizeSp: Float, heading: Boolean, gravity: Int): TextView = TextView(context).apply {
         this.text = text
         this.gravity = gravity
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp)
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, theme.sp(sizeSp))
         setTextColor(palette.ink)
         typeface = if (heading) theme.headingTypeface else theme.bodyTypeface
+        letterSpacing = KeyboardTheme.LETTER_SPACING
         maxLines = 1
         ellipsize = TextUtils.TruncateAt.END
     }
@@ -456,5 +508,12 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         private const val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
         private const val MAX_DOTS = 10
         private const val PAD_SP = 26f
+        private const val SMALL_TITLE_SP = 15f
+        private const val EMPTY_EMOJI_SP = 40f
+        private const val READING_LINE_SPACING = 1.3f
+        private const val ABC_MIN_WIDTH_DP = 112
+        private const val MAX_BAR_EXTRA_DP = 12
+        private const val LIFT_DP = 18
+        private const val SHADOW_COLOUR = 0xFF000000.toInt()
     }
 }

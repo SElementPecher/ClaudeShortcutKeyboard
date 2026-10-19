@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Setup card -->
+    <string name="setup_progress">%1$d of %2$d done</string>
+
+    <!-- Short messages at the bottom of the screen -->
+    <string name="move_done">Moved</string>
+    <string name="folder_made">Folder made</string>
+    <string name="folder_saved">Saved</string>
+
+    <!-- Settings: text size -->
+    <string name="settings_text_title">Text size</string>
+    <string name="settings_text_help">Pick the size that is easiest to read. It changes the app and the keyboard.</string>
+    <string name="text_size_normal">Normal</string>
+    <string name="text_size_large">Large</string>
+    <string name="text_size_sample">Sam, Calpol, 5ml, 20:20</string>
+    <string name="text_size_chosen">%1$s text. This one is chosen.</string>
+    <string name="text_size_choose">%1$s text. Tap to use this size.</string>
+</resources>

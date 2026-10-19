@@ -15,10 +15,10 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository
 import io.github.selementpecher.shortcutkeyboard.model.Shortcut
+import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.tileColorsFor
 import io.github.selementpecher.shortcutkeyboard.look.typefaceOf
 import io.github.selementpecher.shortcutkeyboard.ui.editor.BlankKind
@@ -223,10 +223,11 @@ class EditShortcutActivity : Activity() {
             ShortcutRepository.save(this, currentShortcut())
         } catch (e: Exception) {
             Log.w(TAG, "Could not save the shortcut", e)
-            Toast.makeText(this, R.string.editor_save_failed, Toast.LENGTH_LONG).show()
+            screen.snack(getString(R.string.editor_save_failed), error = true)
             return
         }
-        Toast.makeText(this, R.string.editor_saved, Toast.LENGTH_SHORT).show()
+        // This screen closes at once, so the home screen says it.
+        Snackbars.later(getString(R.string.editor_saved))
         finish()
     }
 
@@ -263,10 +264,13 @@ class EditShortcutActivity : Activity() {
         screen.scroll.scrollTo(0, 0)
     }
 
-    /** "Step 2 of 4", only while making a new shortcut. */
-    private fun stepLabel(number: Int) {
+    /** A slim progress bar and "Step 2 of 4" under the title, only while making a new shortcut. */
+    private fun stepHeader(number: Int) {
         if (!isNew) return
-        with(ui) { screen.content.add(label(getString(R.string.editor_step_of, number, 4)), bottom = 6) }
+        with(ui) {
+            screen.content.add(progressBar(number / 4f), top = 12)
+            screen.content.add(label(getString(R.string.editor_step_of, number, 4)), top = 8)
+        }
     }
 
     private fun errorLine(textId: Int, visible: Boolean): TextView = with(ui) {
@@ -278,10 +282,10 @@ class EditShortcutActivity : Activity() {
 
     private fun buildName() {
         val content = screen.content
-        stepLabel(1)
         with(ui) {
             content.add(title(getString(R.string.editor_name_title)))
-            content.add(small(getString(R.string.editor_name_help)), top = 8)
+            stepHeader(1)
+            content.add(small(getString(R.string.editor_name_help)), top = 12)
 
             val line = row()
             val field = field(getString(R.string.editor_name_hint)).apply {
@@ -305,10 +309,10 @@ class EditShortcutActivity : Activity() {
 
     private fun buildMessage() {
         val content = screen.content
-        stepLabel(2)
         with(ui) {
             content.add(title(getString(R.string.editor_message_title)))
-            content.add(small(getString(R.string.editor_message_help)), top = 8)
+            stepHeader(2)
+            content.add(small(getString(R.string.editor_message_help)), top = 12)
             content.add(
                 text(getString(R.string.editor_message_example), look.type.bodySp, 600, palette.ink).apply {
                     setPadding(dp(14), dp(12), dp(14), dp(12))
@@ -328,10 +332,10 @@ class EditShortcutActivity : Activity() {
 
     private fun buildWords() {
         val content = screen.content
-        stepLabel(3)
         with(ui) {
             content.add(title(getString(R.string.editor_words_title)))
-            content.add(body(getString(R.string.editor_words_hint)), top = 10)
+            stepHeader(3)
+            content.add(body(getString(R.string.editor_words_hint)), top = 12)
             content.add(textButton(getString(R.string.cheat_open_link)) {
                 startActivity(android.content.Intent(this@EditShortcutActivity, CheatSheetActivity::class.java))
             }, top = 4)
@@ -446,9 +450,11 @@ class EditShortcutActivity : Activity() {
 
     private fun buildCheck() {
         val content = screen.content
-        stepLabel(4)
         with(ui) {
-            if (isNew) content.add(title(getString(R.string.editor_check_title)))
+            if (isNew) {
+                content.add(title(getString(R.string.editor_check_title)))
+                stepHeader(4)
+            }
 
             // Name and picture: tap to change.
             val nameCard = card(14).apply {
@@ -464,7 +470,10 @@ class EditShortcutActivity : Activity() {
             names.addView(heading(name.ifBlank { getString(R.string.editor_title_new) }).apply { maxLines = 2 })
             names.add(small(getString(R.string.editor_name_row_hint)), top = 2)
             nameCard.addView(names, lp(width = 0, weight = 1f))
-            content.add(nameCard, top = if (isNew) 16 else 0)
+            content.add(nameCard, top = if (isNew) 20 else 0)
+
+            content.add(label(getString(R.string.editor_check_types)), top = 24)
+            content.add(exampleCard(), top = 8)
 
             content.add(label(getString(R.string.editor_check_asks)), top = 24)
             val asks = draft.questions()
@@ -494,32 +503,41 @@ class EditShortcutActivity : Activity() {
                 content.add(card, top = 8)
             }
 
-            content.add(label(getString(R.string.editor_check_types)), top = 24)
-            val example = card(18)
-            example.addView(text(draft.exampleMessage().ifBlank { "…" }, look.type.bodySp + 1, 500, palette.ink).apply { setTextIsSelectable(true) })
-            content.add(example, top = 8)
 
             val problem = errorLine(R.string.editor_message_error, draft.plainText().isBlank())
             content.add(problem)
 
-            val quiet = row()
-            quiet.addView(
-                textButton(getString(R.string.editor_change_words)) { messageText = draft.plainText(); goTo(Step.MESSAGE) },
-                lp(width = 0, weight = 1f, end = 4),
+            content.add(
+                buttonRow(
+                    secondaryButton(getString(R.string.editor_change_words)) { messageText = draft.plainText(); goTo(Step.MESSAGE) },
+                    secondaryButton(getString(R.string.editor_change_answers)) { wordsBack = Step.CHECK; goTo(Step.WORDS) },
+                ),
+                top = 20,
             )
-            quiet.addView(
-                textButton(getString(R.string.editor_change_answers)) { wordsBack = Step.CHECK; goTo(Step.WORDS) },
-                lp(width = 0, weight = 1f, start = 4),
-            )
-            content.add(quiet, top = 12)
             if (!isNew) {
                 content.add(
-                    textButton(getString(R.string.editor_delete)) { confirmDelete() }.also { it.setTextColor(palette.danger) },
+                    dangerButton(getString(R.string.editor_delete), Icons.Kind.TRASH) { confirmDelete() },
                     top = 12,
                 )
             }
             screen.bottomBar.addView(primaryButton(getString(R.string.editor_save)) { save() })
         }
+    }
+
+    /** The example message, with the words that change shown as soft highlights in their question's colour. */
+    private fun exampleCard(): View = with(ui) {
+        val card = card(20)
+        val parts = ExampleParts.of(draft)
+        val shown: CharSequence = if (parts.isEmpty()) "…" else ExampleText.build(
+            parts = parts,
+            colors = palette.tiles,
+            neutral = io.github.selementpecher.shortcutkeyboard.look.TileColors(palette.surfaceAlt, palette.ink),
+            paddingPx = dpf(6f),
+            radiusPx = dpf(8f),
+            verticalPx = dpf(2f),
+        )
+        card.addView(text(shown, look.type.bodySp + 1, 500, palette.ink, 1.45f))
+        card
     }
 
     // ---- small pieces ----

@@ -18,9 +18,10 @@ import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
+import android.widget.ImageView
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository
+import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.LookStore
 import io.github.selementpecher.shortcutkeyboard.look.typefaceOf
 import io.github.selementpecher.shortcutkeyboard.model.Folder
@@ -64,20 +65,14 @@ class MainActivity : Activity() {
         ui = Ui(this, LookStore.current(this))
         currentFolderId = if (savedInstanceState != null) savedInstanceState.getString(STATE_FOLDER) else intent?.getStringExtra(EXTRA_FOLDER_ID)
 
-        val gear = ui.iconButton(UiIcon.Kind.GEAR, getString(R.string.settings_open)) {
+        val gear = ui.iconButton(Icons.Kind.GEAR, getString(R.string.settings_open)) {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
         screen = ui.screen(getString(R.string.app_name), trailing = listOf(gear), large = true, withBottomBar = true)
-        screen.bottomBar.orientation = LinearLayout.HORIZONTAL
         with(ui) {
-            screen.bottomBar.addView(primaryButton(getString(R.string.shortcut_new)) { openEditor(null) }.apply {
-                layoutParams = lp(width = 0, weight = 1f, end = 6)
-                setPadding(dp(10), dp(8), dp(10), dp(8))
-            })
-            screen.bottomBar.addView(secondaryButton(getString(R.string.folder_new)) { askFolder(null) }.apply {
-                layoutParams = lp(width = 0, weight = 1f, start = 6)
-                setPadding(dp(10), dp(8), dp(10), dp(8))
-            })
+            val newShortcut = primaryButton(getString(R.string.shortcut_new)) { openEditor(null) }
+            val newFolder = secondaryButton(getString(R.string.folder_new)) { askFolder(null) }
+            screen.bottomBar.addView(buttonRow(newShortcut, newFolder))
         }
         screen.install(this)
         ShortcutRepository.addListener(repositoryListener)
@@ -117,6 +112,7 @@ class MainActivity : Activity() {
             return
         }
         render()
+        screen.root.post { if (!isDestroyed) screen.showWaitingSnack() }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -157,18 +153,23 @@ class MainActivity : Activity() {
             if (ready) content.add(readyLine()) else content.add(setupCard(enabled))
 
             val folder = library.folder(currentFolderId)
-            if (folder != null) content.add(folderHeader(library, folder), top = 20)
+            if (folder != null) content.add(folderHeader(library, folder), top = 16)
 
             val children = library.children(currentFolderId)
+            screen.showBottomBar(children.isNotEmpty())
             if (children.isEmpty()) {
-                content.add(emptyState(inFolder = folder != null), top = 28)
+                content.add(emptyState(inFolder = folder != null), top = 16)
             } else {
-                val tiles = children.map { tileFor(it, library) }
+                val tiles = children.map { node -> tileFor(node, library).also { if (shownIds.isNotEmpty() && node.id !in shownIds) Motion.pop(it) } }
                 content.add(grid(columns, tiles), top = if (folder != null) 12 else 20)
                 content.add(small(getString(R.string.home_tip)).apply { gravity = Gravity.CENTER }, top = 20)
             }
+            shownIds = children.map { it.id }.toSet()
         }
     }
+
+    /** What was on screen the last time, so only a tile that was just added pops in. */
+    private var shownIds: Set<String> = emptySet()
 
     private fun tileFor(node: Node, library: Library): View {
         val name = node.name.ifBlank { getString(R.string.shortcut_no_name) }
@@ -192,68 +193,68 @@ class MainActivity : Activity() {
         }
     }
 
-    /** The two setup steps, with ticks that update live. */
+    /** The two setup steps with a slim progress bar; only the step to do now has a button. */
     private fun setupCard(enabled: Boolean): View = with(ui) {
         val selected = enabled && KeyboardSetup.isSelected(this@MainActivity)
+        val done = (if (enabled) 1 else 0) + (if (selected) 1 else 0)
         val card = card()
         card.add(heading(getString(R.string.setup_title)))
-        card.add(step(1, getString(R.string.setup_step1), getString(R.string.setup_step1_button), done = enabled, available = true) { openKeyboardSettings() }, top = 16)
-        card.add(step(2, getString(R.string.setup_step2), getString(R.string.setup_step2_button), done = selected, available = enabled) { showKeyboardPicker() }, top = 16)
-        card.add(small(getString(R.string.setup_privacy)), top = 16)
+        card.add(progressBar(done / 2f), top = 14)
+        card.add(small(getString(R.string.setup_progress, done, 2)), top = 8)
+        card.add(step(1, getString(R.string.setup_step1), getString(R.string.setup_step1_button), done = enabled, current = !enabled) { openKeyboardSettings() }, top = 20)
+        card.add(step(2, getString(R.string.setup_step2), getString(R.string.setup_step2_button), done = selected, current = enabled && !selected) { showKeyboardPicker() }, top = 20)
+        card.add(small(getString(R.string.setup_privacy)), top = 20)
         card
     }
 
-    private fun step(number: Int, label: String, buttonText: String, done: Boolean, available: Boolean, onClick: () -> Unit): View = with(ui) {
+    private fun step(number: Int, label: String, buttonText: String, done: Boolean, current: Boolean, onClick: () -> Unit): View = with(ui) {
         val line = row()
-        val badgeFill = if (done) palette.success else if (available) palette.accent else palette.surfaceAlt
+        val badgeFill = if (done) palette.success else if (current) palette.accent else palette.surfaceAlt
         val badge = TextView(this@MainActivity).apply {
-            text = if (done) "✓" else number.toString()
             gravity = Gravity.CENTER
             setTextSize(TypedValue.COMPLEX_UNIT_SP, look.type.bodySp)
             typeface = typefaceOf(700)
-            setTextColor(if (done || available) readableOn(badgeFill) else palette.inkSoft)
-            background = shape(badgeFill, 999f)
             includeFontPadding = false
+            background = shape(badgeFill, 999f)
             layoutParams = LinearLayout.LayoutParams(dp(36), dp(36))
+            if (done) {
+                setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, null, null)
+                foreground = icon(Icons.Kind.CHECK, 22, readableOn(badgeFill)).also { it.setBounds(0, 0, dp(22), dp(22)) }
+                foregroundGravity = Gravity.CENTER
+            } else {
+                text = number.toString()
+                setTextColor(if (current) readableOn(badgeFill) else palette.inkSoft)
+            }
         }
         line.addView(badge)
-        val text = body(label).apply {
+        line.addView(body(label).apply {
             typeface = typefaceOf(600)
             layoutParams = lp(width = 0, weight = 1f, start = 14)
-            if (!available) setTextColor(palette.inkSoft)
-        }
-        line.addView(text)
+            if (!done && !current) setTextColor(palette.inkSoft)
+        })
         val box = column()
         box.contentDescription = getString(if (done) R.string.setup_step_done else R.string.setup_step_todo, label)
         box.addView(line)
-        if (!done) {
-            val button = if (available) primaryButton(buttonText) { onClick() } else secondaryButton(buttonText)
-            if (!available) {
-                button.isEnabled = false
-                button.alpha = 0.5f
-            }
-            box.add(button, top = 10)
-        }
+        if (current) box.add(primaryButton(buttonText) { onClick() }, top = 12)
         box
     }
 
+    /** "✓ Keyboard is ready": small and calm, with the one tip below it. */
     private fun readyLine(): View = with(ui) {
         val box = column().apply {
             val r = look.shape.cardRadiusDp.coerceAtMost(20).toFloat()
-            background = shape(blend(palette.bg, palette.success, 0.14f), r)
+            background = shape(blend(palette.bg, palette.success, 0.12f), r)
             setPadding(dp(16), dp(14), dp(16), dp(14))
         }
         val line = row()
-        line.addView(TextView(this@MainActivity).apply {
-            text = "✓"
-            gravity = Gravity.CENTER
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
-            typeface = typefaceOf(800)
-            setTextColor(readableOn(palette.success))
-            background = shape(palette.success, 999f)
-            includeFontPadding = false
-            layoutParams = LinearLayout.LayoutParams(dp(28), dp(28))
-        })
+        line.addView(
+            ImageView(this@MainActivity).apply {
+                setImageDrawable(icon(Icons.Kind.CHECK, 18, readableOn(palette.success)))
+                scaleType = ImageView.ScaleType.CENTER
+                background = shape(palette.success, 999f)
+            },
+            LinearLayout.LayoutParams(dp(28), dp(28)),
+        )
         line.addView(text(getString(R.string.setup_ready_text), look.type.bodySp, 700, palette.ink).apply {
             layoutParams = lp(width = 0, weight = 1f, start = 12)
         })
@@ -268,24 +269,25 @@ class MainActivity : Activity() {
         val noName = getString(R.string.shortcut_no_name)
         val parentName = library.folder(folder.parentId)?.name?.ifBlank { noName } ?: home
         val line = row()
-        val back = iconButton(UiIcon.Kind.BACK, getString(R.string.action_up_description, parentName)) { goUp() }
-        back.background = rippled(shape(palette.surfaceAlt, 999f), 999f)
-        line.addView(back)
-        line.addView(text(FolderLogic.pathText(library, currentFolderId, home, noName), look.type.bodySp, 700, palette.ink).apply {
+        // A ghost chevron: it lines up with the screen margin, so pull it left by the button's own padding.
+        line.addView(iconButton(Icons.Kind.BACK, getString(R.string.action_up_description, parentName)) { goUp() }, LinearLayout.LayoutParams(dp(48), dp(48)).apply { marginStart = -dp(12) })
+        line.addView(text(FolderLogic.pathText(library, currentFolderId, home, noName), look.type.headingSp, look.type.headingWeight, palette.ink, Ui.HEADING_LINE_SPACING).apply {
             maxLines = 1
             ellipsize = TextUtils.TruncateAt.START
-            layoutParams = lp(width = 0, weight = 1f, start = 12)
+            layoutParams = lp(width = 0, weight = 1f, start = 0)
         })
         line
     }
 
+    /** Nothing here yet: a big picture, one sentence, and one button. */
     private fun emptyState(inFolder: Boolean): View = with(ui) {
-        val box = column().apply { gravity = Gravity.CENTER_HORIZONTAL; setPadding(dp(12), 0, dp(12), 0) }
-        box.add(heading(getString(R.string.home_empty_title)).apply { gravity = Gravity.CENTER })
-        box.add(body(getString(if (inFolder) R.string.folder_empty else R.string.shortcuts_empty)).apply {
-            gravity = Gravity.CENTER
-            setTextColor(palette.inkSoft)
-        }, top = 8)
+        val box = emptyState(
+            if (inFolder) "📂" else "✨",
+            getString(R.string.home_empty_title),
+            getString(if (inFolder) R.string.folder_empty else R.string.shortcuts_empty),
+        )
+        box.add(primaryButton(getString(R.string.shortcut_new), Icons.Kind.PLUS) { openEditor(null) }, top = 28)
+        box.add(secondaryButton(getString(R.string.folder_new), Icons.Kind.FOLDER) { askFolder(null) }, top = 12)
         box
     }
 
@@ -295,7 +297,7 @@ class MainActivity : Activity() {
         try {
             startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
         } catch (e: ActivityNotFoundException) {
-            Toast.makeText(this, R.string.setup_no_settings, Toast.LENGTH_LONG).show()
+            screen.snack(getString(R.string.setup_no_settings), error = true)
         }
     }
 
@@ -393,8 +395,8 @@ class MainActivity : Activity() {
             Log.w(TAG, "Could not move", e)
             false
         }
-        if (!moved) Toast.makeText(this, R.string.move_failed, Toast.LENGTH_LONG).show()
         render()
+        screen.snack(getString(if (moved) R.string.move_done else R.string.move_failed), error = !moved)
     }
 
     private fun confirmDelete(node: Node) {
@@ -417,11 +419,11 @@ class MainActivity : Activity() {
             if (node is Folder) ShortcutRepository.deleteFolder(this, node.id) else ShortcutRepository.delete(this, node.id)
         } catch (e: Exception) {
             Log.w(TAG, "Could not delete", e)
-            Toast.makeText(this, R.string.edit_save_failed, Toast.LENGTH_LONG).show()
+            screen.snack(getString(R.string.edit_save_failed), error = true)
             return
         }
-        Toast.makeText(this, if (node is Folder) R.string.folder_deleted else R.string.shortcut_deleted, Toast.LENGTH_SHORT).show()
         render()
+        screen.snack(getString(if (node is Folder) R.string.folder_deleted else R.string.shortcut_deleted))
     }
 
     // ---------------------------------------------------------------- new folder / rename
@@ -495,10 +497,11 @@ class MainActivity : Activity() {
             }
         } catch (e: Exception) {
             Log.w(TAG, "Could not save folder", e)
-            Toast.makeText(this, R.string.folder_save_failed, Toast.LENGTH_LONG).show()
+            screen.snack(getString(R.string.folder_save_failed), error = true)
             return false
         }
         render()
+        screen.snack(getString(if (existing == null) R.string.folder_made else R.string.folder_saved))
         return true
     }
 

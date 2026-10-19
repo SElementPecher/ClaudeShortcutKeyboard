@@ -17,6 +17,8 @@ import android.view.inputmethod.InputMethodManager
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository
 import io.github.selementpecher.shortcutkeyboard.fill.FillSession
+import io.github.selementpecher.shortcutkeyboard.fill.ResultPieces
+import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.LookStore
 import io.github.selementpecher.shortcutkeyboard.model.Folder
 import io.github.selementpecher.shortcutkeyboard.model.Library
@@ -203,7 +205,7 @@ class ShortcutKeyboardService : InputMethodService() {
                 node == null -> newTile(getString(R.string.kb_new), getString(R.string.kb_desc_new_shortcut), ::openApp)
                 planner != null && node.id == planner.draggedId ->
                     TileSpec("", TileLook(TileLook.Kind.EMPTY), getString(R.string.kb_desc_empty_slot))
-                else -> nodeTile(node, highlighted = planner?.dropFolderId == node.id)
+                else -> nodeTile(node, library, highlighted = planner?.dropFolderId == node.id)
             }
         }
         view.showGrid(
@@ -224,12 +226,12 @@ class ShortcutKeyboardService : InputMethodService() {
         )
     }
 
-    private fun nodeTile(node: Node, highlighted: Boolean = false): TileSpec = when (node) {
+    private fun nodeTile(node: Node, library: Library, highlighted: Boolean = false): TileSpec = when (node) {
         is Folder -> TileSpec(
             label = node.name.ifBlank { getString(R.string.kb_untitled) },
             look = TileLook(TileLook.Kind.FOLDER, highlighted = highlighted, custom = node.color),
             glyph = TileStyle.glyphFor(node.icon, node.name, isFolder = true),
-            badge = TileStyle.folderBadge(TileStyle.glyphFor(node.icon, node.name, isFolder = true)),
+            subtitle = resources.getQuantityString(R.plurals.kb_folder_items, library.children(node.id).size, library.children(node.id).size),
             description = getString(R.string.kb_desc_folder, node.name),
             draggable = true,
             id = node.id,
@@ -247,7 +249,7 @@ class ShortcutKeyboardService : InputMethodService() {
     }
 
     private fun newTile(label: String, description: String, onClick: () -> Unit) =
-        TileSpec(label, TileLook(TileLook.Kind.NEW), description, onClick = onClick)
+        TileSpec(label, TileLook(TileLook.Kind.NEW), description, icon = Icons.Kind.PLUS, onClick = onClick)
 
     private fun enterFolder(id: String) {
         folderId = id
@@ -295,8 +297,8 @@ class ShortcutKeyboardService : InputMethodService() {
             )
             dragNodes = ordered.associateBy { it.id }
             dragSignature = null
-            val spec = nodeTile(node)
-            view.showGhost(TileSpec(spec.label, spec.look, spec.description, spec.glyph, spec.badge), tile.width, tile.height, rawX, rawY)
+            val spec = nodeTile(node, library)
+            view.showGhost(TileSpec(spec.label, spec.look, spec.description, spec.glyph, spec.subtitle), tile.width, tile.height, rawX, rawY)
             renderGrid()
             return true
         }
@@ -527,7 +529,8 @@ class ShortcutKeyboardService : InputMethodService() {
 
     private fun okTile() = TileSpec(
         getString(R.string.kb_ok),
-        TileLook(TileLook.Kind.OK),
+        TileLook(TileLook.Kind.OK, pill = true),
+        icon = Icons.Kind.CHECK,
         textSp = 26f,
         onClick = { otherOpen = false; advance() },
     )
@@ -587,7 +590,7 @@ class ShortcutKeyboardService : InputMethodService() {
         view.showCheck(
             CheckModel(
                 shortcutName = current.shortcut.name.ifBlank { getString(R.string.kb_untitled) },
-                text = current.result(),
+                pieces = ResultPieces.of(current, locale = locale()),
                 onBack = {
                     if (current.isEmpty) {
                         leaveFill()

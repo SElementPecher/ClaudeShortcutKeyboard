@@ -9,8 +9,8 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
 import io.github.selementpecher.shortcutkeyboard.R
+import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.ui.Ui
-import io.github.selementpecher.shortcutkeyboard.ui.UiIcon
 import io.github.selementpecher.shortcutkeyboard.ui.UiPanel
 import kotlin.math.max
 
@@ -240,7 +240,7 @@ internal class WordSheets(
             answerFields += field
             line.addView(field, lp(width = 0, weight = 1f))
             val remove = iconButton(
-                UiIcon.Kind.CLOSE,
+                Icons.Kind.CLOSE,
                 if (value.isBlank()) activity.getString(R.string.editor_answer_remove_empty) else activity.getString(R.string.editor_answer_remove, value),
             ) {
                 answerFields.remove(field)

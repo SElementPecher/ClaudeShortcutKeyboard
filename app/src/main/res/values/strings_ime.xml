@@ -2,13 +2,18 @@
 <resources>
     <!-- Grid -->
     <string name="kb_title">Shortcuts</string>
-    <string name="kb_new">+ New</string>
-    <string name="kb_abc">⌨ ABC</string>
-    <string name="kb_new_big">+ Add a shortcut</string>
+    <string name="kb_new">New</string>
+    <string name="kb_abc">ABC</string>
+    <string name="kb_new_big">Add a shortcut</string>
     <string name="kb_empty_title">Nothing here yet</string>
+    <string name="kb_empty_emoji">✨</string>
     <string name="kb_empty_hint">Make your first shortcut in the app.</string>
     <string name="kb_untitled">Shortcut</string>
     <string name="kb_page_indicator">%1$d / %2$d</string>
+    <plurals name="kb_folder_items">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
 
     <!-- Spoken names, for screen readers -->
     <string name="kb_desc_back">Back</string>
@@ -23,6 +28,7 @@
     <string name="kb_desc_new_shortcut">New shortcut</string>
     <string name="kb_desc_new_answer">New answer</string>
     <string name="kb_desc_last_answer">%1$s, used last time</string>
+    <string name="kb_desc_page">Page %1$d of %2$d</string>
     <string name="kb_desc_step">Question %1$d of %2$d</string>
     <string name="kb_desc_delete_digit">Delete last digit</string>
     <string name="kb_desc_point">Point</string>
@@ -41,10 +47,10 @@
     <string name="kb_time_ago_30">30 min ago</string>
     <string name="kb_time_ago_60">1 hour ago</string>
     <string name="kb_time_other">🕒 Other</string>
-    <string name="kb_hour_earlier">◀ 1 hour</string>
-    <string name="kb_hour_later">1 hour ▶</string>
-    <string name="kb_minutes_earlier">◀ 5 min</string>
-    <string name="kb_minutes_later">5 min ▶</string>
+    <string name="kb_hour_earlier">− 1 hour</string>
+    <string name="kb_hour_later">+ 1 hour</string>
+    <string name="kb_minutes_earlier">− 5 min</string>
+    <string name="kb_minutes_later">+ 5 min</string>
     <string name="kb_later">Later: %1$s</string>
 
     <!-- Date -->
@@ -52,10 +58,10 @@
     <string name="kb_yesterday">Yesterday</string>
     <string name="kb_tomorrow">Tomorrow</string>
     <string name="kb_date_other">📅 Other</string>
-    <string name="kb_day_earlier">◀ 1 day</string>
-    <string name="kb_day_later">1 day ▶</string>
+    <string name="kb_day_earlier">− 1 day</string>
+    <string name="kb_day_later">+ 1 day</string>
 
     <!-- OK and check -->
-    <string name="kb_ok">✓ OK</string>
-    <string name="kb_add">✓ Add</string>
+    <string name="kb_ok">OK</string>
+    <string name="kb_add">Add</string>
 </resources>

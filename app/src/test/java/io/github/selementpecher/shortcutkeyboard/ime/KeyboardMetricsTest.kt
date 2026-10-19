@@ -51,4 +51,12 @@ class KeyboardMetricsTest {
         assertEquals(168, KeyboardMetrics.bottomPaddingPx(-20, 3f, 35))
         assertEquals(24, KeyboardMetrics.bottomPaddingPx(0, 3f, 30))
     }
+
+    @Test
+    fun biggerTextGivesThePanelALittleMoreRoom() {
+        assertEquals(320, KeyboardMetrics.panelHeightDp(320, 1f))
+        assertEquals(320, KeyboardMetrics.panelHeightDp(320, 0.85f))
+        assertEquals(332, KeyboardMetrics.panelHeightDp(320, 1.15f))
+        assertEquals(320 + KeyboardMetrics.MAX_EXTRA_DP, KeyboardMetrics.panelHeightDp(320, 3f))
+    }
 }

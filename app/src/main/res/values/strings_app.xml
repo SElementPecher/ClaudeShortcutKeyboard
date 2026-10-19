@@ -23,9 +23,9 @@
     <string name="try_tip">Tap the keyboard icon at the bottom of your screen and choose Shortcut Keyboard. Pick a shortcut. It is typed here.</string>
 
     <!-- Main screen: list -->
-    <string name="shortcuts_empty">No shortcuts yet. Tap “New shortcut” to make one.</string>
-    <string name="folder_empty">This folder is empty.</string>
-    <string name="shortcut_new">+ New shortcut</string>
+    <string name="shortcuts_empty">Make your first shortcut. It takes a minute.</string>
+    <string name="folder_empty">This folder is empty. Add a shortcut to it.</string>
+    <string name="shortcut_new">New shortcut</string>
     <string name="shortcut_no_name">(No name)</string>
     <string name="shortcut_row_description">Shortcut %1$s. %2$s. Tap to change it. Press and hold for more.</string>
     <string name="folder_row_description">Folder %1$s. %2$s. Tap to open it. Press and hold for more.</string>
@@ -37,7 +37,7 @@
 
     <!-- Folders -->
     <string name="home_name">Home</string>
-    <string name="folder_new">+ New folder</string>
+    <string name="folder_new">New folder</string>
     <string name="folder_new_title">New folder</string>
     <string name="folder_rename_title">Rename folder</string>
     <string name="folder_name_hint">For example: Kids</string>

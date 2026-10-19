@@ -98,8 +98,8 @@
     </plurals>
     <string name="editor_check_types">It will type something like:</string>
     <string name="editor_save">Save</string>
-    <string name="editor_change_words">Change the words</string>
-    <string name="editor_change_answers">Change the answers</string>
+    <string name="editor_change_words">Edit words</string>
+    <string name="editor_change_answers">Edit answers</string>
     <string name="editor_name_row_hint">Tap to change the name or picture</string>
     <string name="editor_edit_name_title">Name and picture</string>
 

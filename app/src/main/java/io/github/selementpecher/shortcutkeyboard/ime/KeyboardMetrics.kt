@@ -20,6 +20,16 @@ object KeyboardMetrics {
     /** Picture beside the name (true) or picture above the name (false). */
     fun pictureBesideName(look: Look, compact: Boolean): Boolean = compact || look.tileLayout == TileLayout.WIDE
 
+    /**
+     * The panel's height in dp. Bigger text (the owner's Large setting and the phone's font size
+     * together) gets a little more room, never more than [MAX_EXTRA_DP], so tiles do not get cramped.
+     */
+    fun panelHeightDp(baseDp: Int, combinedTextScale: Float): Int =
+        baseDp + Math.round(((combinedTextScale - 1f) * EXTRA_DP_PER_SCALE).coerceIn(0f, MAX_EXTRA_DP.toFloat()))
+
+    private const val EXTRA_DP_PER_SCALE = 80f
+    const val MAX_EXTRA_DP = 40
+
     /** Extra gap, in dp, kept clear above the system's keyboard-switcher icons. */
     fun safetyGapDp(sdk: Int): Int = if (sdk >= SWITCHER_SDK) 16 else 8
 

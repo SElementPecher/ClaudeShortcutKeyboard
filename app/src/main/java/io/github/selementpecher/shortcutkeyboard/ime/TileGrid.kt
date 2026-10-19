@@ -192,7 +192,7 @@ internal class TileGrid(context: Context, private val theme: KeyboardTheme) : Vi
     }
 
     companion object {
-        const val TILE_GAP_DP = 8
+        const val TILE_GAP_DP = 10
         private const val LONG_PRESS_MS = 350L
         private const val EDGE_TICK_MS = 100L
     }

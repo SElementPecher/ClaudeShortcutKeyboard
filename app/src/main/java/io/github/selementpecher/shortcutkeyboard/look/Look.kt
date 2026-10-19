@@ -42,6 +42,19 @@ data class Shape(val tileRadiusDp: Int, val cardRadiusDp: Int, val buttonRadiusD
 /** Text sizes in sp and the weight (100–900) of tile names. */
 data class Type(val titleSp: Float, val headingSp: Float, val bodySp: Float, val smallSp: Float, val tileSp: Float, val tileWeight: Int, val headingWeight: Int)
 
+/** The same sizes multiplied by [factor] (weights stay as they are). */
+fun Type.scaled(factor: Float): Type = copy(
+    titleSp = titleSp * factor,
+    headingSp = headingSp * factor,
+    bodySp = bodySp * factor,
+    smallSp = smallSp * factor,
+    tileSp = tileSp * factor,
+)
+
+/** The same Look with other text sizes (e.g. [Type.scaled] for "Large" text). */
+fun Look.withType(type: Type): Look =
+    Look(id, displayName, tagline, light, dark, shape, type, tileLayout, keyboardColumns, keyboardRows)
+
 /**
  * One complete design: colours (light and dark), shapes, text sizes and the tile layout.
  *

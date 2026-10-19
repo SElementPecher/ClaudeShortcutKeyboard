@@ -2,7 +2,7 @@
 <resources>
     <string name="cheat_title">Cheat sheet</string>
     <string name="cheat_intro">When you make a shortcut, you tap the words that change. For each one you pick a kind. This is what each kind does.</string>
-    <string name="cheat_open_button">Cheat sheet: what each kind does</string>
+    <string name="cheat_open_button">What each kind does</string>
     <string name="cheat_open_link">What can each kind do?</string>
     <string name="cheat_settings_title">Cheat sheet</string>
     <string name="cheat_settings_help">What each kind of changing word can do.</string>

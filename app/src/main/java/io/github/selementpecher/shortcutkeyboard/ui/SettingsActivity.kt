@@ -12,9 +12,10 @@ import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
+import android.widget.ImageView
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository
+import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.Look
 import io.github.selementpecher.shortcutkeyboard.look.LookStore
 import io.github.selementpecher.shortcutkeyboard.look.Looks
@@ -73,7 +74,8 @@ class SettingsActivity : Activity() {
 
     private fun build() = with(ui) {
         val content = screen.content
-        content.add(lookCard(), top = 8)
+        content.add(textSizeCard(), top = 8)
+        content.add(lookCard(), top = 16)
         content.add(cheatCard(), top = 16)
         content.add(backupCard(), top = 16)
         content.add(tryCard(), top = 16)
@@ -125,20 +127,64 @@ class SettingsActivity : Activity() {
         names.addView(text(option.displayName, look.type.headingSp, look.type.headingWeight, palette.ink))
         names.add(small(option.tagline), top = 2)
         line.addView(names)
-        if (chosen) {
-            line.addView(TextView(this@SettingsActivity).apply {
-                text = "✓"
-                gravity = Gravity.CENTER
-                textSize = 18f
-                typeface = typefaceOf(800)
-                setTextColor(palette.onAccent)
-                background = shape(palette.accent, 999f)
-                includeFontPadding = false
-                layoutParams = LinearLayout.LayoutParams(dp(32), dp(32))
-            })
-        }
+        if (chosen) line.addView(checkBadge(32))
         box.add(line, top = 12)
         box
+    }
+
+    /** A round accent badge with a tick: marks the chosen option. */
+    private fun checkBadge(sizeDp: Int): View = with(ui) {
+        ImageView(this@SettingsActivity).apply {
+            setImageDrawable(icon(Icons.Kind.CHECK, sizeDp * 3 / 4, palette.onAccent))
+            scaleType = ImageView.ScaleType.CENTER
+            background = shape(palette.accent, 999f)
+            layoutParams = LinearLayout.LayoutParams(dp(sizeDp), dp(sizeDp))
+        }
+    }
+
+    /** "Text size": two big choices, each showing a sample line at its own size. */
+    private fun textSizeCard(): View = with(ui) {
+        val card = card()
+        card.add(heading(getString(R.string.settings_text_title)))
+        card.add(small(getString(R.string.settings_text_help)), top = 4)
+        card.add(textChoice(large = false), top = 16)
+        card.add(textChoice(large = true), top = 10)
+        card
+    }
+
+    private fun textChoice(large: Boolean): View = with(ui) {
+        val chosen = LookStore.isLargeText(this@SettingsActivity) == large
+        val name = getString(if (large) R.string.text_size_large else R.string.text_size_normal)
+        // The Ui's sizes already include the current choice; take it out, then apply this option's.
+        val base = look.type.bodySp / LookStore.textScale(this@SettingsActivity)
+        val sampleSp = base * (if (large) LookStore.LARGE_TEXT_SCALE else 1f)
+        val box = column().apply {
+            val r = 18f
+            background = rippled(
+                shape(if (chosen) blend(palette.surface, palette.accent, 0.06f) else palette.surface, r, if (chosen) palette.accent else buttonOutline(), if (chosen) 3f else 1.5f),
+                r,
+            )
+            setPadding(dp(16), dp(14), dp(16), dp(16))
+            isClickable = true
+            isFocusable = true
+            contentDescription = getString(if (chosen) R.string.text_size_chosen else R.string.text_size_choose, name)
+            setOnClickListener { chooseTextSize(large) }
+            Motion.pressable(this, 0.98f)
+        }
+        val line = row()
+        line.addView(text(name, look.type.headingSp, look.type.headingWeight, palette.ink, Ui.HEADING_LINE_SPACING).apply { layoutParams = lp(width = 0, weight = 1f) })
+        if (chosen) line.addView(checkBadge(28))
+        box.addView(line)
+        box.add(text(getString(R.string.text_size_sample), sampleSp, 400, palette.ink), top = 8)
+        box
+    }
+
+    private fun Ui.buttonOutline(): Int = blend(palette.outline, palette.inkSoft, 0.55f)
+
+    private fun chooseTextSize(large: Boolean) {
+        if (LookStore.isLargeText(this) == large) return
+        LookStore.setLargeText(this, large)
+        recreate()
     }
 
     private fun chooseLook(option: Look) {
@@ -176,7 +222,7 @@ class SettingsActivity : Activity() {
             line.addView(TextView(this@SettingsActivity).apply {
                 text = (index + 1).toString()
                 gravity = Gravity.CENTER
-                textSize = 14f
+                textSize = ui.sp(14f)
                 typeface = typefaceOf(700)
                 setTextColor(palette.ink)
                 background = shape(palette.surfaceAlt, 999f)
@@ -226,7 +272,7 @@ class SettingsActivity : Activity() {
         try {
             startActivityForResult(intent, requestCode)
         } catch (e: ActivityNotFoundException) {
-            toast(getString(R.string.no_file_app))
+            toast(getString(R.string.no_file_app), error = true)
         }
     }
 
@@ -253,7 +299,7 @@ class SettingsActivity : Activity() {
                 Log.w(TAG, "Backup failed", result.exceptionOrNull())
                 appContext.getString(R.string.backup_failed)
             }
-            Toast.makeText(appContext, message, Toast.LENGTH_LONG).show()
+            if (isDestroyed) Snackbars.later(message, error = result.isFailure) else screen.snack(message, error = result.isFailure)
         }
     }
 
@@ -274,7 +320,7 @@ class SettingsActivity : Activity() {
 
     private fun restoreFinished(message: Int) {
         pendingRestore = null
-        toast(getString(message))
+        toast(getString(message), error = true)
     }
 
     private fun askHowToRestore(library: Library) {
@@ -301,7 +347,7 @@ class SettingsActivity : Activity() {
             if (replace) ShortcutRepository.replaceAll(this, library) else ShortcutRepository.merge(this, library)
         } catch (e: Exception) {
             Log.w(TAG, "Restore failed", e)
-            toast(getString(R.string.restore_save_failed))
+            toast(getString(R.string.restore_save_failed), error = true)
             return
         }
         val total = ShortcutRepository.all(this).size
@@ -327,8 +373,8 @@ class SettingsActivity : Activity() {
         }
     }
 
-    private fun toast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    private fun toast(message: String, error: Boolean = false) {
+        screen.snack(message, error)
     }
 
     companion object {

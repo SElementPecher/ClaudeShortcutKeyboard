@@ -1,5 +1,7 @@
 package io.github.selementpecher.shortcutkeyboard.ime
 
+import io.github.selementpecher.shortcutkeyboard.fill.ResultPiece
+
 /** What the grid screen shows. The service builds this; [KeyboardView] draws it. */
 internal class GridModel(
     val inFolder: Boolean,
@@ -59,7 +61,8 @@ internal sealed interface StepBody {
 /** The last screen: the finished message and the Add button. */
 internal class CheckModel(
     val shortcutName: String,
-    val text: String,
+    /** The message in pieces: fixed words and the values that were filled in. */
+    val pieces: List<ResultPiece>,
     val onBack: () -> Unit,
     val onCancel: () -> Unit,
     val onAdd: () -> Unit,

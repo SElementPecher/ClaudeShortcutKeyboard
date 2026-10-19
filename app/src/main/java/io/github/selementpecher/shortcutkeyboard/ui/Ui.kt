@@ -16,7 +16,10 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
+import android.graphics.drawable.StateListDrawable
 import android.text.InputType
+import android.text.StaticLayout
+import android.text.TextPaint
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
@@ -30,13 +33,17 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.Look
 import io.github.selementpecher.shortcutkeyboard.look.LookStore
 import io.github.selementpecher.shortcutkeyboard.look.Palette
+import io.github.selementpecher.shortcutkeyboard.look.TileColors
 import io.github.selementpecher.shortcutkeyboard.look.TileLayout
 import io.github.selementpecher.shortcutkeyboard.look.folderColors
+import io.github.selementpecher.shortcutkeyboard.look.scaled
 import io.github.selementpecher.shortcutkeyboard.look.tileColorsFor
 import io.github.selementpecher.shortcutkeyboard.look.typefaceOf
+import io.github.selementpecher.shortcutkeyboard.look.withType
 import kotlin.math.max
 import kotlin.math.min
 
@@ -62,6 +69,51 @@ internal class DialogButton(
     val onClick: () -> Boolean = { true },
 )
 
+/**
+ * The measurements of a tile and of the page around it, so the app and the keyboard draw the same tile
+ * (what you see in the app is what you get on the keyboard). All in dp unless it says sp.
+ */
+internal object TileSpec {
+    /** Space at the left and right edge of a screen, and between a screen's blocks of content. */
+    const val SCREEN_MARGIN_DP = 20
+
+    /** Space between tiles, across and down. */
+    const val GRID_GAP_DP = 12
+
+    /** Space inside a card. */
+    const val CARD_PADDING_DP = 20
+
+    /** Space between sections of a screen. */
+    const val SECTION_GAP_DP = 24
+
+    /** Wide tile: the least height it takes (it grows with larger text). */
+    const val WIDE_MIN_HEIGHT_DP = 76
+
+    /** Wide tile: the soft circle that holds the picture or first letter. */
+    const val WIDE_PICTURE_DP = 40
+
+    /** Wide tile: size of an emoji inside that circle, in sp. */
+    const val WIDE_PICTURE_SP = 22f
+
+    /** Wide tile: space between the circle and the name. */
+    const val WIDE_GAP_DP = 10
+
+    /** Wide tile: space left and right, and above and below. */
+    const val WIDE_PADDING_H_DP = 12
+    const val WIDE_PADDING_V_DP = 10
+
+    /** Square tile: height equals width; the picture, in sp, sits above the name. */
+    const val SQUARE_PICTURE_SP = 30f
+    const val SQUARE_PADDING_DP = 8
+
+    /** The folder's tab, drawn on top of its body. */
+    const val FOLDER_TAB_WIDE_DP = 6f
+    const val FOLDER_TAB_SQUARE_DP = 5f
+
+    /** Folders on the Bold Look have an outline this thick. */
+    const val BOLD_FOLDER_OUTLINE_DP = 2f
+}
+
 /** The letter or picture shown on a tile: the icon if there is one, else the name's first letter (upper case). */
 internal fun glyphFor(icon: String, name: String, isFolder: Boolean = false): String {
     if (icon.isNotBlank()) return icon.trim()
@@ -72,10 +124,24 @@ internal fun glyphFor(icon: String, name: String, isFolder: Boolean = false): St
 
 /**
  * The app's design system: builds every view in code from the current [Look], so the app matches the
- * keyboard. Make one with `Ui(this, LookStore.current(this))` in `onCreate`, keep it, and call [isStale]
- * in `onResume`: if it is true the Look (or light/dark) changed, so call `recreate()`.
+ * keyboard. Make one with `Ui(this, LookStore.current(this))` (or [Ui.of]) in `onCreate`, keep it, and call
+ * [isStale] in `onResume`: if it is true the Look, light/dark or text size changed, so call `recreate()`.
+ *
+ * Every text size in [look] is already multiplied by the owner's "Large text" choice
+ * ([LookStore.textScale]) and never goes below a comfortable reading size, so use `look.type.*` as it is.
+ * For a fixed size of your own, use [sp].
  */
-internal class Ui(val context: Context, val look: Look) {
+internal class Ui(val context: Context, baseLook: Look) {
+
+    private val textScale = LookStore.textScale(context)
+
+    /** The Look with its text sizes made comfortable to read and scaled for "Large text". */
+    val look: Look = baseLook.withType(
+        baseLook.type.copy(
+            bodySp = max(baseLook.type.bodySp, MIN_BODY_SP),
+            smallSp = max(baseLook.type.smallSp, MIN_SMALL_SP),
+        ).scaled(textScale),
+    )
 
     /** Colours for the phone's current light or dark setting. */
     val palette: Palette = look.palette(context)
@@ -89,8 +155,12 @@ internal class Ui(val context: Context, val look: Look) {
     /** dp to pixels, keeping fractions. */
     fun dpf(value: Float): Float = value * density
 
-    /** True when the chosen Look or light/dark setting is no longer the one this Ui was built with. */
-    fun isStale(): Boolean = LookStore.current(context).id != look.id || Look.isNight(context) != nightWhenBuilt
+    /** A text size in sp that follows the "Large text" choice. */
+    fun sp(value: Float): Float = value * textScale
+
+    /** True when the chosen Look, light/dark setting or text size is no longer the one this Ui was built with. */
+    fun isStale(): Boolean =
+        LookStore.current(context).id != look.id || Look.isNight(context) != nightWhenBuilt || LookStore.textScale(context) != textScale
 
     val isWide: Boolean get() = look.tileLayout == TileLayout.WIDE
 
@@ -115,6 +185,12 @@ internal class Ui(val context: Context, val look: Look) {
     fun rippled(content: Drawable, radiusDp: Float): Drawable =
         RippleDrawable(ColorStateList.valueOf(withAlpha(palette.ink, 0x26)), content, shape(Color.WHITE, radiusDp))
 
+    /** [base] with a very soft shadow under it (the Look's elevation), drawn in code so it shows everywhere. */
+    fun softShadow(base: Drawable, radiusDp: Float, topInsetDp: Float = 0f): Drawable =
+        if (look.shape.elevationDp > 0f) {
+            SoftShadowDrawable(base, dpf(radiusDp), dpf(look.shape.elevationDp), if (Look.isNight(context)) 0x30 else 0x1C, dpf(topInsetDp))
+        } else base
+
     /** [color] with its opacity set to [alpha] (0 to 255). */
     fun withAlpha(color: Int, alpha: Int): Int = (color and 0x00FFFFFF) or (alpha shl 24)
 
@@ -136,6 +212,12 @@ internal class Ui(val context: Context, val look: Look) {
         (0.2126f * Color.red(color) + 0.7152f * Color.green(color) + 0.0722f * Color.blue(color)) / 255f
 
     private fun outlinePx(): Int = dpf(look.shape.strokeDp).toInt().coerceAtLeast(1)
+
+    /** An outline that can be seen on any surface: the Look's line colour, a little stronger. */
+    private fun buttonBorder(): Int = blend(palette.outline, palette.inkSoft, 0.55f)
+
+    /** A line icon from the shared family, [sizeDp] square, in [color]. */
+    fun icon(kind: Icons.Kind, sizeDp: Int, color: Int): Drawable = Icons.drawable(kind, color, dp(sizeDp))
 
     // ---------------------------------------------------------------- layout helpers
 
@@ -178,24 +260,40 @@ internal class Ui(val context: Context, val look: Look) {
         gravity = Gravity.CENTER_VERTICAL
     }
 
+    /**
+     * Two or more buttons of equal width side by side. If their labels do not fit on one line (large text),
+     * they stack instead, so a label never wraps.
+     */
+    fun buttonRow(vararg buttons: View, gapDp: Int = 12): LinearLayout = AdaptiveRow(context, dp(gapDp)).apply {
+        layoutParams = lp()
+        buttons.forEach { addView(it, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)) }
+    }
+
+    /** A slim progress bar, [fraction] (0 to 1) filled with the accent colour. */
+    fun progressBar(fraction: Float, heightDp: Int = 6): View = SlimProgress(
+        context, fraction.coerceIn(0f, 1f), palette.surfaceAlt.let { blend(palette.bg, palette.inkSoft, 0.22f) }, palette.accent.let { if (look.id == "bold" && !Look.isNight(context)) palette.ink else it },
+    ).apply { layoutParams = lp(height = dp(heightDp)) }
+
     // ---------------------------------------------------------------- text
 
-    /** Any text. [weight] is 100 to 900. */
-    fun text(text: CharSequence, sizeSp: Float, weight: Int, color: Int): TextView = TextView(context).apply {
+    /** Any text. [weight] is 100 to 900. Body-style text gets roomy lines and a little extra letter spacing. */
+    fun text(text: CharSequence, sizeSp: Float, weight: Int, color: Int, lineSpacing: Float = READING_LINE_SPACING): TextView = TextView(context).apply {
         this.text = text
         setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp)
         typeface = typefaceOf(weight)
         setTextColor(color)
-        setLineSpacing(0f, 1.15f)
+        setLineSpacing(0f, lineSpacing)
+        letterSpacing = READING_LETTER_SPACING
+        textAlignment = View.TEXT_ALIGNMENT_VIEW_START
         includeFontPadding = false
         layoutParams = lp()
     }
 
     /** The big screen title. */
-    fun title(text: CharSequence): TextView = text(text, look.type.titleSp, look.type.headingWeight, palette.ink)
+    fun title(text: CharSequence): TextView = text(text, look.type.titleSp, look.type.headingWeight, palette.ink, HEADING_LINE_SPACING)
 
     /** A section heading. */
-    fun heading(text: CharSequence): TextView = text(text, look.type.headingSp, look.type.headingWeight, palette.ink)
+    fun heading(text: CharSequence): TextView = text(text, look.type.headingSp, look.type.headingWeight, palette.ink, HEADING_LINE_SPACING)
 
     /** Normal reading text. */
     fun body(text: CharSequence): TextView = text(text, look.type.bodySp, 400, palette.ink)
@@ -208,53 +306,62 @@ internal class Ui(val context: Context, val look: Look) {
 
     // ---------------------------------------------------------------- buttons
 
-    private fun buttonView(text: CharSequence, fg: Int, bg: Drawable, onClick: (() -> Unit)?): TextView = TextView(context).apply {
+    private fun buttonView(text: CharSequence, fg: Int, bg: Drawable, icon: Icons.Kind?, onClick: (() -> Unit)?): TextView = TextView(context).apply {
         this.text = text
         gravity = Gravity.CENTER
         setTextSize(TypedValue.COMPLEX_UNIT_SP, look.type.bodySp)
         typeface = typefaceOf(max(600, look.type.headingWeight))
         setTextColor(fg)
+        letterSpacing = READING_LETTER_SPACING
         minHeight = dp(MAIN_ACTION_DP)
-        setPadding(dp(24), dp(8), dp(24), dp(8))
+        setPadding(dp(14), dp(8), dp(14), dp(8))
         background = bg
         isClickable = true
         isFocusable = true
         includeFontPadding = false
+        if (icon != null) {
+            setCompoundDrawablesRelativeWithIntrinsicBounds(icon(icon, 22, fg), null, null, null)
+            compoundDrawablePadding = dp(8)
+        }
         setOnClickListener { onClick?.invoke() }
+        Motion.pressable(this, 0.98f)
         layoutParams = lp()
     }
 
-    /** The main action: accent fill, at least 56dp tall. */
-    fun primaryButton(text: CharSequence, onClick: (() -> Unit)? = null): TextView {
+    /** The one main action of a screen: accent fill, at least 56dp tall. */
+    fun primaryButton(text: CharSequence, icon: Icons.Kind? = null, onClick: (() -> Unit)? = null): TextView {
         val r = look.shape.buttonRadiusDp.toFloat()
-        return buttonView(text, palette.onAccent, rippled(shape(palette.accent, r), r), onClick)
+        return buttonView(text, palette.onAccent, rippled(shape(palette.accent, r), r), icon, onClick)
     }
 
-    /** A second choice: a quiet tinted (or outlined) button. */
-    fun secondaryButton(text: CharSequence, onClick: (() -> Unit)? = null): TextView {
+    /** A second choice: an outlined button. */
+    fun secondaryButton(text: CharSequence, icon: Icons.Kind? = null, onClick: (() -> Unit)? = null): TextView {
         val r = look.shape.buttonRadiusDp.toFloat()
-        val bg = if (look.shape.strokeDp > 0f) shape(Color.TRANSPARENT, r, palette.outline, look.shape.strokeDp)
-        else shape(palette.surfaceAlt, r)
-        return buttonView(text, palette.ink, rippled(bg, r), onClick)
+        val bg = shape(Color.TRANSPARENT, r, buttonBorder(), max(1.5f, look.shape.strokeDp))
+        return buttonView(text, palette.ink, rippled(bg, r), icon, onClick)
     }
 
     /** A plain text button for small choices such as Cancel. */
-    fun textButton(text: CharSequence, onClick: (() -> Unit)? = null): TextView {
+    fun textButton(text: CharSequence, icon: Icons.Kind? = null, onClick: (() -> Unit)? = null): TextView {
         val r = look.shape.buttonRadiusDp.toFloat()
-        val fg = if (look.id == "bold" && palette.accent == Color.parseColor("#0B0C10")) palette.ink else palette.accent
-        return buttonView(text, fg, rippled(shape(Color.TRANSPARENT, r), r), onClick)
+        return buttonView(text, linkColor(), rippled(shape(Color.TRANSPARENT, r), r), icon, onClick)
     }
 
-    /** An outlined red button for deleting things. */
-    fun dangerButton(text: CharSequence, onClick: (() -> Unit)? = null): TextView {
+    /** Red text for deleting things (always followed by a question). No box, so it is never the loudest thing. */
+    fun dangerButton(text: CharSequence, icon: Icons.Kind? = null, onClick: (() -> Unit)? = null): TextView {
         val r = look.shape.buttonRadiusDp.toFloat()
-        val bg = shape(Color.TRANSPARENT, r, palette.danger, max(1.5f, look.shape.strokeDp))
-        return buttonView(text, palette.danger, rippled(bg, r), onClick)
+        return buttonView(text, palette.danger, rippled(shape(Color.TRANSPARENT, r), r), icon, onClick)
     }
 
-    /** A round button (48dp) with a drawn icon, e.g. [UiIcon.Kind.BACK]. */
-    fun iconButton(kind: UiIcon.Kind, description: String, onClick: () -> Unit): ImageView = ImageView(context).apply {
-        setImageDrawable(UiIcon(kind, palette.ink, dp(24)))
+    /** The colour of a plain text button: the accent, or ink where the accent is black (Bold, light). */
+    fun linkColor(): Int = if (palette.accent == Color.parseColor("#0B0C10")) palette.ink else palette.accent
+
+    /**
+     * A ghost icon button: a 48dp hit area with no box. A soft round highlight shows only while pressed.
+     * The picture is 24dp, from the shared [Icons] family.
+     */
+    fun iconButton(kind: Icons.Kind, description: String, tint: Int = palette.ink, onClick: () -> Unit): ImageView = ImageView(context).apply {
+        setImageDrawable(icon(kind, 24, tint))
         scaleType = ImageView.ScaleType.CENTER
         background = rippled(shape(Color.TRANSPARENT, 999f), 999f)
         contentDescription = description
@@ -267,11 +374,11 @@ internal class Ui(val context: Context, val look: Look) {
     // ---------------------------------------------------------------- containers and inputs
 
     /** A rounded surface that holds a group of things. Add children to it. */
-    fun card(paddingDp: Int = 20): LinearLayout = column().apply {
+    fun card(paddingDp: Int = TileSpec.CARD_PADDING_DP): LinearLayout = column().apply {
         val r = look.shape.cardRadiusDp.toFloat()
-        background = shape(palette.surface, r, palette.outline, look.shape.strokeDp)
+        background = softShadow(shape(palette.surface, r, palette.outline, look.shape.strokeDp), r)
         setPadding(dp(paddingDp), dp(paddingDp), dp(paddingDp), dp(paddingDp))
-        if (look.shape.elevationDp > 0f) elevation = dpf(look.shape.elevationDp)
+        clipChildren = false
         layoutParams = lp()
     }
 
@@ -282,12 +389,14 @@ internal class Ui(val context: Context, val look: Look) {
         typeface = typefaceOf(400)
         setTextColor(palette.ink)
         setHintTextColor(palette.inkSoft)
+        letterSpacing = READING_LETTER_SPACING
+        setLineSpacing(0f, READING_LINE_SPACING)
         val r = min(look.shape.cardRadiusDp, 16).toFloat()
         val strokeDp = max(1.5f, look.shape.strokeDp)
         val rest = if (look.shape.strokeDp > 0f) shape(palette.surface, r, palette.outline, look.shape.strokeDp)
         else shape(palette.surfaceAlt, r)
         val focus = shape(if (look.shape.strokeDp > 0f) palette.surface else palette.surfaceAlt, r, palette.accent, max(2f, strokeDp))
-        background = android.graphics.drawable.StateListDrawable().apply {
+        background = StateListDrawable().apply {
             addState(intArrayOf(android.R.attr.state_focused), focus)
             addState(intArrayOf(), rest)
         }
@@ -315,6 +424,7 @@ internal class Ui(val context: Context, val look: Look) {
         setTextSize(TypedValue.COMPLEX_UNIT_SP, look.type.bodySp)
         typeface = typefaceOf(if (selected) max(600, look.type.headingWeight) else 500)
         setTextColor(if (selected) palette.onAccent else palette.ink)
+        letterSpacing = READING_LETTER_SPACING
         minHeight = dp(48)
         setPadding(dp(18), dp(8), dp(18), dp(8))
         val r = 999f
@@ -338,7 +448,7 @@ internal class Ui(val context: Context, val look: Look) {
      * Rows of [columns] equal cells, filling the last row with empty space. Good for tiles.
      * Does not clip, so soft shadows show.
      */
-    fun grid(columns: Int, cells: List<View>, gapDp: Int = 12): LinearLayout {
+    fun grid(columns: Int, cells: List<View>, gapDp: Int = TileSpec.GRID_GAP_DP): LinearLayout {
         val grid = column()
         grid.clipChildren = false
         grid.clipToPadding = false
@@ -359,11 +469,34 @@ internal class Ui(val context: Context, val look: Look) {
         return grid
     }
 
+    /**
+     * What a screen shows when there is nothing yet: a big picture ([emoji]), one sentence, and the one
+     * button that fixes it. Add the button yourself, under it.
+     */
+    fun emptyState(emoji: String, title: CharSequence, sentence: CharSequence): LinearLayout = column().apply {
+        gravity = Gravity.CENTER_HORIZONTAL
+        setPadding(dp(16), dp(24), dp(16), 0)
+        addView(
+            TextView(context).apply {
+                text = emoji
+                gravity = Gravity.CENTER
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(52f))
+                includeFontPadding = false
+                background = shape(palette.surfaceAlt, 999f)
+                layoutParams = LinearLayout.LayoutParams(dp(112), dp(112))
+            },
+        )
+        add(heading(title).apply { gravity = Gravity.CENTER }, top = 20)
+        add(body(sentence).apply { gravity = Gravity.CENTER; setTextColor(palette.inkSoft) }, top = 8)
+    }
+
     // ---------------------------------------------------------------- tiles
 
     /**
-     * A tile as on the keyboard. WIDE Looks: the picture (or first letter) in a soft circle at the top left, the
-     * name below. SQUARE Look: a big centred picture with a small name under it. Folders have a folder shape.
+     * A tile, the same as on the keyboard. WIDE Looks: the picture (or first letter) in a soft circle on the
+     * left, the name beside it (two lines at most; the text shrinks, never below the small size, before it
+     * is cut). SQUARE Look: a square tile with the picture above the name. Folders have a tab and a quiet
+     * line such as "3 items". The tile grows taller for larger text. See [TileSpec] for the measurements.
      *
      * @param colorKey picks the tile colour (use the shortcut id) so it always looks the same.
      * @param subtitle an optional small line under the name, e.g. "3 items".
@@ -382,88 +515,105 @@ internal class Ui(val context: Context, val look: Look) {
         val colors = when (kind) {
             TileKind.SHORTCUT -> palette.tileColorsFor(colorKey, color)
             TileKind.FOLDER -> palette.folderColors(color)
-            TileKind.NEW -> io.github.selementpecher.shortcutkeyboard.look.TileColors(Color.TRANSPARENT, palette.inkSoft)
+            TileKind.NEW -> TileColors(Color.TRANSPARENT, palette.inkSoft)
         }
         val radius = look.shape.tileRadiusDp.toFloat()
-        val tile = AspectFrame(context, if (isWide) WIDE_RATIO else SQUARE_RATIO)
+        val tile = if (isWide) AspectFrame(context, 0f, dp(TileSpec.WIDE_MIN_HEIGHT_DP)) else AspectFrame(context, 1f, 0)
         tile.clipChildren = false
         val folderLike = kind == TileKind.FOLDER
+        val tabDp = if (isWide) TileSpec.FOLDER_TAB_WIDE_DP else TileSpec.FOLDER_TAB_SQUARE_DP
         val base: Drawable = when {
-            kind == TileKind.NEW -> shape(Color.TRANSPARENT, radius, palette.outline.let { if (look.shape.strokeDp > 0f) it else palette.inkSoft }, max(1.5f, look.shape.strokeDp), dashed = true)
+            kind == TileKind.NEW -> shape(Color.TRANSPARENT, radius, if (look.shape.strokeDp > 0f) palette.outline else palette.inkSoft, max(1.5f, look.shape.strokeDp), dashed = true)
             folderLike -> FolderDrawable(
                 fill = colors.bg,
                 strokeColor = if (look.id == "bold") palette.accent else palette.outline,
                 strokePx = when {
-                    look.id == "bold" -> dpf(2f)
+                    look.id == "bold" -> dpf(TileSpec.BOLD_FOLDER_OUTLINE_DP)
                     look.shape.strokeDp > 0f -> dpf(look.shape.strokeDp)
                     else -> 0f
                 },
                 radiusPx = dpf(radius),
-                tabPx = dpf(if (isWide) 9f else 7f),
+                tabPx = dpf(tabDp),
             )
             else -> shape(colors.bg, radius, palette.outline, if (look.shape.strokeDp > 0f) look.shape.strokeDp else 0f)
         }
-        tile.background = rippled(base, radius)
-        if (look.shape.elevationDp > 0f && kind != TileKind.NEW) tile.elevation = dpf(look.shape.elevationDp)
+        tile.background = rippled(if (kind == TileKind.NEW) base else softShadow(base, radius, if (folderLike) tabDp else 0f), radius)
         tile.contentDescription = description
         tile.isClickable = onClick != null || onLongClick != null
         tile.isFocusable = tile.isClickable
         tile.setOnClickListener(onClick?.let { handler -> View.OnClickListener { handler() } })
         if (onLongClick != null) tile.setOnLongClickListener { onLongClick(); true }
+        if (tile.isClickable) Motion.pressable(tile)
 
         val glyph = if (kind == TileKind.NEW) "+" else glyphFor(icon, name, folderLike)
-        val topPad = if (folderLike) dp(if (isWide) 9 else 7) else 0
-        val inner = column().apply {
-            clipChildren = false
-            layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        }
-        val nameView = text(name, look.type.tileSp, look.type.tileWeight, colors.fg).apply {
+        val topPad = if (folderLike) dp(tabDp.toInt()) else 0
+        val nameView = FitTextView(context, look.type.smallSp, look.type.tileSp).apply {
+            text = name
+            typeface = typefaceOf(look.type.tileWeight)
+            setTextColor(colors.fg)
+            setLineSpacing(0f, 1.1f)
+            letterSpacing = READING_LETTER_SPACING
+            includeFontPadding = false
             maxLines = 2
             ellipsize = TextUtils.TruncateAt.END
+            layoutParams = lp()
         }
         val subView = subtitle?.let {
-            text(it, look.type.smallSp, 500, colors.fg).apply {
-                alpha = 0.78f
+            text(it, look.type.smallSp, 500, colors.fg, 1.1f).apply {
+                alpha = 0.8f
                 maxLines = 1
                 ellipsize = TextUtils.TruncateAt.END
             }
         }
         if (isWide) {
-            inner.setPadding(dp(16), dp(14) + topPad, dp(16), dp(14))
+            val inner = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                clipChildren = false
+                setPadding(dp(TileSpec.WIDE_PADDING_H_DP), dp(TileSpec.WIDE_PADDING_V_DP) + topPad, dp(TileSpec.WIDE_PADDING_H_DP), dp(TileSpec.WIDE_PADDING_V_DP))
+                layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL)
+            }
             val circle = TextView(context).apply {
                 text = glyph
                 gravity = Gravity.CENTER
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, if (glyph.length > 1 || glyph.codePointAt(0) > 0x2000) 22f else 20f)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(if (glyph.codePointAt(0) > 0x2000) TileSpec.WIDE_PICTURE_SP else 20f))
                 typeface = typefaceOf(look.type.tileWeight)
                 setTextColor(colors.fg)
                 includeFontPadding = false
                 background = shape(if (kind == TileKind.NEW) Color.TRANSPARENT else withAlpha(colors.fg, 0x26), 999f)
-                layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
+                layoutParams = LinearLayout.LayoutParams(dp(TileSpec.WIDE_PICTURE_DP), dp(TileSpec.WIDE_PICTURE_DP))
             }
             inner.addView(circle)
-            inner.addView(View(context), LinearLayout.LayoutParams(0, 0, 1f).apply { height = 0; width = ViewGroup.LayoutParams.MATCH_PARENT })
-            inner.addView(nameView.apply { layoutParams = lp(top = 10) })
-            subView?.let { inner.addView(it.apply { layoutParams = lp(top = 2) }) }
-        } else {
-            inner.setPadding(dp(8), dp(8) + topPad, dp(8), dp(10))
-            inner.gravity = Gravity.CENTER
-            val big = TextView(context).apply {
-                text = glyph
-                gravity = Gravity.CENTER
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 30f)
-                typeface = typefaceOf(look.type.tileWeight)
-                setTextColor(colors.fg)
-                includeFontPadding = false
-                layoutParams = lp(height = ViewGroup.LayoutParams.WRAP_CONTENT)
+            val words = column().apply {
+                gravity = Gravity.CENTER_VERTICAL
+                layoutParams = lp(width = 0, weight = 1f, start = TileSpec.WIDE_GAP_DP)
             }
-            inner.addView(big)
-            inner.addView(nameView.apply {
+            words.addView(nameView)
+            subView?.let { words.addView(it.apply { layoutParams = lp(top = 2) }) }
+            inner.addView(words)
+            tile.addView(inner)
+        } else {
+            val inner = column().apply {
+                clipChildren = false
                 gravity = Gravity.CENTER
-                layoutParams = lp(top = 6)
-            })
+                setPadding(dp(TileSpec.SQUARE_PADDING_DP), dp(TileSpec.SQUARE_PADDING_DP) + topPad, dp(TileSpec.SQUARE_PADDING_DP), dp(TileSpec.SQUARE_PADDING_DP + 2))
+                layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            }
+            inner.addView(
+                TextView(context).apply {
+                    text = glyph
+                    gravity = Gravity.CENTER
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(TileSpec.SQUARE_PICTURE_SP))
+                    typeface = typefaceOf(look.type.tileWeight)
+                    setTextColor(colors.fg)
+                    includeFontPadding = false
+                    layoutParams = lp()
+                },
+            )
+            inner.addView(nameView.apply { gravity = Gravity.CENTER; layoutParams = lp(top = 6) })
             subView?.let { inner.addView(it.apply { gravity = Gravity.CENTER; layoutParams = lp(top = 1) }) }
+            tile.addView(inner)
         }
-        tile.addView(inner)
         tile.layoutParams = lp()
         return tile
     }
@@ -489,16 +639,19 @@ internal class Ui(val context: Context, val look: Look) {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         }
         val topBar = column()
-        val bar = row().apply { setPadding(dp(if (onBack == null) 20 else 8), dp(8), dp(8), dp(8)) }
-        if (onBack != null) bar.addView(iconButton(UiIcon.Kind.BACK, context.getString(io.github.selementpecher.shortcutkeyboard.R.string.action_back), onBack))
-        val titleView = (if (large) title(title) else heading(title)).apply {
-            maxLines = 1
+        val bar = row().apply {
+            setPadding(dp(if (onBack == null) TileSpec.SCREEN_MARGIN_DP else 8), dp(8), dp(8), dp(8))
+            minimumHeight = dp(56)
+        }
+        if (onBack != null) bar.addView(iconButton(Icons.Kind.BACK, context.getString(io.github.selementpecher.shortcutkeyboard.R.string.action_back), onClick = onBack))
+        val titleView = (if (large) title(title).apply { setTextSize(TypedValue.COMPLEX_UNIT_SP, min(look.type.titleSp, sp(28f))) } else heading(title)).apply {
+            maxLines = if (large) 2 else 1
             ellipsize = TextUtils.TruncateAt.END
             layoutParams = lp(width = 0, weight = 1f, start = if (onBack == null) 0 else 6, end = 8)
         }
         bar.addView(titleView)
         trailing.forEach { bar.addView(it) }
-        topBar.addView(bar, lp(height = dp(56)))
+        topBar.addView(bar, lp())
         root.addView(topBar, lp())
 
         val scroll = ScrollView(context).apply {
@@ -508,17 +661,18 @@ internal class Ui(val context: Context, val look: Look) {
             isVerticalScrollBarEnabled = false
         }
         val content = column().apply {
-            setPadding(dp(20), dp(8), dp(20), dp(24))
+            setPadding(dp(TileSpec.SCREEN_MARGIN_DP), dp(8), dp(TileSpec.SCREEN_MARGIN_DP), dp(24))
             clipChildren = false
             clipToPadding = false
         }
         scroll.addView(content, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         root.addView(scroll, lp(height = 0, weight = 1f))
 
-        val bottom = column().apply { setPadding(dp(20), dp(12), dp(20), dp(12)) }
+        val bottom = column().apply { setPadding(dp(TileSpec.SCREEN_MARGIN_DP), dp(12), dp(TileSpec.SCREEN_MARGIN_DP), dp(12)) }
         val bottomWrap = column().apply {
             setBackgroundColor(palette.bg)
-            addView(divider())
+            // Quiet: only the hairline Look keeps a rule above the buttons.
+            if (look.shape.strokeDp > 0f) addView(divider())
             addView(bottom)
             visibility = if (withBottomBar) View.VISIBLE else View.GONE
         }
@@ -557,8 +711,8 @@ internal class Ui(val context: Context, val look: Look) {
     ): UiPanel = ask(
         activity, title, message,
         listOf(
+            DialogButton(cancelText.toString(), ButtonStyle.SECONDARY),
             DialogButton(confirmText.toString(), if (danger) ButtonStyle.DANGER else ButtonStyle.PRIMARY) { onConfirm(); true },
-            DialogButton(cancelText.toString(), ButtonStyle.TEXT),
         ),
     )
 
@@ -574,7 +728,7 @@ internal class Ui(val context: Context, val look: Look) {
                 cornerRadii = if (bottom) floatArrayOf(r, r, r, r, 0f, 0f, 0f, 0f) else FloatArray(8) { r }
                 if (look.shape.strokeDp > 0f) setStroke(outlinePx(), palette.outline)
             }
-            setPadding(dp(20), dp(if (bottom) 12 else 22), dp(20), dp(if (bottom) 20 else 18))
+            setPadding(dp(TileSpec.SCREEN_MARGIN_DP), dp(if (bottom) 12 else 24), dp(TileSpec.SCREEN_MARGIN_DP), dp(if (bottom) 20 else 16))
         }
         if (bottom) {
             // Grab handle: a small hint that this is a sheet.
@@ -591,7 +745,7 @@ internal class Ui(val context: Context, val look: Look) {
         }
         surface.addView(scroller, lp())
         val frame = FrameLayout(context).apply {
-            if (!bottom) setPadding(dp(20), 0, dp(20), 0)
+            if (!bottom) setPadding(dp(TileSpec.SCREEN_MARGIN_DP), 0, dp(TileSpec.SCREEN_MARGIN_DP), 0)
             addView(
                 surface,
                 FrameLayout.LayoutParams(
@@ -617,8 +771,14 @@ internal class Ui(val context: Context, val look: Look) {
         /** Height of the main action buttons and fields, in dp. */
         const val MAIN_ACTION_DP = 56
 
-        private const val WIDE_RATIO = 0.7f
-        private const val SQUARE_RATIO = 1.0f
+        /** Reading text is never smaller than this (sp, before "Large text"). */
+        const val MIN_BODY_SP = 17f
+        const val MIN_SMALL_SP = 14f
+
+        /** Roomy lines and a touch of extra letter spacing help dyslexic readers. */
+        const val READING_LINE_SPACING = 1.3f
+        const val HEADING_LINE_SPACING = 1.15f
+        const val READING_LETTER_SPACING = 0.02f
 
         /** A Ui for the Look chosen right now. */
         fun of(context: Context): Ui = Ui(context, LookStore.current(context))
@@ -637,6 +797,8 @@ internal class UiScreen(
     val bottomBar: LinearLayout,
     private val bottomWrap: View,
 ) {
+    private var activity: Activity? = null
+
     /** Show or hide the bottom action area. */
     fun showBottomBar(show: Boolean) {
         bottomWrap.visibility = if (show) View.VISIBLE else View.GONE
@@ -644,9 +806,25 @@ internal class UiScreen(
 
     /** Make this the activity's content with edge-to-edge padding and the Look's background behind it. */
     fun install(activity: Activity) {
+        this.activity = activity
         activity.window.setBackgroundDrawable(ColorDrawable(ui.palette.bg))
         activity.setContentView(root)
         EdgeToEdge.apply(activity, root, topBar)
+    }
+
+    /** Height of the bottom action area, so a message can sit above it. */
+    private fun bottomBarHeight(): Int = if (bottomWrap.visibility == View.VISIBLE) bottomWrap.height else 0
+
+    /** Shows a short message ("Saved") above the bottom buttons; it goes away by itself. */
+    fun snack(text: CharSequence, error: Boolean = false) {
+        val host = activity ?: return
+        Snackbars.show(host, ui, text, error, bottomBarHeight())
+    }
+
+    /** Shows the message another screen left with [Snackbars.later], if there is one. */
+    fun showWaitingSnack() {
+        val host = activity ?: return
+        Snackbars.showWaiting(host, ui, bottomBarHeight())
     }
 }
 
@@ -675,13 +853,163 @@ internal class UiPanel(val ui: Ui, val dialog: Dialog, val body: LinearLayout) {
     fun dismiss() = dialog.dismiss()
 }
 
-/** A frame whose height is at least [ratio] times its width, growing if the content needs more. */
-internal class AspectFrame(context: Context, private val ratio: Float) : FrameLayout(context) {
+/**
+ * A frame at least [minHeightPx] tall and at least [ratio] times its width, growing if the content needs more.
+ * Used for tiles, so large text makes a tile taller instead of cutting the name.
+ */
+internal class AspectFrame(context: Context, private val ratio: Float, private val minHeightPx: Int = 0) : FrameLayout(context) {
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED))
-        val wanted = max(measuredHeight, (width * ratio).toInt())
+        val wanted = max(max(measuredHeight, (width * ratio).toInt()), minHeightPx)
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(wanted, MeasureSpec.EXACTLY))
+    }
+}
+
+/**
+ * Text that shrinks (down to [minSizePx]) until it fits [maxLines] without cutting a word in two, and only
+ * then is cut with "…". The biggest size is [maxSizePx].
+ */
+internal class FitTextView(context: Context, private val minSizePx: Float, private val maxSizePx: Float) : TextView(context) {
+
+    // The constructor takes sp values for convenience; they are turned into pixels on first use.
+    private val minPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, minSizePx, resources.displayMetrics)
+    private val maxPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, maxSizePx, resources.displayMetrics)
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val available = MeasureSpec.getSize(widthMeasureSpec) - paddingLeft - paddingRight
+        if (available > 0 && text.isNotEmpty()) {
+            var size = maxPx
+            while (size > minPx && !fits(size, available)) size -= TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 0.5f, resources.displayMetrics)
+            size = max(size, minPx)
+            if (size != textSize) setTextSize(TypedValue.COMPLEX_UNIT_PX, size)
+        }
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+    }
+
+    private fun fits(sizePx: Float, width: Int): Boolean {
+        val paint = TextPaint(paint).apply { textSize = sizePx }
+        val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
+            .setLineSpacing(0f, lineSpacingMultiplier)
+            .setIncludePad(false)
+            .setMaxLines(maxLines)
+            .setEllipsize(TextUtils.TruncateAt.END)
+            .build()
+        if (layout.lineCount > maxLines) return false
+        val last = layout.lineCount - 1
+        if (layout.getEllipsisCount(last) > 0) return false
+        // A word split across two lines does not count as fitting.
+        for (line in 0 until last) {
+            val end = layout.getLineEnd(line)
+            if (end in 1 until text.length && !text[end - 1].isWhitespace() && text[end - 1] != '-' && !text[end].isWhitespace()) return false
+        }
+        return true
+    }
+}
+
+/** A very soft shadow under a rounded [inner] drawable, drawn by hand (it needs no elevation, so it shows in screenshots too). */
+internal class SoftShadowDrawable(
+    private val inner: Drawable,
+    private val radiusPx: Float,
+    private val elevationPx: Float,
+    private val alpha: Int,
+    private val topInsetPx: Float = 0f,
+) : Drawable() {
+
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val rect = RectF()
+
+    /** The room under the shape that the shadow uses; the shadow never goes outside the view, so nothing can cut it off. */
+    private val room get() = (elevationPx * 1.5f).toInt()
+
+    override fun onBoundsChange(bounds: android.graphics.Rect) {
+        inner.setBounds(bounds.left, bounds.top, bounds.right, bounds.bottom - room)
+    }
+
+    override fun draw(canvas: Canvas) {
+        val b = inner.bounds
+        // Three soft layers, each a little lower than the one before and fainter.
+        for (i in 2 downTo 0) {
+            val drop = elevationPx * (0.5f + 0.5f * i)
+            paint.color = Color.argb(alpha / (i + 1) + 2, 0, 0, 0)
+            rect.set(b.left + elevationPx * 0.15f * i, b.top + topInsetPx + drop, b.right - elevationPx * 0.15f * i, b.bottom + drop)
+            canvas.drawRoundRect(rect, radiusPx, radiusPx, paint)
+        }
+        inner.draw(canvas)
+    }
+
+    override fun getOutline(outline: Outline) {
+        inner.getOutline(outline)
+    }
+
+    override fun setAlpha(alpha: Int) {
+        inner.alpha = alpha
+    }
+
+    override fun setColorFilter(colorFilter: ColorFilter?) {
+        inner.colorFilter = colorFilter
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
+}
+
+/** A slim rounded progress bar. */
+internal class SlimProgress(context: Context, private val fraction: Float, private val track: Int, private val fill: Int) : View(context) {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val rect = RectF()
+
+    override fun onDraw(canvas: Canvas) {
+        val h = height.toFloat()
+        paint.color = track
+        rect.set(0f, 0f, width.toFloat(), h)
+        canvas.drawRoundRect(rect, h / 2f, h / 2f, paint)
+        if (fraction > 0f) {
+            paint.color = fill
+            rect.set(0f, 0f, max(h, width * fraction), h)
+            canvas.drawRoundRect(rect, h / 2f, h / 2f, paint)
+        }
+    }
+}
+
+/**
+ * Buttons of equal width in a row. When a label would not fit on one line, the buttons are stacked
+ * (full width, one under the other) instead of wrapping.
+ */
+internal class AdaptiveRow(context: Context, private val gapPx: Int) : LinearLayout(context) {
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        orientation = HORIZONTAL
+        applyLayout(horizontal = true)
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        if (childrenWrap()) {
+            orientation = VERTICAL
+            applyLayout(horizontal = false)
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        }
+    }
+
+    private fun childrenWrap(): Boolean {
+        for (i in 0 until childCount) {
+            val child = getChildAt(i)
+            if (child is TextView && child.lineCount > 1) return true
+        }
+        return false
+    }
+
+    private fun applyLayout(horizontal: Boolean) {
+        for (i in 0 until childCount) {
+            val params = getChildAt(i).layoutParams as LayoutParams
+            if (horizontal) {
+                params.width = 0
+                params.weight = 1f
+                params.setMargins(if (i == 0) 0 else gapPx / 2, 0, if (i == childCount - 1) 0 else gapPx / 2, 0)
+            } else {
+                params.width = ViewGroup.LayoutParams.MATCH_PARENT
+                params.weight = 0f
+                params.setMargins(0, if (i == 0) 0 else gapPx, 0, 0)
+            }
+        }
     }
 }
 
@@ -758,81 +1086,6 @@ internal class UiFlow(context: Context, private val gap: Int) : ViewGroup(contex
             lineHeight = max(lineHeight, h)
         }
     }
-}
-
-/** Simple line icons drawn in code (no image files). */
-internal class UiIcon(private val kind: Kind, color: Int, private val sizePx: Int) : Drawable() {
-
-    enum class Kind { BACK, CLOSE, GEAR, PLUS, CHECK }
-
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        this.color = color
-        style = Paint.Style.STROKE
-        strokeCap = Paint.Cap.ROUND
-        strokeJoin = Paint.Join.ROUND
-    }
-
-    override fun getIntrinsicWidth() = sizePx
-    override fun getIntrinsicHeight() = sizePx
-
-    override fun draw(canvas: Canvas) {
-        val b = bounds
-        val s = min(b.width(), b.height()).toFloat()
-        val cx = b.exactCenterX()
-        val cy = b.exactCenterY()
-        paint.strokeWidth = s * 0.1f
-        when (kind) {
-            Kind.BACK -> {
-                val path = Path().apply {
-                    moveTo(cx + s * 0.12f, cy - s * 0.3f)
-                    lineTo(cx - s * 0.18f, cy)
-                    lineTo(cx + s * 0.12f, cy + s * 0.3f)
-                }
-                canvas.drawPath(path, paint)
-            }
-            Kind.CLOSE -> {
-                val d = s * 0.26f
-                canvas.drawLine(cx - d, cy - d, cx + d, cy + d, paint)
-                canvas.drawLine(cx - d, cy + d, cx + d, cy - d, paint)
-            }
-            Kind.PLUS -> {
-                val d = s * 0.3f
-                canvas.drawLine(cx - d, cy, cx + d, cy, paint)
-                canvas.drawLine(cx, cy - d, cx, cy + d, paint)
-            }
-            Kind.CHECK -> {
-                val path = Path().apply {
-                    moveTo(cx - s * 0.3f, cy + s * 0.02f)
-                    lineTo(cx - s * 0.08f, cy + s * 0.24f)
-                    lineTo(cx + s * 0.32f, cy - s * 0.22f)
-                }
-                canvas.drawPath(path, paint)
-            }
-            Kind.GEAR -> {
-                canvas.drawCircle(cx, cy, s * 0.2f, paint)
-                paint.strokeWidth = s * 0.13f
-                paint.strokeCap = Paint.Cap.BUTT
-                for (i in 0 until 8) {
-                    canvas.save()
-                    canvas.rotate(45f * i, cx, cy)
-                    canvas.drawLine(cx, cy - s * 0.3f, cx, cy - s * 0.42f, paint)
-                    canvas.restore()
-                }
-                paint.strokeCap = Paint.Cap.ROUND
-            }
-        }
-    }
-
-    override fun setAlpha(alpha: Int) {
-        paint.alpha = alpha
-    }
-
-    override fun setColorFilter(colorFilter: ColorFilter?) {
-        paint.colorFilter = colorFilter
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
 }
 
 /** A folder: a rounded body with a small tab on the top left. */

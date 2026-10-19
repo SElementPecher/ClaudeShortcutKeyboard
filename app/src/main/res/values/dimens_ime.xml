@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- The keyboard has one fixed height, so it never jumps between screens. -->
-    <dimen name="kb_panel_height">312dp</dimen>
+    <!-- The keyboard has one fixed height, so it never jumps between screens (it grows a little with bigger text). -->
+    <dimen name="kb_panel_height">320dp</dimen>
     <dimen name="kb_panel_height_compact">244dp</dimen>
 
     <!-- Every bar and button is at least 48dp wide, and 48dp tall except the short bottom strip on its side. -->
@@ -9,7 +9,7 @@
     <dimen name="kb_strip_height">48dp</dimen>
     <dimen name="kb_strip_height_compact">40dp</dimen>
     <dimen name="kb_question_height">36dp</dimen>
-    <dimen name="kb_button_width">52dp</dimen>
+    <dimen name="kb_icon_button">48dp</dimen>
 
     <dimen name="kb_padding">12dp</dimen>
     <dimen name="kb_check_tile_height">64dp</dimen>
