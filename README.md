@@ -47,6 +47,8 @@ Do these steps **on your phone**.
 6. Tap **Install**.
 7. Tap **Open**.
 
+**Examples:** every install starts with the example quiKies (Kids, Running late and a Sick day one), even if Android restores a backup. Your own quiKies are kept. You can delete the examples, or add them back in **Settings → Add the examples**.
+
 **Getting a new version:** do the same steps again.
 Your saved quiKies **stay safe**.
 

@@ -61,7 +61,6 @@ internal class PillSpan(
 
 /** Builds the message text for the check screen. */
 internal object ResultSpans {
-    private const val UNBROKEN_MAX = 22
 
     /** The pieces as one text, every filled-in value on a rounded highlight in the tile colour of its blank. */
     fun build(pieces: List<ResultPiece>, tiles: List<TileColors>, radius: Float, padX: Float, padY: Float): CharSequence {
@@ -72,13 +71,14 @@ internal object ResultSpans {
                 continue
             }
             val colors = tiles[Math.floorMod(piece.blank, tiles.size)]
-            // A short value stays in one piece (no line break inside it); only a long one may wrap.
-            val chunks = if (piece.text.length <= UNBROKEN_MAX) listOf(piece.text.replace(' ', '\u00A0')) else chunksOf(piece.text)
+            // Every piece is a complete rounded pill (short values are one piece); the space between pieces is plain.
+            val chunks = io.github.selementpecher.shortcutkeyboard.fill.PillChunks.of(piece.text)
             chunks.forEachIndexed { i, chunk ->
+                if (i > 0) text.append(' ')
                 val start = text.length
-                text.append(chunk)
+                text.append(chunk.replace(' ', '\u00A0'))
                 text.setSpan(
-                    PillSpan(colors, radius, padX, padY, roundStart = i == 0, roundEnd = i == chunks.lastIndex),
+                    PillSpan(colors, radius, padX, padY, roundStart = true, roundEnd = true),
                     start, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
                 )
             }

@@ -83,11 +83,12 @@ internal object ExampleText {
                 continue
             }
             val tile = if (part.blank == ExampleParts.BUILT_IN || colors.isEmpty()) neutral else colors[part.blank % colors.size]
-            // A short value stays in one piece (no line break inside it); only a long one may wrap.
-            val pieces = if (part.text.length <= UNBROKEN_MAX) listOf(part.text.replace(' ', NO_BREAK_SPACE)) else splitAtSpaces(part.text)
+            // Every piece is a complete rounded pill (short values are one piece); the space between pieces is plain.
+            val pieces = io.github.selementpecher.shortcutkeyboard.fill.PillChunks.of(part.text)
             pieces.forEachIndexed { index, piece ->
+                if (index > 0) out.append(' ')
                 val start = out.length
-                out.append(piece)
+                out.append(piece.replace(' ', NO_BREAK_SPACE))
                 out.setSpan(
                     RoundedHighlightSpan(
                         background = tile.bg,
@@ -95,8 +96,8 @@ internal object ExampleText {
                         paddingPx = paddingPx,
                         radiusPx = radiusPx,
                         verticalPx = verticalPx,
-                        roundStart = index == 0,
-                        roundEnd = index == pieces.lastIndex,
+                        roundStart = true,
+                        roundEnd = true,
                     ),
                     start, out.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
                 )
@@ -105,7 +106,6 @@ internal object ExampleText {
         return out
     }
 
-    private const val UNBROKEN_MAX = 22
     private const val NO_BREAK_SPACE = '\u00A0'
 
     /** "Sam Jones" becomes "Sam " and "Jones", so a long answer can wrap onto the next line. */

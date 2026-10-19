@@ -19,6 +19,7 @@ import java.util.concurrent.CopyOnWriteArraySet
 object ShortcutRepository {
     private const val TAG = "ShortcutRepository"
     private const val FILE_NAME = "shortcuts.json"
+    private const val EXAMPLES_MARKER = "examples-added"
 
     private var cache: Library? = null
     private val listeners = CopyOnWriteArraySet<() -> Unit>()
@@ -111,12 +112,25 @@ object ShortcutRepository {
     private fun file(context: Context) = AtomicFile(File(context.filesDir, FILE_NAME))
 
     private fun load(context: Context): Library {
+        val stored = readStored(context)
+        // Every install gets the example quiKies, even when Android restored a backup: this marker lives in the
+        // no-backup folder, so it is never restored and a reinstall always starts without it.
+        val marker = File(context.noBackupFilesDir, EXAMPLES_MARKER)
+        if (marker.exists()) return stored
+        val withExamples = stored.withExamples(SampleShortcuts.library)
+        runCatching {
+            write(context, withExamples)
+            marker.parentFile?.mkdirs()
+            marker.writeText("1")
+        }.onFailure { Log.e(TAG, "Could not save the examples", it) }
+        // If saving failed they are still shown, and tried again next time.
+        return withExamples
+    }
+
+    /** What is saved on the phone (restored from a backup or written earlier), or an empty library. */
+    private fun readStored(context: Context): Library {
         val file = file(context)
-        if (!file.baseFile.exists()) {
-            // A new install starts empty. The tour (or the home screen) offers the example quiKies.
-            runCatching { write(context, Library()) }.onFailure { Log.e(TAG, "Could not create the file", it) }
-            return Library()
-        }
+        if (!file.baseFile.exists()) return Library()
         return try {
             ShortcutJson.libraryFromJson(String(file.readFully(), Charsets.UTF_8))
         } catch (e: Exception) {
