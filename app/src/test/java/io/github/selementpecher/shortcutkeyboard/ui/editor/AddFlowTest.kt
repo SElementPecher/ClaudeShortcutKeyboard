@@ -657,9 +657,9 @@ class AddFlowTest {
         assertEquals(FlowStep.SHOW, f.step)
         assertEquals(RelativeShow.BOTH, f.show)
         f.chooseShow(RelativeShow.CLOCK)
-        assertEquals(FlowStep.QUESTION, f.step)
+        // Nothing is left to ask: no empty "name" screen after the last choice.
+        assertTrue(f.isDone)
         assertEquals("How long", f.question)
-        f.advance()
         val edited = f.spec()
         assertEquals(listOf("10 mins", "30 mins"), edited.amounts.map { it.text() })
         assertFalse(edited.fixed)
@@ -811,5 +811,36 @@ class AddFlowTest {
         session.setValue(session.variables[1], "30 mins")
         assertEquals("Dose Nurofen, again in 4 hours (00:25), taken 30 mins (19:55) ago", session.result())
         assertNotNull(session.updatedShortcut())
+    }
+
+    @Test
+    fun progressIsOnlyShownForPathsWithSeveralScreens() {
+        val f = flow()
+        assertNull(f.progress())
+        f.chooseKind(BlankKind.TIME)
+        assertNull(f.progress())               // which time? the path is not known yet
+        f.chooseTime(TimeChoice.FROM_NOW)
+        assertEquals(3 to 5, f.progress())      // unit
+        f.chooseUnit(RelativeUnit.MINS)
+        assertEquals(4 to 5, f.progress())      // amounts
+        f.typeNumber("10"); f.advance()
+        assertEquals(5 to 5, f.progress())      // what to show
+        val list = flow()
+        list.chooseKind(BlankKind.LIST)
+        assertEquals(2 to 2, list.progress())
+        val date = flow()
+        date.chooseKind(BlankKind.DATE)
+        assertNull(date.progress())
+    }
+
+    @Test
+    fun changingAHowLongHasTwoScreensAndChangingAListHasOne() {
+        val spec = BlankSpec(1, "How long", BlankKind.TIME_AHEAD, amounts = listOf(RelativeAmount(10, RelativeUnit.MINS)))
+        val f = AddFlow.edit(spec, 0, emptySet(), now = now, locale = uk)
+        assertEquals(1 to 2, f.progress())
+        f.advance()
+        assertEquals(2 to 2, f.progress())
+        val list = AddFlow.edit(BlankSpec(2, "Who", BlankKind.LIST, listOf("Sam"), example = "Sam"), 0, emptySet(), now = now, locale = uk)
+        assertNull(list.progress())
     }
 }

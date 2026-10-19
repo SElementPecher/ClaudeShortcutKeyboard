@@ -118,6 +118,15 @@ internal class ChainPanel(
 
     private fun header(flow: AddFlow): View = with(ui) {
         val box = column()
+        // A progress bar, only when making or changing this part takes more than one screen.
+        flow.progress()?.let { (at, total) ->
+            val bar = row()
+            for (i in 1..total) {
+                bar.addView(progressBar(if (i <= at) 1f else 0f, 6), lp(width = 0, weight = 1f, start = if (i == 1) 0 else 6, height = dp(6)))
+            }
+            bar.contentDescription = activity.getString(R.string.editor_step_of, at, total)
+            box.add(bar, bottom = 12)
+        }
         val line = row()
         if (flow.canGoBack) {
             line.addView(iconButton(Icons.Kind.BACK, str(R.string.chain_back)) { goBack() }, LinearLayout.LayoutParams(dp(48), dp(48)).apply { marginStart = -dp(12) })
@@ -161,7 +170,9 @@ internal class ChainPanel(
     }
 
     private fun primaryLabel(flow: AddFlow): String? = when (flow.step) {
-        FlowStep.LIST_QUESTION, FlowStep.AMOUNTS -> str(if (flow.isEditing) R.string.chain_done else R.string.chain_next)
+        // Amounts always go on to "what to show", so it is "Next" even when changing an existing one.
+        FlowStep.AMOUNTS -> str(R.string.chain_next)
+        FlowStep.LIST_QUESTION -> str(if (flow.isEditing) R.string.chain_done else R.string.chain_next)
         FlowStep.LIST_ANSWERS, FlowStep.AFTER_NUMBER, FlowStep.QUESTION -> str(if (flow.isEditing) R.string.chain_done else R.string.chain_add)
         else -> null
     }

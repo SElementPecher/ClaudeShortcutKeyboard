@@ -196,6 +196,26 @@ class AddFlow private constructor(
         return RelativeShow.entries.associateWith { amount.phrase(ahead, it, now, locale) }
     }
 
+    /**
+     * Where this screen is in a path of several screens: (this screen's number, how many there are), or null when
+     * there is only one screen or the path is not known yet (right after choosing a time). Used for the progress bar.
+     */
+    fun progress(): Pair<Int, Int>? {
+        val position = history.size + 1
+        val total: Int? = when {
+            isEditing -> if (nav.step == FlowStep.AMOUNTS || nav.step == FlowStep.SHOW) 2 else 1
+            nav.top == BlankKind.LIST -> 2
+            nav.top == BlankKind.TIME -> when (nav.time) {
+                null -> null
+                TimeChoice.CLOCK -> 2
+                TimeChoice.FROM_NOW, TimeChoice.AGO -> 5
+                TimeChoice.AFTER_OTHER -> if (clockBlanks.size > 1) 5 else 4
+            }
+            else -> 1
+        }
+        return total?.takeIf { it >= 2 }?.let { position.coerceAtMost(it) to it }
+    }
+
     /** True when the main button of this screen can be pressed. */
     val canAdvance: Boolean
         get() = when (nav.step) {
@@ -266,7 +286,8 @@ class AddFlow private constructor(
     fun chooseShow(show: RelativeShow) {
         if (nav.step != FlowStep.SHOW) return
         chosenShow = show
-        if (chosenAmounts.size >= 2) go(nav.copy(step = FlowStep.QUESTION)) else isDone = true
+        // The last choice for a "how long": there is nothing left to ask (the name is automatic).
+        isDone = true
     }
 
     // ---- typing ----
