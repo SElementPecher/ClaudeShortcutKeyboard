@@ -61,6 +61,7 @@ internal class PillSpan(
 
 /** Builds the message text for the check screen. */
 internal object ResultSpans {
+    private const val UNBROKEN_MAX = 22
 
     /** The pieces as one text, every filled-in value on a rounded highlight in the tile colour of its blank. */
     fun build(pieces: List<ResultPiece>, tiles: List<TileColors>, radius: Float, padX: Float, padY: Float): CharSequence {
@@ -71,7 +72,8 @@ internal object ResultSpans {
                 continue
             }
             val colors = tiles[Math.floorMod(piece.blank, tiles.size)]
-            val chunks = chunksOf(piece.text)
+            // A short value stays in one piece (no line break inside it); only a long one may wrap.
+            val chunks = if (piece.text.length <= UNBROKEN_MAX) listOf(piece.text.replace(' ', '\u00A0')) else chunksOf(piece.text)
             chunks.forEachIndexed { i, chunk ->
                 val start = text.length
                 text.append(chunk)
