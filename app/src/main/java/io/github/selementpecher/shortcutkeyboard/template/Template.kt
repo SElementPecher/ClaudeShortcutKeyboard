@@ -76,6 +76,8 @@ class Template private constructor(val parts: List<Part>) {
                 is Part.Text -> out.append(part.text)
                 is Part.Ref -> {
                     val shown = renderRef(part, values, types, now, locale, missing)
+                    val filled = values.containsKey(part.key) || part.key == NOW || part.key == TODAY
+                    if (filled && shown.isNotEmpty() && !shown.first().isWhitespace() && needsSpaceAfterChar(out.lastOrNull())) out.append(' ')
                     out.append(shown)
                     if (shown.isNotEmpty() && needsSpaceBefore(parts.getOrNull(index + 1))) out.append(' ')
                 }
@@ -121,11 +123,19 @@ class Template private constructor(val parts: List<Part>) {
 
     companion object {
         /**
+         * True when a filled-in value must be preceded by a space: the text before it ends in a letter, a number
+         * or a full stop, comma, colon, semicolon, ! ? or closing bracket. Nothing is added after a space,
+         * an opening bracket or quote, a currency sign, or at the start of the message.
+         */
+        fun needsSpaceAfterChar(previous: Char?): Boolean =
+            previous != null && (previous.isLetterOrDigit() || previous in ",;:.!?)")
+
+        /**
          * True when a filled-in value must be followed by a space: the next thing starts with a letter or digit,
          * or is another blank. Spaces and punctuation already read fine, and the end of the message needs nothing.
          */
         fun needsSpaceBefore(next: Part?): Boolean = when (next) {
-            is Part.Text -> next.text.firstOrNull()?.isLetterOrDigit() == true
+            is Part.Text -> next.text.firstOrNull()?.let { it.isLetterOrDigit() || it == '(' } == true
             is Part.Ref -> true
             null -> false
         }

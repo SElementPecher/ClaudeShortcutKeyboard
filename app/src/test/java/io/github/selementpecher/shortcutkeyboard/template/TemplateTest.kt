@@ -61,6 +61,20 @@ class TemplateTest {
     }
 
     @Test
+    fun `a value is also set off from the word before it`() {
+        val values = mapOf("a" to "20:30", "b" to "Sam")
+        assertEquals("at 20:30", render("at{a}", values))
+        assertEquals("Hello, Sam", render("Hello,{b}", values))
+        assertEquals("Note: Sam", render("Note:{b}", values))
+        assertEquals("(Sam)", render("({b})", values))
+        assertEquals("£Sam", render("£{b}", values))
+        assertEquals("Sam", render("{b}", values))
+        assertEquals("at  Sam", render("at  {b}", values))
+        assertEquals("Sam (ok)", render("{b}(ok)", values))
+        assertEquals("Sam Sam", render("{b}{b}", values))
+    }
+
+    @Test
     fun `plain text has no blanks and renders unchanged`() {
         val template = Template.parse("Hello there, see you soon.")
         assertEquals(listOf(Template.Part.Text("Hello there, see you soon.")), template.parts)
@@ -167,7 +181,7 @@ class TemplateTest {
     fun `an unclosed brace before a blank stays as text`() {
         assertEquals(listOf("b"), names("{a{b}"))
         assertEquals("{a{b}", render("{a{b}"))
-        assertEquals("{aX", render("{a{b}", mapOf("b" to "X")))
+        assertEquals("{a X", render("{a{b}", mapOf("b" to "X")))
     }
 
     @Test

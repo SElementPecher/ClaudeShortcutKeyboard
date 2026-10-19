@@ -58,6 +58,7 @@ object ResultPieces {
                     val number = numbers.getOrPut(part.key) { numbers.size }
                     // A one-blank message renders that blank exactly as the whole message would.
                     val shown = Template.parse("{${part.raw}}").render(values, types, now, locale) { "" }
+                    if (shown.isNotEmpty() && !shown.first().isWhitespace() && Template.needsSpaceAfterChar(pieces.lastOrNull()?.text?.lastOrNull())) add(" ", ResultPiece.FIXED)
                     add(shown, number)
                     if (shown.isNotEmpty() && Template.needsSpaceBefore(template.parts.getOrNull(index + 1))) add(" ", ResultPiece.FIXED)
                 }

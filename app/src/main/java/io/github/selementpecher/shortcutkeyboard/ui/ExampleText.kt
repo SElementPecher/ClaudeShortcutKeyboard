@@ -31,6 +31,10 @@ internal object ExampleParts {
         val order = draft.questions().withIndex().associate { it.value.blankId to it.index }
         val parts = ArrayList<Part>()
         for ((index, segment) in draft.segments.withIndex()) {
+            // The same rule as the keyboard: a value is always set off from the word before it.
+            if (segment !is Segment.Text && io.github.selementpecher.shortcutkeyboard.template.Template.needsSpaceAfterChar(parts.lastOrNull()?.text?.lastOrNull())) {
+                parts += Part(" ", FIXED)
+            }
             when (segment) {
                 is Segment.Text -> if (segment.text.isNotEmpty()) parts += Part(segment.text, FIXED)
                 is Segment.Ref -> parts += Part(segment.shown, order[segment.blankId] ?: 0)
@@ -40,7 +44,7 @@ internal object ExampleParts {
             if (segment !is Segment.Text) {
                 val next = draft.segments.getOrNull(index + 1)
                 val needsSpace = when (next) {
-                    is Segment.Text -> next.text.firstOrNull()?.isLetterOrDigit() == true
+                    is Segment.Text -> next.text.firstOrNull()?.let { it.isLetterOrDigit() || it == '(' } == true
                     null -> false
                     else -> true
                 }
