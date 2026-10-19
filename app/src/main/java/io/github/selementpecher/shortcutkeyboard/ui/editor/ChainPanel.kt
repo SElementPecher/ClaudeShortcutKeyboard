@@ -100,7 +100,11 @@ internal class ChainPanel(
             FlowStep.QUESTION, FlowStep.LIST_QUESTION -> questionLevel(flow)
             FlowStep.LIST_ANSWERS -> answersLevel(flow)
         }
-        if (flow.isEditing && !flow.canGoBack) editExtras()
+        // Make it plain words / Remove it: on the short screens they sit at the bottom, just above Done, so the empty
+        // space is not in the middle; on the long amounts screen they stay in the page so the bottom has room.
+        val extras = flow.isEditing && !flow.canGoBack
+        val pinned = extras && (flow.step == FlowStep.QUESTION || flow.step == FlowStep.LIST_ANSWERS)
+        if (extras) editExtras(pinned)
         val button = primaryLabel(flow)
         if (button != null) {
             val b = ui.primaryButton(button) { advance() }
@@ -109,7 +113,7 @@ internal class ChainPanel(
             screen.showBottomBar(true)
             refreshControls()
         } else {
-            screen.showBottomBar(false)
+            screen.showBottomBar(pinned)
         }
         val field = typed
         if (field != null) showKeyboardFor(field) else hideKeyboard()
@@ -522,9 +526,16 @@ internal class ChainPanel(
         typed = flow.answers.indexOfFirst { it.isBlank() }.let { i -> answerFields.getOrNull(max(i, 0)) } ?: firstField
     }
 
-    private fun editExtras() = with(ui) {
-        view.add(textButton(str(R.string.chain_make_plain)) { listener.onMakePlain() }, top = 12)
-        view.add(dangerButton(str(R.string.chain_remove)) { listener.onRemove() }, top = 0)
+    private fun editExtras(pinned: Boolean) = with(ui) {
+        val plain = textButton(str(R.string.chain_make_plain)) { listener.onMakePlain() }
+        val remove = dangerButton(str(R.string.chain_remove)) { listener.onRemove() }
+        if (pinned) {
+            screen.bottomBar.addView(plain)
+            screen.bottomBar.addView(remove)
+        } else {
+            view.add(plain, top = 12)
+            view.add(remove)
+        }
     }
 
     // ---- big tiles ----
