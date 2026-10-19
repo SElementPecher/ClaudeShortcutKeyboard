@@ -82,6 +82,8 @@ internal class TileSpec(
     /** Overrides the usual text size (sp, before the owner's text size), e.g. for the number keys. */
     val textSp: Float? = null,
     val onClick: (() -> Unit)? = null,
+    /** Twice as wide, so a page with an odd number of tiles has full rows. Only the first tile of a page. */
+    val wide: Boolean = false,
 )
 
 /**
@@ -204,7 +206,8 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
         val shownSp = theme.sp(if (spec.textSp == null && theme.compact && mode != Mode.STACKED) maxOf(baseSp - 2f, look.type.smallSp) else baseSp)
         maxSp = shownSp
         // The floor is the Look's small size as the phone's font size makes it, not made bigger again by Large text.
-        minSp = if (spec.textSp != null) shownSp else minOf(shownSp, look.type.smallSp)
+        // A fixed size (the number keys) still gives way when the tile is too short to hold it, so nothing is cut off.
+        minSp = if (spec.textSp != null) minOf(shownSp, maxOf(shownSp * 0.6f, 14f)) else minOf(shownSp, look.type.smallSp)
         appliedSp = 0f
         nameView.setTextSize(TypedValue.COMPLEX_UNIT_SP, shownSp)
         val centred = mode != Mode.BESIDE

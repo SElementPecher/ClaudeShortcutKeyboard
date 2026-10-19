@@ -17,7 +17,7 @@ import kotlin.math.sin
  */
 object Icons {
 
-    enum class Kind { BACK, FORWARD, CLOSE, GEAR, KEYBOARD, PLUS, CHECK, TRASH, FOLDER }
+    enum class Kind { BACK, FORWARD, CLOSE, GEAR, KEYBOARD, PLUS, CHECK, TRASH, FOLDER, BACKSPACE }
 
     /** An icon in [color], [sizePx] square. Resize with `setBounds` if needed. */
     fun drawable(kind: Kind, color: Int, sizePx: Int): Drawable = IconDrawable(kind, color, sizePx)
@@ -70,7 +70,27 @@ private class IconDrawable(private val kind: Icons.Kind, color: Int, private val
             Icons.Kind.KEYBOARD -> keyboard(canvas, cx, cy, s)
             Icons.Kind.TRASH -> trash(canvas, cx, cy, s)
             Icons.Kind.FOLDER -> folder(canvas, cx, cy, s)
+            Icons.Kind.BACKSPACE -> backspace(canvas, cx, cy, s)
         }
+    }
+
+    /** A delete key: a tag pointing left with a cross inside. */
+    private fun backspace(canvas: Canvas, cx: Float, cy: Float, s: Float) {
+        canvas.drawPath(
+            Path().apply {
+                moveTo(cx - s * 0.42f, cy)
+                lineTo(cx - s * 0.2f, cy - s * 0.25f)
+                lineTo(cx + s * 0.4f, cy - s * 0.25f)
+                lineTo(cx + s * 0.4f, cy + s * 0.25f)
+                lineTo(cx - s * 0.2f, cy + s * 0.25f)
+                close()
+            },
+            stroke,
+        )
+        val d = s * 0.09f
+        val mx = cx + s * 0.1f
+        canvas.drawLine(mx - d, cy - d, mx + d, cy + d, stroke)
+        canvas.drawLine(mx - d, cy + d, mx + d, cy - d, stroke)
     }
 
     private fun chevron(canvas: Canvas, cx: Float, cy: Float, s: Float, direction: Float) {

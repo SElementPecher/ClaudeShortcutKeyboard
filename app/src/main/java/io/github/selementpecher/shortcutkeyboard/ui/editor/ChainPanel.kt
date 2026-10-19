@@ -21,7 +21,10 @@ import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.TileLayout
 import io.github.selementpecher.shortcutkeyboard.look.typefaceOf
+import io.github.selementpecher.shortcutkeyboard.ime.QuickLabels
 import io.github.selementpecher.shortcutkeyboard.model.RelativeShow
+import io.github.selementpecher.shortcutkeyboard.model.VariableType
+import io.github.selementpecher.shortcutkeyboard.template.QuickChoices
 import io.github.selementpecher.shortcutkeyboard.template.RelativeUnit
 import io.github.selementpecher.shortcutkeyboard.ui.Motion
 import io.github.selementpecher.shortcutkeyboard.ui.Ui
@@ -103,7 +106,8 @@ internal class ChainPanel(
         // Make it plain words / Remove it: on the short screens they sit at the bottom, just above Done, so the empty
         // space is not in the middle; on the long amounts screen they stay in the page so the bottom has room.
         val extras = flow.isEditing && !flow.canGoBack
-        val pinned = extras && (flow.step == FlowStep.QUESTION || flow.step == FlowStep.LIST_ANSWERS)
+        val quick = flow.kind() == BlankKind.TIME || flow.kind() == BlankKind.DATE
+        val pinned = extras && !quick && (flow.step == FlowStep.QUESTION || flow.step == FlowStep.LIST_ANSWERS)
         if (extras) editExtras(pinned)
         val button = primaryLabel(flow)
         if (button != null) {
@@ -173,7 +177,7 @@ internal class ChainPanel(
         FlowStep.UNIT -> str(if (flow.timeChoice == TimeChoice.AFTER_OTHER) R.string.chain_title_unit_short else R.string.chain_title_unit)
         FlowStep.AMOUNTS, FlowStep.AFTER_NUMBER -> str(R.string.chain_title_amount)
         FlowStep.SHOW -> str(R.string.chain_title_show)
-        FlowStep.QUESTION, FlowStep.LIST_QUESTION -> str(R.string.chain_title_question)
+        FlowStep.QUESTION, FlowStep.LIST_QUESTION -> str(if (flow.kind() == BlankKind.TIME || flow.kind() == BlankKind.DATE) R.string.chain_title_quick else R.string.chain_title_question)
         FlowStep.LIST_ANSWERS -> str(if (flow.isEditing) R.string.chain_title_values else R.string.chain_title_answers)
     }
 
@@ -415,59 +419,73 @@ internal class ChainPanel(
         view.addView(stack(tiles), lp())
     }
 
-    /** A pill with no values to change (a clock time, a date, a number): nothing to type, just the extras below. */
+    /** A pill with no list of values to type (a number, a time, a date). Time and date have quick choices to pick. */
     private fun questionLevel(flow: AddFlow) = with(ui) {
-        if (flow.kind() == BlankKind.NUMBER) {
-            // A number is just typed on the number pad: nothing worth previewing.
-            view.add(small(str(R.string.chain_number_note)))
-        } else {
-            view.addView(fixedPreview(flow), lp())
-            view.add(small(str(R.string.chain_fixed_note)), top = 12)
+        when (flow.kind()) {
+            BlankKind.TIME, BlankKind.DATE -> quickLevel(flow)
+            else -> view.add(small(str(R.string.chain_number_note)))
         }
         typed = null
     }
 
     /**
-     * What the keyboard will ask for this part, drawn faded with a dashed outline so it is plainly a preview and
-     * not something to tap or edit.
+     * The ready-made answers the keyboard offers for a time or date: one to six, the first is the default. Chosen ones
+     * show first (tap to take one out); the rest can be tapped to add. With an odd number the first is twice as wide,
+     * as it is on the keyboard.
      */
-    private fun fixedPreview(flow: AddFlow): View = with(ui) {
-        val kind = flow.kind() ?: BlankKind.TIME
-        val name = flow.question.replace(BlankQuestions.UNIQUE_MARK, "").ifBlank { BlankQuestions.default(kind) }
-        val question = activity.getString(
-            when (kind) {
-                BlankKind.DATE -> R.string.kb_question_date
-                else -> R.string.kb_question_time
-            },
-            name,
-        )
-        val options: List<String> = when (kind) {
-            BlankKind.DATE -> listOf(R.string.kb_today, R.string.kb_yesterday, R.string.kb_tomorrow, R.string.kb_date_other).map { str(it) }
-            else -> listOf(
-                activity.getString(R.string.kb_time_now, java.time.LocalTime.now().let { String.format("%02d:%02d", it.hour, it.minute) }).replace('\n', ' '),
-                str(R.string.kb_time_ago_15), str(R.string.kb_time_ago_30), str(R.string.kb_time_ago_60), str(R.string.kb_time_other),
-            )
-        }
-        val card = column().apply {
-            val r = look.shape.cardRadiusDp.coerceAtMost(20).toFloat()
-            background = shape(Color.TRANSPARENT, r, palette.inkSoft, 1.5f, dashed = true)
-            setPadding(dp(16), dp(14), dp(16), dp(16))
-            alpha = 0.7f
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
-        }
-        card.add(label(str(R.string.chain_fixed_label)))
-        card.add(heading(question), top = 6)
-        val chips = flow(8)
-        for (o in options) {
-            chips.addView(chip(o).apply {
-                isClickable = false
-                isFocusable = false
-                background = shape(palette.surfaceAlt, 999f)
+    private fun quickLevel(flow: AddFlow) = with(ui) {
+        val isDate = flow.kind() == BlankKind.DATE
+        val chosen = flow.quickChoices()
+        val now = java.time.LocalTime.now().let { String.format("%02d:%02d", it.hour, it.minute) }
+        fun name(value: Long): String =
+            (if (isDate) QuickLabels.date(activity, value) else QuickLabels.time(activity, value, now)).replace('\n', ' ')
+        val presets = if (isDate) QuickChoices.presets(VariableType.DATE) else QuickChoices.presets(VariableType.TIME)
+
+        view.add(label(activity.getString(R.string.chain_quick_chosen, chosen.size, QuickChoices.MAX)))
+        val grid = column()
+        val odd = QuickChoices.firstIsWide(chosen.size)
+        var rowView: LinearLayout? = null
+        chosen.forEachIndexed { i, value ->
+            val pill = chip(name(value), selected = i == 0) {
+                if (chosen.size > 1) {
+                    flow.toggleQuick(value)
+                    render()
+                } else {
+                    screen.snack(str(R.string.chain_quick_min))
+                }
+            }.apply {
+                contentDescription = name(value) + ", " + str(R.string.chain_quick_tap_remove)
+            }
+            val wide = odd && i == 0
+            if (wide || rowView == null || rowView!!.childCount == 2) {
+                rowView = row().also { grid.add(it, top = if (i == 0) 0 else 8) }
+            }
+            rowView!!.addView(pill, LinearLayout.LayoutParams(0, dp(52), if (wide) 2f else 1f).apply {
+                if (rowView!!.childCount > 0) marginStart = dp(8)
             })
+            if (wide) rowView = null
         }
-        card.add(chips, top = 12)
-        card.contentDescription = str(R.string.chain_fixed_label) + ": " + question
-        card
+        view.add(grid, top = 8)
+        view.add(small(str(R.string.chain_quick_first)), top = 8)
+
+        val others = presets.filter { it !in chosen }
+        if (others.isNotEmpty()) {
+            view.add(label(str(R.string.chain_quick_add)), top = 20)
+            val chips = flow(8)
+            val full = chosen.size >= QuickChoices.MAX
+            for (value in others) {
+                chips.addView(chip(name(value)) {
+                    flow.toggleQuick(value)
+                    render()
+                }.apply {
+                    alpha = if (full) 0.4f else 1f
+                    isEnabled = !full
+                })
+            }
+            view.add(chips, top = 8)
+            if (full) view.add(small(str(R.string.chain_quick_max)), top = 8)
+        }
+        view.add(small(str(R.string.chain_quick_other)), top = 12)
     }
 
     private fun answersLevel(flow: AddFlow) = with(ui) {

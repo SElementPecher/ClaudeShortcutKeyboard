@@ -74,6 +74,7 @@ internal class TileGrid(context: Context, private val theme: KeyboardTheme) : Vi
 
     fun bind(newSpecs: List<TileSpec?>) {
         specs = newSpecs
+        requestLayout()
         tiles.forEachIndexed { i, tile ->
             val spec = newSpecs.getOrNull(i)
             if (spec == null) {
@@ -92,6 +93,13 @@ internal class TileGrid(context: Context, private val theme: KeyboardTheme) : Vi
     /** The view of the tile in [slot], e.g. to measure it for the drag ghost. */
     fun tileAt(slot: Int): TileView = tiles[slot]
 
+    /** A wide first tile takes two cells (only where there are at least two columns). */
+    private fun firstIsWide(): Boolean = cols >= 2 && specs.firstOrNull()?.wide == true
+
+    private fun spanOf(index: Int): Int = if (index == 0 && firstIsWide()) 2 else 1
+
+    private fun cellOf(index: Int): Int = if (firstIsWide() && index > 0) index + 1 else index
+
     private fun geometry() = GridGeometry(cols, rows, width.toFloat(), height.toFloat(), gap.toFloat())
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -99,17 +107,21 @@ internal class TileGrid(context: Context, private val theme: KeyboardTheme) : Vi
         val h = MeasureSpec.getSize(heightMeasureSpec)
         setMeasuredDimension(w, h)
         val g = GridGeometry(cols, rows, w.toFloat(), h.toFloat(), gap.toFloat())
-        val cellW = MeasureSpec.makeMeasureSpec(g.cellWidth.toInt(), MeasureSpec.EXACTLY)
         val cellH = MeasureSpec.makeMeasureSpec(g.cellHeight.toInt(), MeasureSpec.EXACTLY)
-        tiles.forEach { it.measure(cellW, cellH) }
+        tiles.forEachIndexed { i, tile ->
+            val span = spanOf(i)
+            val width = g.cellWidth * span + gap * (span - 1)
+            tile.measure(MeasureSpec.makeMeasureSpec(width.toInt(), MeasureSpec.EXACTLY), cellH)
+        }
     }
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         val g = geometry()
         tiles.forEachIndexed { i, tile ->
-            val x = ((i % cols) * (g.cellWidth + gap)).toInt()
-            val y = ((i / cols) * (g.cellHeight + gap)).toInt()
-            tile.layout(x, y, x + g.cellWidth.toInt(), y + g.cellHeight.toInt())
+            val cell = cellOf(i)
+            val x = ((cell % cols) * (g.cellWidth + gap)).toInt()
+            val y = ((cell / cols) * (g.cellHeight + gap)).toInt()
+            tile.layout(x, y, x + tile.measuredWidth, y + g.cellHeight.toInt())
         }
     }
 

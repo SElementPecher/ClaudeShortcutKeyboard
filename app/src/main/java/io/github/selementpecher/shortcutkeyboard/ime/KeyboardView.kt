@@ -443,8 +443,9 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
             for (c in 0 until 4) {
                 val key = keys[r * 4 + c]
                 val spec = TileSpec(
-                    key,
+                    if (key == "⌫") "" else key,
                     TileLook(TileLook.Kind.SPECIAL),
+                    icon = if (key == "⌫") Icons.Kind.BACKSPACE else null,
                     description = when (key) {
                         "⌫" -> getString(R.string.kb_desc_delete_digit)
                         "." -> getString(R.string.kb_desc_point)
@@ -484,7 +485,13 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
      */
     private fun addAmountBody(column: LinearLayout, body: StepBody.Number, relative: RelativeEntry) {
         fun key(label: String, desc: String = label, onClick: () -> Unit) = TileView(context, theme).also {
-            it.bind(TileSpec(label, TileLook(TileLook.Kind.SPECIAL), description = desc, textSp = PAD_SP, onClick = onClick))
+            val delete = label == "⌫"
+            it.bind(
+                TileSpec(
+                    if (delete) "" else label, TileLook(TileLook.Kind.SPECIAL), description = desc,
+                    icon = if (delete) Icons.Kind.BACKSPACE else null, textSp = PAD_SP, onClick = onClick,
+                ),
+            )
         }
         val ok = TileView(context, theme).also {
             it.bind(
@@ -613,7 +620,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         private const val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
         private const val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
         private const val MAX_DOTS = 10
-        private const val PAD_SP = 26f
+        private const val PAD_SP = 22f
         private const val OK_SP = 20f
         private const val SMALL_TITLE_SP = 15f
         private const val EMPTY_EMOJI_SP = 40f

@@ -57,6 +57,14 @@
     <string name="chain_show_both">Both</string>
 
     <!-- The question and the answers -->
+    <string name="chain_title_quick">Quick choices</string>
+    <string name="chain_quick_chosen">Your choices (%1$d of %2$d)</string>
+    <string name="chain_quick_tap_remove">tap to take out</string>
+    <string name="chain_quick_first">The first one is picked first. Tap a choice to take it out.</string>
+    <string name="chain_quick_add">Add another</string>
+    <string name="chain_quick_max">That is the most: take one out to add another.</string>
+    <string name="chain_quick_min">You need at least one choice.</string>
+    <string name="chain_quick_other">The keyboard also shows Other, to pick anything else.</string>
     <string name="chain_title_question">Nothing to edit here</string>
     <string name="chain_title_answers">What are the answers?</string>
     <string name="chain_title_values">Its answers</string>
@@ -72,7 +80,5 @@
     <string name="chain_name_label">Name (optional)</string>
     <string name="chain_name_hint">List</string>
     <string name="chain_show_current"> · now chosen</string>
-    <string name="chain_fixed_label">What the keyboard will ask</string>
-    <string name="chain_fixed_note">This is only a preview of what the keyboard will ask. It is the same every time.</string>
     <string name="chain_number_note">The keyboard asks you to type a number each time.</string>
 </resources>

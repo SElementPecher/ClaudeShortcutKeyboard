@@ -305,6 +305,21 @@ class FillSessionTest {
     }
 
     @Test
+    fun `useDefaults uses the first quick choice of a time or date`() {
+        val shortcut = Shortcut(
+            "1", "x", "{when} {day}",
+            listOf(
+                VariableDef("when", VariableType.TIME, listOf("-60", "0")),
+                VariableDef("day", VariableType.DATE, listOf("1")),
+            ),
+        )
+        val s = session(shortcut) { LocalDateTime.of(2026, 10, 16, 20, 20) }
+        s.useDefaults()
+        assertEquals("19:20", s.valueOf(s.blank("when")))
+        assertEquals("2026-10-17", s.valueOf(s.blank("day")))
+    }
+
+    @Test
     fun `result builds the medicine example`() {
         val s = session(medicine)
         s.setValue(s.blank("child"), "Sam")

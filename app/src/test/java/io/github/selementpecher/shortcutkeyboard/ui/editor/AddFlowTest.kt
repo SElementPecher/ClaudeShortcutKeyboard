@@ -647,6 +647,32 @@ class AddFlowTest {
     }
 
     @Test
+    fun timeQuickChoicesCanBeChangedWithinOneToSix() {
+        val f = AddFlow.edit(BlankSpec(1, "When", BlankKind.TIME), 0, emptySet(), now = now, locale = uk)
+        assertEquals(listOf(0L, -15L, -30L, -60L), f.quickChoices())
+        f.toggleQuick(0L)
+        f.toggleQuick(-5L)
+        f.toggleQuick(15L)
+        f.toggleQuick(30L)
+        f.toggleQuick(60L) // a seventh is refused
+        assertEquals(listOf(-15L, -30L, -60L, -5L, 15L, 30L), f.quickChoices())
+        f.advance()
+        assertEquals(listOf("-15", "-30", "-60", "-5", "15", "30"), f.spec().answers)
+    }
+
+    @Test
+    fun theLastQuickChoiceStaysAndTheUsualOnesAreNotSaved() {
+        val f = AddFlow.edit(BlankSpec(1, "Day", BlankKind.DATE, answers = listOf("0")), 0, emptySet(), now = now, locale = uk)
+        f.toggleQuick(0L)
+        assertEquals(listOf(0L), f.quickChoices())
+        f.toggleQuick(-1L)
+        f.toggleQuick(1L)
+        f.advance()
+        assertEquals(listOf("0", "-1", "1"), f.spec().answers.ifEmpty { listOf("0", "-1", "1") })
+        assertEquals(emptyList<String>(), f.spec().answers)
+    }
+
+    @Test
     fun editingAFixedBlankAndAddingAnAmountMakesItAsked() {
         val spec = BlankSpec(1, "How long", BlankKind.TIME_AHEAD, show = RelativeShow.BOTH, amounts = listOf(RelativeAmount(10, RelativeUnit.MINS)))
         val f = AddFlow.edit(spec, 0, emptySet(), now = now, locale = uk)

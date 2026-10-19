@@ -43,9 +43,16 @@
 
     <!-- Time -->
     <string name="kb_time_now">Now\n%1$s</string>
-    <string name="kb_time_ago_15">15 min ago</string>
-    <string name="kb_time_ago_30">30 min ago</string>
-    <string name="kb_time_ago_60">1 hour ago</string>
+    <string name="kb_time_min_ago">%1$d min ago</string>
+    <string name="kb_time_hour_ago">1 hour ago</string>
+    <string name="kb_time_hours_ago">%1$d hours ago</string>
+    <string name="kb_time_min_ahead">in %1$d min</string>
+    <string name="kb_time_hour_ahead">in 1 hour</string>
+    <string name="kb_time_hours_ahead">in %1$d hours</string>
+    <string name="kb_date_days_ago">%1$d days ago</string>
+    <string name="kb_date_days_ahead">in %1$d days</string>
+    <string name="kb_date_week_ago">1 week ago</string>
+    <string name="kb_date_week_ahead">in 1 week</string>
     <string name="kb_time_other">🕒 Other</string>
     <string name="kb_hour_earlier">− 1 hour</string>
     <string name="kb_hour_later">+ 1 hour</string>

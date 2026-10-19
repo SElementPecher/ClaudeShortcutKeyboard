@@ -4,6 +4,7 @@ import io.github.selementpecher.shortcutkeyboard.model.Shortcut
 import io.github.selementpecher.shortcutkeyboard.model.VariableDef
 import io.github.selementpecher.shortcutkeyboard.model.VariableType
 import io.github.selementpecher.shortcutkeyboard.template.RelativeAmount
+import io.github.selementpecher.shortcutkeyboard.template.QuickChoices
 import io.github.selementpecher.shortcutkeyboard.template.Template
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -45,11 +46,24 @@ class FillSession(
     val isFirst: Boolean get() = index <= 0
     val isLast: Boolean get() = index >= variables.size - 1
 
-    /** Gives every list that has no value yet its first answer, so the message can be typed straight away. */
+    /** Gives every list, time and date that has no value yet its first answer, so the message can be typed straight away. */
     fun useDefaults() {
         for (variable in allVariables) {
-            if (variable.type != VariableType.CHOICE || values.containsKey(variable.key)) continue
-            variable.options.firstOrNull { it.isNotBlank() }?.let { values[variable.key] = it }
+            when (variable.type) {
+                VariableType.CHOICE -> if (!values.containsKey(variable.key)) {
+                    variable.options.firstOrNull { it.isNotBlank() }?.let { values[variable.key] = it }
+                }
+                // Times and dates start at now / today; the first ready-made answer is the default.
+                VariableType.TIME -> {
+                    setTimeToNow(variable)
+                    adjustTime(variable, QuickChoices.of(variable).first())
+                }
+                VariableType.DATE -> {
+                    setDate(variable, now().toLocalDate())
+                    adjustDate(variable, QuickChoices.of(variable).first())
+                }
+                else -> {}
+            }
         }
     }
 

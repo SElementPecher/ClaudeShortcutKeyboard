@@ -28,6 +28,7 @@ import io.github.selementpecher.shortcutkeyboard.model.RelativeShow
 import io.github.selementpecher.shortcutkeyboard.model.VariableDef
 import io.github.selementpecher.shortcutkeyboard.model.VariableType
 import io.github.selementpecher.shortcutkeyboard.template.RelativeUnit
+import io.github.selementpecher.shortcutkeyboard.template.QuickChoices
 import io.github.selementpecher.shortcutkeyboard.template.Template
 import io.github.selementpecher.shortcutkeyboard.ui.AddOptionActivity
 import io.github.selementpecher.shortcutkeyboard.ui.MainActivity
@@ -534,28 +535,58 @@ class ShortcutKeyboardService : InputMethodService() {
     }
 
     private fun timeBody(current: FillSession, variable: VariableDef): StepBody {
-        fun choice(minutesAgo: Long, label: String, kind: TileLook.Kind) = TileSpec(
-            label = label,
-            look = TileLook(kind, colourIndex = (minutesAgo / 15).toInt()),
-            description = label.replace('\n', ' '),
-            onClick = {
-                TimeChoices.pick(current, variable, minutesAgo)
-                advance()
-            },
-        )
         val now = Template.formatTimeValue(LocalTime.now())
-        val tiles = listOf(
-            choice(0, getString(R.string.kb_time_now, now), TileLook.Kind.OK),
-            choice(15, getString(R.string.kb_time_ago_15), TileLook.Kind.ANSWER),
-            choice(30, getString(R.string.kb_time_ago_30), TileLook.Kind.ANSWER),
-            choice(60, getString(R.string.kb_time_ago_60), TileLook.Kind.ANSWER),
-            TileSpec(
+        val choices = QuickChoices.of(variable)
+        return quickBody(
+            choices = choices,
+            label = { QuickLabels.time(this, it, now) },
+            colour = { (-it / 15).toInt().coerceAtLeast(0) },
+            other = TileSpec(
                 getString(R.string.kb_time_other),
                 TileLook(TileLook.Kind.SPECIAL),
                 onClick = { otherOpen = true; showQuestion() },
             ),
+            pick = { TimeChoices.pick(current, variable, -it) },
         )
-        return StepBody.Tiles(tiles, 0, 1, null, {}, {})
+    }
+
+    /** The owner's ready-made answers as tiles (the first one stands out), then Other; paged six at a time. */
+    private fun quickBody(
+        choices: List<Long>,
+        label: (Long) -> String,
+        colour: (Long) -> Int,
+        other: TileSpec,
+        pick: (Long) -> Unit,
+    ): StepBody {
+        val entries: List<Long?> = choices + null
+        answerPage = GridPaging.clampPage(answerPage, entries.size)
+        val onPage = GridPaging.pageItems(entries, answerPage)
+        val tiles = onPage.mapIndexed { slot, value ->
+            val wide = slot == 0 && onPage.size % 2 == 1
+            if (value == null) {
+                other.let { TileSpec(it.label, it.look, it.description, onClick = it.onClick, wide = wide) }
+            } else {
+                val text = label(value)
+                TileSpec(
+                    label = text,
+                    look = TileLook(
+                        if (GridPaging.globalIndex(answerPage, slot) == 0) TileLook.Kind.OK else TileLook.Kind.ANSWER,
+                        colourIndex = colour(value),
+                    ),
+                    description = text.replace('\n', ' '),
+                    onClick = { pick(value); advance() },
+                    wide = wide,
+                )
+            }
+        }
+        return StepBody.Tiles(
+            tiles = tiles,
+            page = answerPage,
+            pageCount = GridPaging.pageCount(entries.size),
+            hint = null,
+            onPrevious = { flipAnswerPage(-1) },
+            onNext = { flipAnswerPage(1) },
+        )
     }
 
     private fun timeAdjustBody(current: FillSession, variable: VariableDef): StepBody {
@@ -579,27 +610,17 @@ class ShortcutKeyboardService : InputMethodService() {
         )
     }
 
-    private fun dateBody(current: FillSession, variable: VariableDef): StepBody {
-        fun choice(label: Int, days: Long) = TileSpec(
-            getString(label),
-            TileLook(if (days == 0L) TileLook.Kind.OK else TileLook.Kind.ANSWER, colourIndex = if (days < 0) 1 else 0),
-            onClick = {
-                DateChoices.pick(current, variable, LocalDate.now(), days)
-                advance()
-            },
-        )
-        val tiles = listOf(
-            choice(R.string.kb_today, 0),
-            choice(R.string.kb_yesterday, -1),
-            choice(R.string.kb_tomorrow, 1),
-            TileSpec(
-                getString(R.string.kb_date_other),
-                TileLook(TileLook.Kind.SPECIAL),
-                onClick = { otherOpen = true; showQuestion() },
-            ),
-        )
-        return StepBody.Tiles(tiles, 0, 1, null, {}, {})
-    }
+    private fun dateBody(current: FillSession, variable: VariableDef): StepBody = quickBody(
+        choices = QuickChoices.of(variable),
+        label = { QuickLabels.date(this, it) },
+        colour = { if (it < 0) 1 else 0 },
+        other = TileSpec(
+            getString(R.string.kb_date_other),
+            TileLook(TileLook.Kind.SPECIAL),
+            onClick = { otherOpen = true; showQuestion() },
+        ),
+        pick = { DateChoices.pick(current, variable, LocalDate.now(), it) },
+    )
 
     private fun dateAdjustBody(current: FillSession, variable: VariableDef): StepBody {
         fun nudge(label: Int, days: Long) = TileSpec(

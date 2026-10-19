@@ -1,6 +1,8 @@
 package io.github.selementpecher.shortcutkeyboard.ui.editor
 
 import io.github.selementpecher.shortcutkeyboard.model.RelativeShow
+import io.github.selementpecher.shortcutkeyboard.model.VariableType
+import io.github.selementpecher.shortcutkeyboard.template.QuickChoices
 import io.github.selementpecher.shortcutkeyboard.template.RelativeAmount
 import io.github.selementpecher.shortcutkeyboard.template.RelativeUnit
 import io.github.selementpecher.shortcutkeyboard.template.Template
@@ -448,6 +450,22 @@ class AddFlow private constructor(
         return AddResult.Reference(id, if (isAfter) minutes else -minutes)
     }
 
+    /** The ready-made answers of a time or date, as saved: nothing when they are the usual ones. */
+    private fun quickAnswers(type: VariableType): List<String> {
+        val chosen = QuickChoices.parse(typedAnswers, type)
+        return if (chosen == QuickChoices.defaults(type)) emptyList() else QuickChoices.encode(chosen)
+    }
+
+    /** The ready-made answers of the time or date being edited, first = the default (1 to [QuickChoices.MAX]). */
+    fun quickChoices(): List<Long> = QuickChoices.parse(typedAnswers, if (kind() == BlankKind.DATE) VariableType.DATE else VariableType.TIME)
+
+    /** Takes a ready-made answer out, or puts it back at the end. The last one cannot be removed; at most six. */
+    fun toggleQuick(value: Long) {
+        val next = QuickChoices.toggle(quickChoices(), value)
+        typedAnswers.clear()
+        typedAnswers.addAll(QuickChoices.encode(next))
+    }
+
     private fun buildSpec(): BlankSpec {
         val original = (editing as? Editing.OfBlank)?.spec
         val kind = kind() ?: BlankKind.TIME
@@ -475,8 +493,8 @@ class AddFlow private constructor(
                     lastValue = original?.lastValue?.takeIf { v -> answers.any { it.equals(v, true) } } ?: first.ifBlank { null },
                 )
             }
-            BlankKind.TIME -> base.copy(example = example.ifBlank { original?.example.orEmpty() })
-            BlankKind.DATE -> base
+            BlankKind.TIME -> base.copy(example = example.ifBlank { original?.example.orEmpty() }, answers = quickAnswers(VariableType.TIME))
+            BlankKind.DATE -> base.copy(answers = quickAnswers(VariableType.DATE))
             BlankKind.NUMBER -> base.copy(
                 example = example.ifBlank { original?.example.orEmpty() },
                 lastValue = example.ifBlank { null } ?: original?.lastValue,

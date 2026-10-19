@@ -367,8 +367,8 @@ data class MessageDraft(
 
     private fun BlankSpec.toVariable(): VariableDef = when (kind) {
         BlankKind.LIST -> VariableDef(question, if (textType) VariableType.TEXT else VariableType.CHOICE, answers, remember, lastValue)
-        BlankKind.TIME -> VariableDef(question, VariableType.TIME, emptyList(), true, example.ifBlank { null })
-        BlankKind.DATE -> VariableDef(question, VariableType.DATE, emptyList(), true, example.ifBlank { null })
+        BlankKind.TIME -> VariableDef(question, VariableType.TIME, answers, true, example.ifBlank { null })
+        BlankKind.DATE -> VariableDef(question, VariableType.DATE, answers, true, example.ifBlank { null })
         BlankKind.NUMBER -> VariableDef(question, VariableType.NUMBER, emptyList(), true, lastValue ?: example.ifBlank { null })
         BlankKind.TIME_AHEAD, BlankKind.TIME_AGO -> {
             val texts = amounts.map { it.text() }
@@ -475,8 +475,8 @@ data class MessageDraft(
                     example = def.lastValue?.takeIf { it.isNotBlank() } ?: def.options.firstOrNull { it.isNotBlank() }?.trim().orEmpty(),
                     remember = def.remember, textType = def.type == VariableType.TEXT, lastValue = def.lastValue,
                 )
-                VariableType.TIME -> BlankSpec(id, question, BlankKind.TIME, example = def.lastValue.orEmpty(), lastValue = def.lastValue)
-                VariableType.DATE -> BlankSpec(id, question, BlankKind.DATE, example = def.lastValue.orEmpty(), lastValue = def.lastValue)
+                VariableType.TIME -> BlankSpec(id, question, BlankKind.TIME, answers = def.options, example = def.lastValue.orEmpty(), lastValue = def.lastValue)
+                VariableType.DATE -> BlankSpec(id, question, BlankKind.DATE, answers = def.options, example = def.lastValue.orEmpty(), lastValue = def.lastValue)
                 VariableType.NUMBER -> BlankSpec(id, question, BlankKind.NUMBER, example = def.lastValue.orEmpty(), lastValue = def.lastValue)
                 VariableType.TIME_AHEAD, VariableType.TIME_AGO -> BlankSpec(
                     id = id,
