@@ -15,14 +15,14 @@ object QuickChoices {
     private val TIME_DEFAULT = listOf(0L, -15L, -30L, -60L)
     private val DATE_DEFAULT = listOf(0L, -1L, 1L)
 
-    private val TIME_PRESETS = listOf(0L, -5L, -10L, -15L, -30L, -45L, -60L, -120L, -180L, 15L, 30L, 60L, 120L)
-    private val DATE_PRESETS = listOf(0L, -1L, 1L, -2L, 2L, -3L, 3L, -7L, 7L)
+    private val TIME_PRESETS = listOf(-180L, -120L, -60L, -45L, -30L, -15L, -10L, -5L, 0L, 15L, 30L, 60L, 120L)
+    private val DATE_PRESETS = listOf(-7L, -3L, -2L, -1L, 0L, 1L, 2L, 3L, 7L)
 
     fun isQuick(type: VariableType): Boolean = type == VariableType.TIME || type == VariableType.DATE
 
     fun defaults(type: VariableType): List<Long> = if (type == VariableType.DATE) DATE_DEFAULT else TIME_DEFAULT
 
-    /** Everything that can be offered for [type], in the order shown when choosing. */
+    /** Everything that can be offered for [type], from the past to the future. */
     fun presets(type: VariableType): List<Long> = if (type == VariableType.DATE) DATE_PRESETS else TIME_PRESETS
 
     fun of(variable: VariableDef): List<Long> = parse(variable.options, variable.type)

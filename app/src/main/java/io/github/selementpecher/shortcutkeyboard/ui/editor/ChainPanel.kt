@@ -438,7 +438,7 @@ internal class ChainPanel(
         val chosen = flow.quickChoices()
         val now = java.time.LocalTime.now().let { String.format("%02d:%02d", it.hour, it.minute) }
         fun name(value: Long): String =
-            (if (isDate) QuickLabels.date(activity, value) else QuickLabels.time(activity, value, now)).replace('\n', ' ')
+            (if (isDate) QuickLabels.date(activity, value) else if (value == 0L) str(R.string.chain_quick_now) else QuickLabels.time(activity, value, now)).replace('\n', ' ')
         val presets = if (isDate) QuickChoices.presets(VariableType.DATE) else QuickChoices.presets(VariableType.TIME)
 
         // A pill with a small sign at its end: − (tap to take out) or + (tap to add).

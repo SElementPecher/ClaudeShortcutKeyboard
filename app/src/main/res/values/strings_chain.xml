@@ -57,6 +57,7 @@
     <string name="chain_show_both">Both</string>
 
     <!-- The question and the answers -->
+    <string name="chain_quick_now">Now</string>
     <string name="chain_title_quick">Quick choices</string>
     <string name="chain_quick_chosen">Your choices (%1$d of %2$d)</string>
     <string name="chain_quick_tap_remove">tap to take out</string>
