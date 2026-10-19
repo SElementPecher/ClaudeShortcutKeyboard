@@ -165,7 +165,7 @@ class OnboardingActivity : Activity() {
             ExampleParts.Part("18:13", 0), ExampleParts.Part(" ", ExampleParts.FIXED),
             ExampleParts.Part("Sam", 1), ExampleParts.Part(", ", ExampleParts.FIXED),
             ExampleParts.Part("Calpol", 2), ExampleParts.Part(", ", ExampleParts.FIXED),
-            ExampleParts.Part("5ml", 3), ExampleParts.Part(" next dose ", ExampleParts.FIXED),
+            ExampleParts.Part("5ml", 3), ExampleParts.Part(" next dose not before ", ExampleParts.FIXED),
             ExampleParts.Part("22:13", 0),
         )
         box.add(exampleCard(parts), top = 24)
