@@ -18,6 +18,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -25,6 +26,9 @@ import android.widget.Toolbar
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.data.ShortcutJson
 import io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository
+import io.github.selementpecher.shortcutkeyboard.model.Folder
+import io.github.selementpecher.shortcutkeyboard.model.Library
+import io.github.selementpecher.shortcutkeyboard.model.Node
 import io.github.selementpecher.shortcutkeyboard.model.Shortcut
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -38,8 +42,11 @@ import java.util.concurrent.RejectedExecutionException
 /**
  * The app's home screen, also opened from the keyboard's settings button.
  *
- * Shows the two setup steps (with ticks that update live), a box to try the keyboard, the list
- * of shortcuts, and backup / restore through the system file picker.
+ * Shows the two setup steps (with ticks that update live), a box to try the keyboard, the
+ * shortcuts and folders (one folder level at a time), and backup / restore through the system
+ * file picker.
+ *
+ * Start with [EXTRA_FOLDER_ID] to open inside a folder.
  */
 class MainActivity : Activity() {
 
@@ -54,6 +61,13 @@ class MainActivity : Activity() {
     private lateinit var tryTip: TextView
     private lateinit var shortcutList: LinearLayout
     private lateinit var emptyText: TextView
+    private lateinit var tipText: View
+    private lateinit var folderHeader: View
+    private lateinit var folderBack: TextView
+    private lateinit var folderPath: TextView
+
+    /** The folder being shown (null = top level, called "Home"). */
+    private var currentFolderId: String? = null
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -94,10 +108,21 @@ class MainActivity : Activity() {
         tryTip = findViewById(R.id.try_tip)
         shortcutList = findViewById(R.id.shortcut_list)
         emptyText = findViewById(R.id.shortcuts_empty)
+        tipText = findViewById(R.id.shortcuts_tip)
+        folderHeader = findViewById(R.id.folder_header)
+        folderBack = findViewById(R.id.folder_back)
+        folderPath = findViewById(R.id.folder_path)
+        currentFolderId = if (savedInstanceState != null) {
+            savedInstanceState.getString(STATE_FOLDER)
+        } else {
+            intent?.getStringExtra(EXTRA_FOLDER_ID)
+        }
 
         step1Button.setOnClickListener { openKeyboardSettings() }
         step2Button.setOnClickListener { showKeyboardPicker() }
         findViewById<View>(R.id.new_shortcut_button).setOnClickListener { openEditor(null) }
+        findViewById<View>(R.id.new_folder_button).setOnClickListener { askFolderName(null) }
+        folderBack.setOnClickListener { goUp() }
 
         ShortcutRepository.addListener(repositoryListener)
 
@@ -114,6 +139,22 @@ class MainActivity : Activity() {
                 Log.w(TAG, "Could not watch $key", e)
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        // Singleton: the keyboard opens us again, maybe for another folder.
+        if (intent.hasExtra(EXTRA_FOLDER_ID)) {
+            currentFolderId = intent.getStringExtra(EXTRA_FOLDER_ID)
+            if (!isDestroyed) refreshShortcuts()
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        // Back goes up a folder first, then leaves.
+        if (currentFolderId != null) goUp() else super.onBackPressed()
     }
 
     override fun onResume() {
@@ -135,6 +176,7 @@ class MainActivity : Activity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
+        currentFolderId?.let { outState.putString(STATE_FOLDER, it) }
         pendingRestore?.let { outState.putString(STATE_PENDING_RESTORE, it.toString()) }
     }
 
@@ -225,15 +267,51 @@ class MainActivity : Activity() {
     // Shortcut list
 
     private fun refreshShortcuts() {
-        val shortcuts = ShortcutRepository.all(this)
+        val library = ShortcutRepository.library(this)
+        // A folder deleted elsewhere (e.g. from the keyboard): fall back to the top level.
+        currentFolderId = FolderLogic.existingFolder(library, currentFolderId)
+        val children = library.children(currentFolderId)
         val now = LocalDateTime.now()
         val locale = Locale.getDefault()
         shortcutList.removeAllViews()
-        for (shortcut in shortcuts) shortcutList.addView(shortcutRow(shortcut, now, locale))
-        emptyText.visibility = if (shortcuts.isEmpty()) View.VISIBLE else View.GONE
+        for (node in children) {
+            when (node) {
+                is Folder -> shortcutList.addView(folderRow(node, library))
+                is Shortcut -> shortcutList.addView(shortcutRow(node, now, locale))
+            }
+        }
+        val inFolder = currentFolderId != null
+        emptyText.setText(if (inFolder) R.string.folder_empty else R.string.shortcuts_empty)
+        emptyText.visibility = if (children.isEmpty()) View.VISIBLE else View.GONE
+        tipText.visibility = if (children.isEmpty()) View.GONE else View.VISIBLE
+        showHeader(library)
+        tryTip.setText(R.string.try_tip)
+    }
 
-        val trigger = shortcuts.firstOrNull { it.trigger.isNotBlank() }?.trigger?.trim()
-        tryTip.text = if (trigger != null) getString(R.string.try_tip_trigger, unbreakable(trigger)) else getString(R.string.try_tip)
+    /** The back row and the "Home › Kids" line, only inside a folder. */
+    private fun showHeader(library: Library) {
+        val folder = library.folder(currentFolderId)
+        folderHeader.visibility = if (folder == null) View.GONE else View.VISIBLE
+        if (folder == null) return
+        val home = getString(R.string.home_name)
+        val noName = getString(R.string.shortcut_no_name)
+        val parentName = library.folder(folder.parentId)?.name?.ifBlank { noName } ?: home
+        folderBack.text = getString(R.string.folder_back, parentName)
+        folderBack.contentDescription = getString(R.string.folder_back_description, parentName)
+        folderPath.text = FolderLogic.pathText(library, currentFolderId, home, noName)
+    }
+
+    private fun goUp() {
+        val library = ShortcutRepository.library(this)
+        currentFolderId = library.folder(currentFolderId)?.parentId
+        refreshShortcuts()
+        findViewById<View>(R.id.main_scroll).scrollTo(0, 0)
+    }
+
+    private fun openFolder(id: String) {
+        currentFolderId = id
+        refreshShortcuts()
+        findViewById<View>(R.id.main_scroll).scrollTo(0, 0)
     }
 
     private fun shortcutRow(shortcut: Shortcut, now: LocalDateTime, locale: Locale): View {
@@ -242,21 +320,165 @@ class MainActivity : Activity() {
         val preview = ShortcutPreview.render(shortcut, now, locale).replace('\n', ' ')
         row.findViewById<TextView>(R.id.shortcut_name).text = name
         row.findViewById<TextView>(R.id.shortcut_preview).text = preview
-        row.findViewById<TextView>(R.id.shortcut_trigger).apply {
-            text = shortcut.trigger.trim()
-            visibility = if (shortcut.trigger.isBlank()) View.GONE else View.VISIBLE
-        }
         row.contentDescription = getString(R.string.shortcut_row_description, name, preview)
         row.setOnClickListener { openEditor(shortcut.id) }
+        row.setOnLongClickListener {
+            showRowMenu(shortcut)
+            true
+        }
         return row
     }
 
-    /** Stops a line break inside a word like "/meds" (Android may break after the slash). */
-    private fun unbreakable(word: String): String = word.toCharArray().joinToString(WORD_JOINER)
+    private fun folderRow(folder: Folder, library: Library): View {
+        val row = layoutInflater.inflate(R.layout.item_shortcut, shortcutList, false)
+        val name = folder.name.ifBlank { getString(R.string.shortcut_no_name) }
+        val count = FolderLogic.itemCount(library, folder.id)
+        val items = if (count == 0) getString(R.string.folder_empty_row) else resources.getQuantityString(R.plurals.folder_items, count, count)
+        row.findViewById<TextView>(R.id.shortcut_name).text = getString(R.string.folder_row_name, name)
+        row.findViewById<TextView>(R.id.shortcut_preview).text = items
+        row.contentDescription = getString(R.string.folder_row_description, name, items)
+        row.setOnClickListener { openFolder(folder.id) }
+        row.setOnLongClickListener {
+            showRowMenu(folder)
+            true
+        }
+        return row
+    }
+
+    // Folder and shortcut actions
+
+    /** Press and hold: rename (folders only), move, delete. */
+    private fun showRowMenu(node: Node) {
+        val name = node.name.ifBlank { getString(R.string.shortcut_no_name) }
+        val actions = ArrayList<Pair<String, () -> Unit>>()
+        if (node is Folder) actions += getString(R.string.row_rename) to { askFolderName(node) }
+        actions += getString(R.string.row_move) to { showMoveDialog(node) }
+        actions += getString(R.string.row_delete) to { confirmDelete(node) }
+        showDialog(
+            AlertDialog.Builder(this)
+                .setTitle(if (node is Folder) getString(R.string.folder_row_name, name) else name)
+                .setItems(actions.map { it.first }.toTypedArray()) { _, which -> actions[which].second() }
+                .setNegativeButton(R.string.dialog_cancel, null)
+                .create(),
+        )
+    }
+
+    /** A box for the name of a new folder ([existing] = null) or to rename one. */
+    private fun askFolderName(existing: Folder?) {
+        val view = layoutInflater.inflate(R.layout.dialog_folder_name, null)
+        val field = view.findViewById<EditText>(R.id.folder_name_field)
+        val error = view.findViewById<TextView>(R.id.folder_name_error)
+        existing?.let {
+            field.setText(it.name)
+            field.setSelection(field.length())
+        }
+        field.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: android.text.Editable?) {
+                error.visibility = View.GONE
+            }
+        })
+        val ask = AlertDialog.Builder(this)
+            .setTitle(if (existing == null) R.string.folder_new_title else R.string.folder_rename_title)
+            .setView(view)
+            .setPositiveButton(if (existing == null) R.string.folder_create else R.string.folder_rename_save, null)
+            .setNegativeButton(R.string.dialog_cancel, null)
+            .create()
+        ask.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+        showDialog(ask)
+        // Set after show() so an empty name keeps the box open instead of closing it.
+        ask.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val name = field.text.toString().trim()
+            if (name.isEmpty()) {
+                error.visibility = View.VISIBLE
+                field.requestFocus()
+            } else if (saveFolder(existing, name)) {
+                ask.dismiss()
+            }
+        }
+        field.requestFocus()
+    }
+
+    private fun saveFolder(existing: Folder?, name: String): Boolean {
+        try {
+            if (existing == null) {
+                ShortcutRepository.saveFolder(this, Folder(ShortcutRepository.newId(), name, currentFolderId))
+            } else {
+                // Use the stored copy, in case it was moved meanwhile.
+                val latest = ShortcutRepository.findFolder(this, existing.id) ?: existing
+                ShortcutRepository.saveFolder(this, latest.copy(name = name))
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not save folder", e)
+            toast(R.string.folder_save_failed)
+            return false
+        }
+        refreshShortcuts()
+        return true
+    }
+
+    private fun showMoveDialog(node: Node) {
+        val library = ShortcutRepository.library(this)
+        val targets = FolderLogic.moveTargets(library, node.id, getString(R.string.home_name))
+        val noName = getString(R.string.shortcut_no_name)
+        val labels = targets.map { target ->
+            val base = target.name.ifBlank { noName }.let { if (target.folderId == null) it else getString(R.string.folder_row_name, it) }
+            val text = if (target.isCurrent) getString(R.string.move_here, base) else base
+            INDENT.repeat(target.depth) + text
+        }
+        showDialog(
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.move_title, node.name.ifBlank { noName }))
+                .setItems(labels.toTypedArray()) { _, which ->
+                    val target = targets[which]
+                    if (!target.isCurrent) moveTo(node, target.folderId)
+                }
+                .setNegativeButton(R.string.dialog_cancel, null)
+                .create(),
+        )
+    }
+
+    private fun moveTo(node: Node, folderId: String?) {
+        val moved = try {
+            ShortcutRepository.move(this, node.id, folderId, Int.MAX_VALUE)
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not move", e)
+            false
+        }
+        if (!moved) toast(R.string.move_failed)
+        refreshShortcuts()
+    }
+
+    private fun confirmDelete(node: Node) {
+        val name = node.name.ifBlank { getString(R.string.shortcut_no_name) }
+        val isFolder = node is Folder
+        showDialog(
+            AlertDialog.Builder(this)
+                .setTitle(if (isFolder) getString(R.string.folder_delete_title, name) else getString(R.string.delete_title, name))
+                .setMessage(if (isFolder) R.string.folder_delete_message else R.string.delete_message)
+                .setPositiveButton(R.string.delete_confirm) { _, _ -> delete(node) }
+                .setNegativeButton(R.string.dialog_cancel, null)
+                .create(),
+        )
+    }
+
+    private fun delete(node: Node) {
+        try {
+            if (node is Folder) ShortcutRepository.deleteFolder(this, node.id) else ShortcutRepository.delete(this, node.id)
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not delete", e)
+            toast(R.string.edit_save_failed)
+            return
+        }
+        toast(if (node is Folder) R.string.folder_deleted else R.string.shortcut_deleted)
+        refreshShortcuts()
+    }
 
     private fun openEditor(id: String?) {
         val intent = Intent(this, EditShortcutActivity::class.java)
         if (id != null) intent.putExtra(EditShortcutActivity.EXTRA_ID, id)
+        else currentFolderId?.let { intent.putExtra(EditShortcutActivity.EXTRA_PARENT_ID, it) }
         startActivity(intent)
     }
 
@@ -287,8 +509,9 @@ class MainActivity : Activity() {
     }
 
     private fun writeBackup(uri: Uri) {
-        val shortcuts = ShortcutRepository.all(this)
-        val json = ShortcutJson.toJson(shortcuts)
+        val library = ShortcutRepository.library(this)
+        val shortcuts = library.shortcuts
+        val json = ShortcutJson.toJson(library)
         val resolver = applicationContext.contentResolver
         val appContext = applicationContext
         inBackground(work = { writeText(resolver, uri, json) }) { result ->
@@ -310,7 +533,7 @@ class MainActivity : Activity() {
             // If the screen was rotated meanwhile, the new one reads the file again.
             if (isDestroyed) return@inBackground
             when (val outcome = result.getOrElse { RestoreOutcome.ReadFailed }) {
-                is RestoreOutcome.Found -> askHowToRestore(outcome.shortcuts)
+                is RestoreOutcome.Found -> askHowToRestore(outcome.library)
                 RestoreOutcome.Empty -> restoreFinished(R.string.restore_empty)
                 RestoreOutcome.NotABackup -> restoreFinished(R.string.restore_bad_file)
                 RestoreOutcome.ReadFailed -> restoreFinished(R.string.restore_failed)
@@ -323,23 +546,23 @@ class MainActivity : Activity() {
         toast(message)
     }
 
-    private fun askHowToRestore(shortcuts: List<Shortcut>) {
-        val count = shortcuts.size
+    private fun askHowToRestore(library: Library) {
+        val count = library.shortcuts.size
         val ask = AlertDialog.Builder(this)
             .setTitle(resources.getQuantityString(R.plurals.restore_found, count, count))
             .setMessage(R.string.restore_message)
-            .setPositiveButton(R.string.restore_add) { _, _ -> applyRestore(shortcuts, replace = false) }
-            .setNegativeButton(R.string.restore_replace) { _, _ -> applyRestore(shortcuts, replace = true) }
+            .setPositiveButton(R.string.restore_add) { _, _ -> applyRestore(library, replace = false) }
+            .setNegativeButton(R.string.restore_replace) { _, _ -> applyRestore(library, replace = true) }
             .setNeutralButton(R.string.dialog_cancel) { _, _ -> pendingRestore = null }
             .setOnCancelListener { pendingRestore = null }
             .create()
         showDialog(ask)
     }
 
-    private fun applyRestore(shortcuts: List<Shortcut>, replace: Boolean) {
+    private fun applyRestore(library: Library, replace: Boolean) {
         pendingRestore = null
         try {
-            if (replace) ShortcutRepository.replaceAll(this, shortcuts) else ShortcutRepository.merge(this, shortcuts)
+            if (replace) ShortcutRepository.replaceAll(this, library) else ShortcutRepository.merge(this, library)
         } catch (e: Exception) {
             Log.w(TAG, "Restore failed", e)
             toast(R.string.restore_save_failed)
@@ -350,7 +573,7 @@ class MainActivity : Activity() {
             if (replace) {
                 resources.getQuantityString(R.plurals.restore_replaced, total, total)
             } else {
-                resources.getQuantityString(R.plurals.restore_added, shortcuts.size, shortcuts.size)
+                resources.getQuantityString(R.plurals.restore_added, library.shortcuts.size, library.shortcuts.size)
             },
         )
         refreshShortcuts()
@@ -385,19 +608,23 @@ class MainActivity : Activity() {
 
     /** What reading a backup file found. */
     private sealed interface RestoreOutcome {
-        class Found(val shortcuts: List<Shortcut>) : RestoreOutcome
+        class Found(val library: Library) : RestoreOutcome
         data object Empty : RestoreOutcome
         data object NotABackup : RestoreOutcome
         data object ReadFailed : RestoreOutcome
     }
 
     companion object {
+        /** The id of the folder to open. Leave it out for the top level. */
+        const val EXTRA_FOLDER_ID = "folder_id"
+
         private const val TAG = "MainActivity"
         private const val REQUEST_BACKUP = 1
         private const val REQUEST_RESTORE = 2
         private const val STATE_PENDING_RESTORE = "pendingRestore"
+        private const val STATE_FOLDER = "folder"
         private const val DISABLED_ALPHA = 0.45f
-        private const val WORD_JOINER = "\u2060"
+        private const val INDENT = "\u2003"
         private const val BACKUP_MIME_TYPE = "application/json"
         private val RESTORE_MIME_TYPES = arrayOf("application/json", "text/plain", "application/octet-stream", "*/*")
 
@@ -436,15 +663,13 @@ class MainActivity : Activity() {
                 Log.w(TAG, "Could not read backup", e)
                 return RestoreOutcome.ReadFailed
             }
-            val shortcuts = try {
-                ShortcutJson.fromJson(text)
+            val library = try {
+                FolderLogic.withoutRepeats(ShortcutJson.libraryFromJson(text))
             } catch (e: Exception) {
                 Log.w(TAG, "Not a backup file", e)
                 return RestoreOutcome.NotABackup
             }
-            // A file with the same id twice would otherwise add both copies.
-            val unique = shortcuts.asReversed().distinctBy { it.id }.asReversed()
-            return if (unique.isEmpty()) RestoreOutcome.Empty else RestoreOutcome.Found(unique)
+            return if (FolderLogic.isEmpty(library)) RestoreOutcome.Empty else RestoreOutcome.Found(library)
         }
     }
 }

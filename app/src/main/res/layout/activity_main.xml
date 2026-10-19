@@ -114,6 +114,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/app_gap"
+                    android:text="@string/setup_how_to" />
+
+                <TextView
+                    style="@style/AppText.Help"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/app_gap_small"
                     android:text="@string/setup_privacy" />
             </LinearLayout>
 
@@ -166,6 +173,41 @@
                 android:accessibilityHeading="true"
                 android:text="@string/shortcuts_title" />
 
+            <!-- Where you are. Only shown inside a folder. -->
+            <LinearLayout
+                android:id="@+id/folder_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/folder_back"
+                    style="@style/AppText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/app_card_clickable"
+                    android:clickable="true"
+                    android:ellipsize="end"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:maxLines="1"
+                    android:minHeight="56dp"
+                    android:paddingStart="@dimen/app_card_padding"
+                    android:paddingEnd="@dimen/app_card_padding"
+                    android:textColor="@color/primary"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/folder_path"
+                    style="@style/AppText.Help"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/app_gap"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp" />
+            </LinearLayout>
+
             <LinearLayout
                 android:id="@+id/shortcut_list"
                 android:layout_width="match_parent"
@@ -181,10 +223,25 @@
                 android:text="@string/shortcuts_empty"
                 android:visibility="gone" />
 
+            <TextView
+                android:id="@+id/shortcuts_tip"
+                style="@style/AppText.Help"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/app_gap"
+                android:text="@string/shortcuts_tip"
+                android:visibility="gone" />
+
             <Button
                 android:id="@+id/new_shortcut_button"
                 style="@style/AppButton.Primary"
                 android:text="@string/shortcut_new" />
+
+            <Button
+                android:id="@+id/new_folder_button"
+                style="@style/AppButton.Outline"
+                android:layout_marginTop="@dimen/app_gap"
+                android:text="@string/folder_new" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

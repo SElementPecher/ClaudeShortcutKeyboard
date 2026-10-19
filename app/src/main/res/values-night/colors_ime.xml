@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="kb_tile_1">#2B4FBF</color>
+    <color name="kb_tile_2">#1F7A44</color>
+    <color name="kb_tile_3">#7B3FC4</color>
+    <color name="kb_tile_4">#B83A3A</color>
+    <color name="kb_tile_5">#11766E</color>
+    <color name="kb_tile_6">#B5521B</color>
+    <color name="kb_tile_text">#FFFFFF</color>
+
+    <color name="kb_tile_folder">#5C4D12</color>
+    <color name="kb_tile_folder_text">#FFF4CC</color>
+
+    <color name="kb_tile_answer">#3A63D6</color>
+    <color name="kb_tile_ok">#1F7A44</color>
+    <color name="kb_tile_new_stroke">#A8AEBD</color>
+    <color name="kb_tile_new_text">#D5D9E4</color>
+
+    <color name="kb_tile_drop">#FFB84D</color>
+</resources>

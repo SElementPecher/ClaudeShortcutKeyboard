@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One box for a folder's name (new folder or rename). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="?android:attr/dialogPreferredPadding"
+    android:paddingTop="@dimen/app_gap_small"
+    android:paddingEnd="?android:attr/dialogPreferredPadding"
+    android:paddingBottom="@dimen/app_gap_small">
+
+    <TextView
+        style="@style/AppText.Label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:labelFor="@+id/folder_name_field"
+        android:text="@string/folder_name_label" />
+
+    <EditText
+        android:id="@+id/folder_name_field"
+        style="@style/AppField"
+        android:hint="@string/folder_name_hint"
+        android:imeOptions="actionDone"
+        android:importantForAutofill="no"
+        android:inputType="textCapSentences"
+        android:maxLines="1" />
+
+    <TextView
+        android:id="@+id/folder_name_error"
+        style="@style/AppText.Error"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/folder_name_required" />
+</LinearLayout>

@@ -22,6 +22,7 @@
     <string name="setup_step2_button">Pick keyboard</string>
     <string name="setup_step_done">Done: %1$s</string>
     <string name="setup_step_todo">To do: %1$s</string>
+    <string name="setup_how_to">To type a shortcut: tap the keyboard icon at the bottom of your screen, then choose Shortcut Keyboard.</string>
     <string name="setup_privacy">This keyboard has no internet access. What you type stays on your phone.</string>
     <string name="setup_ready">✓ Keyboard is ready</string>
     <string name="setup_no_settings">Could not open settings. Go to Settings, then System, then Keyboard.</string>
@@ -29,15 +30,47 @@
     <!-- Main screen: try it -->
     <string name="try_title">Try it</string>
     <string name="try_hint">Tap here to try your keyboard</string>
-    <string name="try_tip">Tap a shortcut at the top of the keyboard.</string>
-    <string name="try_tip_trigger">Tap a shortcut at the top of the keyboard. Or type %1$s and a space.</string>
+    <string name="try_tip">Tap the keyboard icon at the bottom of your screen and choose Shortcut Keyboard. Pick a shortcut. It is typed here.</string>
 
     <!-- Main screen: list -->
     <string name="shortcuts_title">Your shortcuts</string>
     <string name="shortcuts_empty">No shortcuts yet. Tap “New shortcut” to make one.</string>
+    <string name="folder_empty">This folder is empty.</string>
+    <string name="shortcuts_tip">In the keyboard, press and hold a tile, then drag it to move it.</string>
     <string name="shortcut_new">+ New shortcut</string>
     <string name="shortcut_no_name">(No name)</string>
-    <string name="shortcut_row_description">%1$s. %2$s. Tap to change it.</string>
+    <string name="shortcut_row_description">Shortcut %1$s. %2$s. Tap to change it. Press and hold for more.</string>
+    <string name="folder_row_description">Folder %1$s. %2$s. Tap to open it. Press and hold for more.</string>
+    <string name="folder_row_name">📁 %1$s</string>
+    <plurals name="folder_items">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+    <string name="folder_empty_row">Empty</string>
+
+    <!-- Folders -->
+    <string name="home_name">Home</string>
+    <string name="folder_back">◀ %1$s</string>
+    <string name="folder_back_description">Back to %1$s</string>
+    <string name="folder_new">+ New folder</string>
+    <string name="folder_new_title">New folder</string>
+    <string name="folder_rename_title">Rename folder</string>
+    <string name="folder_name_label">Folder name</string>
+    <string name="folder_name_hint">For example: Kids</string>
+    <string name="folder_name_required">Please give it a name.</string>
+    <string name="folder_create">Make folder</string>
+    <string name="folder_rename_save">Save</string>
+    <string name="folder_save_failed">Could not save. Please try again.</string>
+    <string name="row_rename">Rename</string>
+    <string name="row_move">Move to…</string>
+    <string name="row_delete">Delete</string>
+    <string name="move_title">Move “%1$s” to</string>
+    <string name="move_here">%1$s (here)</string>
+    <string name="move_failed">It could not be moved there.</string>
+    <string name="folder_delete_title">Delete the folder “%1$s”?</string>
+    <string name="folder_delete_message">Everything inside moves up one level.</string>
+    <string name="folder_deleted">Folder deleted</string>
+    <string name="shortcut_deleted">Deleted</string>
 
     <!-- Backup and restore -->
     <string name="backup_file_name" translatable="false">shortcuts-backup.json</string>
@@ -46,7 +79,7 @@
     <string name="restore_failed">Could not open that file. Please try again.</string>
     <string name="restore_bad_file">That file is not a shortcuts backup.</string>
     <string name="restore_empty">There are no shortcuts in that file.</string>
-    <string name="restore_message">Add them to the shortcuts you have now?\n\nOr replace all your shortcuts with them? This removes the ones you have now.</string>
+    <string name="restore_message">Add them to the shortcuts and folders you have now?\n\nOr replace everything you have now with them? This removes what you have now.</string>
     <string name="restore_add">Add to my shortcuts</string>
     <string name="restore_replace">Replace all</string>
     <string name="restore_save_failed">Could not restore. Please try again.</string>
@@ -69,7 +102,7 @@
 
     <!-- How blanks work -->
     <string name="help_title">How blanks work</string>
-    <string name="help_intro">A blank is a word in curly brackets. The keyboard asks you to fill it in.</string>
+    <string name="help_intro">A blank is a word in curly brackets. When you use the shortcut, the keyboard asks you to fill it in, one question at a time.</string>
     <string name="help_choice_code" translatable="false">{child}</string>
     <string name="help_choice">You pick it from a list or type it. Like Sam.</string>
     <string name="help_time_code" translatable="false">{time}</string>
@@ -89,9 +122,7 @@
     <string name="edit_delete">Delete</string>
     <string name="edit_name_label">Name</string>
     <string name="edit_name_hint">For example: Medicine given</string>
-    <string name="edit_trigger_label">Trigger word (optional)</string>
-    <string name="edit_trigger_hint" translatable="false">/meds</string>
-    <string name="edit_trigger_help">Type this then space to open the shortcut.</string>
+    <string name="edit_in_folder">In: %1$s</string>
     <string name="edit_message_label">Message</string>
     <string name="edit_message_hint">For example: {child} had {medicine} at {time}</string>
     <string name="edit_message_help">Put blanks in curly brackets, like {child}. For a time later, use {time+4h}.</string>
@@ -112,11 +143,6 @@
     <!-- Edit screen: problems -->
     <string name="error_name_required">Please give it a name.</string>
     <string name="error_message_required">Please type the message.</string>
-    <string name="error_trigger_spaces">No spaces, please. For example: /meds</string>
-    <string name="trigger_clash_title">Trigger word already used</string>
-    <string name="trigger_clash_message">“%2$s” already uses %1$s. Only one of them will open.</string>
-    <string name="trigger_clash_save">Save anyway</string>
-    <string name="trigger_clash_change">Change it</string>
 
     <!-- Edit screen: dialogs -->
     <string name="unsaved_title">Save changes?</string>

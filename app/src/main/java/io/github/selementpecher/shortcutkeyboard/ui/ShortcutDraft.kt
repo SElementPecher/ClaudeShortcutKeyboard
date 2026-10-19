@@ -7,7 +7,7 @@ import io.github.selementpecher.shortcutkeyboard.template.Template
 
 /**
  * The shortcut editor's rules: building the shortcut to save, cleaning list options, and
- * checking names and trigger words.
+ * checking blank names.
  *
  * Plain Kotlin with no Android types, so it can be unit tested.
  */
@@ -28,21 +28,29 @@ object ShortcutDraft {
     fun optionsText(options: List<String>): String = options.joinToString("\n")
 
     /**
-     * The shortcut to save. Only the blanks used in [template] are kept, in the order they first
+     * The shortcut to save, staying in its folder ([parentId]) and place ([order]). Only the blanks used in [template] are kept, in the order they first
      * appear, named as in the message. [settingsFor] gives the editor's settings for each blank name.
      */
     fun build(
         id: String,
         name: String,
-        trigger: String,
         template: String,
+        parentId: String? = null,
+        order: Int = 0,
         settingsFor: (String) -> VariableDef,
     ): Shortcut {
         val variables = Template.parse(template).variableNames.map { blank ->
             val settings = settingsFor(blank)
             settings.copy(name = blank, options = cleanOptions(settings.options))
         }
-        return Shortcut(id = id, name = name.trim(), trigger = trigger.trim(), template = template, variables = variables)
+        return Shortcut(
+            id = id,
+            name = name.trim(),
+            template = template,
+            variables = variables,
+            parentId = parentId,
+            order = order,
+        )
     }
 
     /**
@@ -52,18 +60,9 @@ object ShortcutDraft {
     fun normalise(shortcut: Shortcut): Shortcut {
         val parsed = Template.parse(shortcut.template)
         val resolved = FillSession.resolveVariables(shortcut, parsed).associateBy { it.key }
-        return build(shortcut.id, shortcut.name, shortcut.trigger, shortcut.template) { blank ->
+        return build(shortcut.id, shortcut.name, shortcut.template, shortcut.parentId, shortcut.order) { blank ->
             resolved[VariableDef.keyOf(blank)] ?: VariableDef(blank, Template.guessType(blank, parsed.usesOffset(blank)))
         }
-    }
-
-    fun triggerHasSpaces(trigger: String): Boolean = trigger.trim().any { it.isWhitespace() }
-
-    /** Another shortcut (not [id]) that already uses [trigger], ignoring case. */
-    fun triggerClash(trigger: String, id: String, shortcuts: List<Shortcut>): Shortcut? {
-        val wanted = trigger.trim()
-        if (wanted.isEmpty()) return null
-        return shortcuts.firstOrNull { it.id != id && it.trigger.trim().equals(wanted, ignoreCase = true) }
     }
 
     /** Checks a name typed for a new blank. Returns null when it is fine. */

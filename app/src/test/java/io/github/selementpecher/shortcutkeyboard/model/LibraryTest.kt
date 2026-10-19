@@ -80,7 +80,7 @@ class LibraryTest {
     @Test
     fun `a folder can move into another folder with what it holds`() {
         val moved = library.moved("meds", "other", 0)!!
-        assertEquals(listOf("kids", "meds", "calpol"), moved.path("calpol").map { it.id })
+        assertEquals(listOf("kids", "other", "meds", "calpol"), moved.path("calpol").map { it.id })
         assertEquals(listOf("meds", "thinking"), ids("other", moved))
     }
 

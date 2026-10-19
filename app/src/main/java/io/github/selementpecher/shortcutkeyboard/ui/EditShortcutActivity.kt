@@ -25,7 +25,7 @@ import io.github.selementpecher.shortcutkeyboard.model.VariableType
 import io.github.selementpecher.shortcutkeyboard.template.Template
 
 /**
- * Makes a new shortcut or changes one: its name, trigger word, message and the settings of each
+ * Makes a new shortcut or changes one: its name, message and the settings of each
  * blank, with a live preview.
  *
  * Start with [EXTRA_ID] to change a saved shortcut; without it (or if it no longer exists) a new
@@ -34,10 +34,8 @@ import io.github.selementpecher.shortcutkeyboard.template.Template
 class EditShortcutActivity : Activity() {
 
     private lateinit var nameField: EditText
-    private lateinit var triggerField: EditText
     private lateinit var messageField: EditText
     private lateinit var nameError: TextView
-    private lateinit var triggerError: TextView
     private lateinit var messageError: TextView
     private lateinit var blanksContainer: LinearLayout
     private lateinit var noBlanksText: View
@@ -46,6 +44,10 @@ class EditShortcutActivity : Activity() {
 
     private lateinit var shortcutId: String
     private var isNew = true
+
+    /** The folder this shortcut sits in (null = top level) and its place there. */
+    private var parentId: String? = null
+    private var position = 0
 
     /** The shortcut as it was when the screen opened (empty for a new one). */
     private lateinit var original: Shortcut
@@ -73,10 +75,8 @@ class EditShortcutActivity : Activity() {
         EdgeToEdge.apply(this, findViewById(R.id.edit_root), findViewById(R.id.edit_top_bar))
 
         nameField = findViewById(R.id.edit_name)
-        triggerField = findViewById(R.id.edit_trigger)
         messageField = findViewById(R.id.edit_message)
         nameError = findViewById(R.id.edit_name_error)
-        triggerError = findViewById(R.id.edit_trigger_error)
         messageError = findViewById(R.id.edit_message_error)
         blanksContainer = findViewById(R.id.edit_blanks)
         noBlanksText = findViewById(R.id.edit_no_blanks)
@@ -87,7 +87,10 @@ class EditShortcutActivity : Activity() {
         val stored = requestedId?.let { ShortcutRepository.find(this, it) }
         isNew = stored == null
         shortcutId = stored?.id ?: savedInstanceState?.getString(STATE_ID) ?: ShortcutRepository.newId()
-        original = stored ?: Shortcut(id = shortcutId, name = "", template = "")
+        val library = ShortcutRepository.library(this)
+        parentId = if (stored != null) stored.parentId else FolderLogic.existingFolder(library, intent?.getStringExtra(EXTRA_PARENT_ID))
+        position = stored?.order ?: 0
+        original = stored ?: Shortcut(id = shortcutId, name = "", template = "", parentId = parentId)
         unchanged = ShortcutDraft.normalise(original)
 
         setActionBar(findViewById<Toolbar>(R.id.edit_toolbar))
@@ -98,6 +101,14 @@ class EditShortcutActivity : Activity() {
             setTitle(if (isNew) R.string.edit_title_new else R.string.edit_title)
         }
 
+        findViewById<TextView>(R.id.edit_folder).apply {
+            val line = FolderLogic.folderLine(library, parentId, getString(R.string.shortcut_no_name))
+            if (line != null) {
+                text = getString(R.string.edit_in_folder, line)
+                visibility = View.VISIBLE
+            }
+        }
+
         findViewById<View>(R.id.edit_toolbar_save).setOnClickListener { save() }
         findViewById<View>(R.id.edit_save_button).setOnClickListener { save() }
         findViewById<View>(R.id.edit_add_blank).setOnClickListener { showAddBlank() }
@@ -105,7 +116,6 @@ class EditShortcutActivity : Activity() {
         findViewById<View>(R.id.edit_help).setOnClickListener { showDialog(HelpDialog.create(this)) }
 
         nameField.onTextChanged { nameError.visibility = View.GONE }
-        triggerField.onTextChanged { triggerError.visibility = View.GONE }
         messageField.onTextChanged {
             if (filling) return@onTextChanged
             messageError.visibility = View.GONE
@@ -115,7 +125,7 @@ class EditShortcutActivity : Activity() {
         if (savedInstanceState != null) {
             restoreDraft(savedInstanceState)
         } else {
-            fillFields(original.name, original.trigger, original.template)
+            fillFields(original.name, original.template)
             if (isNew) {
                 // A new shortcut starts with the keyboard open on "Name".
                 nameField.requestFocus()
@@ -131,7 +141,6 @@ class EditShortcutActivity : Activity() {
         super.onSaveInstanceState(outState)
         outState.putString(STATE_ID, shortcutId)
         outState.putString(STATE_NAME, nameField.text.toString())
-        outState.putString(STATE_TRIGGER, triggerField.text.toString())
         outState.putString(STATE_MESSAGE, messageField.text.toString())
         outState.putInt(STATE_SELECTION_START, messageField.selectionStart)
         outState.putInt(STATE_SELECTION_END, messageField.selectionEnd)
@@ -206,10 +215,9 @@ class EditShortcutActivity : Activity() {
 
     // Filling the screen
 
-    private fun fillFields(name: String, trigger: String, message: String) {
+    private fun fillFields(name: String, message: String) {
         filling = true
         nameField.setText(name)
-        triggerField.setText(trigger)
         messageField.setText(message)
         filling = false
         onMessageChanged()
@@ -219,7 +227,6 @@ class EditShortcutActivity : Activity() {
         restoredCards = state.getBundle(STATE_CARDS)
         fillFields(
             state.getString(STATE_NAME).orEmpty(),
-            state.getString(STATE_TRIGGER).orEmpty(),
             state.getString(STATE_MESSAGE).orEmpty(),
         )
         val length = messageField.length()
@@ -325,20 +332,17 @@ class EditShortcutActivity : Activity() {
     private fun currentDraft(): Shortcut = ShortcutDraft.build(
         shortcutId,
         nameField.text.toString(),
-        triggerField.text.toString(),
         messageField.text.toString(),
+        parentId,
+        position,
     ) { name -> cardFor(name).toVariableDef() }
 
-    private fun save(allowTriggerClash: Boolean = false) {
+    private fun save() {
         val draft = currentDraft()
         var firstProblem: View? = null
         if (draft.name.isEmpty()) {
             showError(nameError, R.string.error_name_required)
             firstProblem = nameField
-        }
-        if (ShortcutDraft.triggerHasSpaces(draft.trigger)) {
-            showError(triggerError, R.string.error_trigger_spaces)
-            firstProblem = firstProblem ?: triggerField
         }
         if (draft.template.isBlank()) {
             showError(messageError, R.string.error_message_required)
@@ -350,18 +354,15 @@ class EditShortcutActivity : Activity() {
         }
 
         val all = ShortcutRepository.all(this)
-        val clash = ShortcutDraft.triggerClash(draft.trigger, shortcutId, all)
-        if (clash != null && !allowTriggerClash) {
-            confirmTriggerClash(draft.trigger, clash)
-            return
-        }
-
         // Keep anything the keyboard learned while this screen was open.
         val latest = all.firstOrNull { it.id == shortcutId }
         val toSave = if (latest == null) {
             draft
         } else {
+            // It may have been moved (e.g. in the keyboard) while this screen was open.
             draft.copy(
+                parentId = latest.parentId,
+                order = latest.order,
                 variables = draft.variables.map { variable ->
                     latest.variable(variable.name)?.lastValue?.let { variable.copy(lastValue = it) } ?: variable
                 },
@@ -381,21 +382,6 @@ class EditShortcutActivity : Activity() {
     private fun showError(view: TextView, message: Int) {
         view.setText(message)
         view.visibility = View.VISIBLE
-    }
-
-    private fun confirmTriggerClash(trigger: String, other: Shortcut) {
-        val otherName = other.name.ifBlank { getString(R.string.shortcut_no_name) }
-        showDialog(
-            AlertDialog.Builder(this)
-                .setTitle(R.string.trigger_clash_title)
-                .setMessage(getString(R.string.trigger_clash_message, trigger, otherName))
-                .setPositiveButton(R.string.trigger_clash_save) { _, _ -> save(allowTriggerClash = true) }
-                .setNegativeButton(R.string.trigger_clash_change) { _, _ ->
-                    triggerField.requestFocus()
-                    triggerField.selectAll()
-                }
-                .create(),
-        )
     }
 
     private fun confirmDelete() {
@@ -433,10 +419,12 @@ class EditShortcutActivity : Activity() {
         /** The id of the shortcut to change. Leave it out to make a new one. */
         const val EXTRA_ID = "id"
 
+        /** The folder a new shortcut is made in (a folder id). Leave it out for the top level. */
+        const val EXTRA_PARENT_ID = "parent_id"
+
         private const val TAG = "EditShortcutActivity"
         private const val STATE_ID = "id"
         private const val STATE_NAME = "name"
-        private const val STATE_TRIGGER = "trigger"
         private const val STATE_MESSAGE = "message"
         private const val STATE_SELECTION_START = "selectionStart"
         private const val STATE_SELECTION_END = "selectionEnd"
