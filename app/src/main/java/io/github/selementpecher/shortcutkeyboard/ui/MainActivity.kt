@@ -85,8 +85,13 @@ class MainActivity : Activity() {
         selectButton = ui.iconButton(Icons.Kind.CHECK, getString(R.string.select_open)) { startSelecting(null) }
         screen = ui.screen(getString(R.string.app_name), trailing = listOf(selectButton, gear), large = true, withBottomBar = true)
         screen.install(this)
-        // The first time the app opens, show the short tour (it can be skipped).
-        if (savedInstanceState == null && !Onboarding.isDone(this)) OnboardingActivity.open(this)
+        // A cold start keeps the splash screen up for a few seconds before anything else appears.
+        val hold = savedInstanceState == null && !splashShown
+        if (hold) holdSplash()
+        // The first time the app opens, show the short tour (it can be skipped), after the splash.
+        if (savedInstanceState == null && !Onboarding.isDone(this)) {
+            if (hold) mainHandler.postDelayed({ if (!isDestroyed) OnboardingActivity.open(this) }, SPLASH_HOLD_MS) else OnboardingActivity.open(this)
+        }
         drag = TileDrag(this, ui, screen.scroll, object : TileDrag.Callbacks {
             override fun tiles() = shownTiles
             override fun folderIds() = shownFolderIds
@@ -103,6 +108,20 @@ class MainActivity : Activity() {
             }
         })
         ShortcutRepository.addListener(repositoryListener)
+    }
+
+    /** Nothing is drawn for [SPLASH_HOLD_MS], so the phone's splash screen (the app icon) stays on screen. */
+    private fun holdSplash() {
+        splashShown = true
+        val content = findViewById<View>(android.R.id.content)
+        var ready = false
+        val listener = android.view.ViewTreeObserver.OnPreDrawListener { ready }
+        content.viewTreeObserver.addOnPreDrawListener(listener)
+        mainHandler.postDelayed({
+            ready = true
+            if (content.viewTreeObserver.isAlive) content.viewTreeObserver.removeOnPreDrawListener(listener)
+            content.invalidate()
+        }, SPLASH_HOLD_MS)
     }
 
     override fun onStart() {
@@ -739,6 +758,12 @@ class MainActivity : Activity() {
         const val EXTRA_FOLDER_ID = "folder_id"
 
         private const val TAG = "MainActivity"
+
+        /** How long a cold start stays on the splash screen. */
+        private const val SPLASH_HOLD_MS = 3000L
+
+        /** True once this app process has held the splash, so coming back to the app never waits again. */
+        private var splashShown = false
         private const val STATE_FOLDER = "folder"
     }
 }

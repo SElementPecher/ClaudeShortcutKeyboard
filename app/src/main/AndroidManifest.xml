@@ -13,6 +13,7 @@
 
         <activity
             android:name=".ui.MainActivity"
+            android:theme="@style/AppTheme.Launch"
             android:exported="true"
             android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize">

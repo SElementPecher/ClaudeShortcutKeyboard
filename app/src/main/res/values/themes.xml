@@ -13,4 +13,9 @@
     </style>
 
     <style name="AppTheme" parent="Base.AppTheme" />
+
+    <!-- Only the first screen: the icon on the paper colour while the app starts. -->
+    <style name="AppTheme.Launch" parent="AppTheme">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+    </style>
 </resources>
