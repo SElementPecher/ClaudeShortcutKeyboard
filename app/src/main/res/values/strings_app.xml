@@ -163,4 +163,5 @@
         <item quantity="other">%d items deleted</item>
     </plurals>
     <string name="tile_new">New</string>
+    <string name="new_chooser_title">Make something new</string>
 </resources>

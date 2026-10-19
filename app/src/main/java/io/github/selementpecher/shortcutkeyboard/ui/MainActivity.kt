@@ -197,7 +197,8 @@ class MainActivity : Activity() {
 
             val children = library.children(currentFolderId)
             if (children.isEmpty() && selecting) selecting = false
-            screen.showBottomBar(children.isNotEmpty())
+            // The bottom bar is only for choosing several; making something new is the "New" tile.
+            screen.showBottomBar(selecting)
             selectButton.visibility = if (children.isNotEmpty() && !selecting) View.VISIBLE else View.GONE
             buildBottomBar()
             if (children.isEmpty()) {
@@ -211,7 +212,7 @@ class MainActivity : Activity() {
                 // Like the keyboard: every tile the same size, and a "New" tile as the last one.
                 val newTile = ui.tile(
                     name = getString(R.string.tile_new), icon = "", kind = TileKind.NEW,
-                    description = getString(R.string.shortcut_new), onClick = { openEditor(null) },
+                    description = getString(R.string.new_chooser_title), onClick = { showNewChooser() },
                 )
                 content.add(grid(columns, if (selecting) tiles else tiles + newTile), top = if (folder != null && !selecting) 12 else 20)
                 if (!selecting) content.add(small(getString(R.string.home_tip)).apply { gravity = Gravity.CENTER }, top = 20)
@@ -257,10 +258,6 @@ class MainActivity : Activity() {
                 delete.alpha = if (count > 0) 1f else 0.4f
                 val cancel = secondaryButton(getString(R.string.dialog_cancel)) { stopSelecting() }
                 screen.bottomBar.addView(buttonRow(delete, cancel))
-            } else {
-                val newShortcut = primaryButton(getString(R.string.shortcut_new)) { openEditor(null) }
-                val newFolder = secondaryButton(getString(R.string.folder_new)) { askFolder(null) }
-                screen.bottomBar.addView(buttonRow(newShortcut, newFolder))
             }
         }
     }
@@ -293,6 +290,19 @@ class MainActivity : Activity() {
             }.apply { layoutParams = lp(width = ViewGroup.LayoutParams.WRAP_CONTENT) },
         )
         line
+    }
+
+    /** The "New" tile: pick what to make. */
+    private fun showNewChooser() {
+        val sheet = ui.sheet(this, getString(R.string.new_chooser_title))
+        sheet.buttons(
+            listOf(
+                DialogButton(getString(R.string.shortcut_new), ButtonStyle.PRIMARY) { openEditor(null); true },
+                DialogButton(getString(R.string.folder_new), ButtonStyle.SECONDARY) { askFolder(null); true },
+                DialogButton(getString(R.string.dialog_cancel), ButtonStyle.TEXT),
+            ),
+        )
+        show(sheet)
     }
 
     // ---------------------------------------------------------------- choosing several

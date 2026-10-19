@@ -223,7 +223,8 @@ internal class TileDrag(
         if (overUp) upPill?.background = ui.shape(withAccentSoft(), 999f, ui.palette.accent, 2f)
     }
 
-    private fun withAccentSoft(): Int = ui.withAlpha(ui.palette.accent, 0x40)
+    // Solid, never see-through: the folder title behind the pill must not show.
+    private fun withAccentSoft(): Int = ui.blend(ui.palette.surface, ui.palette.accent, 0.3f)
 
     private fun clearHighlight() {
         hover?.let {
