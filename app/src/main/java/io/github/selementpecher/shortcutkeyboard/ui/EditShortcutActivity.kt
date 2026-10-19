@@ -337,6 +337,21 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
         }
     }
 
+    /**
+     * The buttons at the bottom of the Name and Message steps. A new quiKey has just Next. One that already
+     * exists also gets Save above it, so a small change never needs the steps after it.
+     */
+    private fun addStepButtons(onNext: () -> Unit) {
+        with(ui) {
+            if (isNew) {
+                screen.bottomBar.addView(primaryButton(getString(R.string.editor_next)) { onNext() })
+            } else {
+                screen.bottomBar.addView(primaryButton(getString(R.string.editor_save)) { save() })
+                screen.bottomBar.add(secondaryButton(getString(R.string.editor_next)) { onNext() }, top = 10)
+            }
+        }
+    }
+
     private fun errorLine(textId: Int, visible: Boolean): TextView = with(ui) {
         text(getString(textId), look.type.smallSp, 600, palette.danger).apply {
             visibility = if (visible) View.VISIBLE else View.GONE
@@ -365,7 +380,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             content.add(error)
             content.add(ColorPicker.collapsible(ui, color) { color = it }, top = 16)
 
-            screen.bottomBar.addView(primaryButton(getString(R.string.editor_next)) { next() })
+            addStepButtons { next() }
             if (isNew && name.isEmpty()) showKeyboardFor(field)
         }
     }
@@ -398,16 +413,14 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             )
             if (draft.chips().isNotEmpty()) content.add(small(getString(R.string.editor_message_tap)), top = 12)
 
-            screen.bottomBar.addView(
-                primaryButton(getString(R.string.editor_next)) {
-                    if (draft.plainText().isBlank()) {
-                        messageError = true
-                        error.visibility = View.VISIBLE
-                    } else {
-                        goTo(Step.CHECK)
-                    }
-                },
-            )
+            addStepButtons {
+                if (draft.plainText().isBlank()) {
+                    messageError = true
+                    error.visibility = View.VISIBLE
+                } else {
+                    goTo(Step.CHECK)
+                }
+            }
             val caret = if (caretStart in 0..draft.length) caretStart else draft.length
             renderMessage(caret, if (caretEnd in 0..draft.length) caretEnd else caret)
             if (openChipAfterDraw >= 0) {
