@@ -80,9 +80,35 @@ class SettingsActivity : Activity() {
         content.add(examplesCard(), top = 16)
         content.add(tourCard(), top = 16)
         content.add(backupCard(), top = 16)
+        content.add(startAgainCard(), top = 16)
         content.add(tryCard(), top = 16)
         content.add(helpCard(), top = 16)
         content.add(aboutCard(), top = 16)
+    }
+
+    /** Wipes every quiKey and folder, after asking. */
+    private fun startAgainCard(): View = with(ui) {
+        val card = card()
+        card.add(heading(getString(R.string.again_title)))
+        card.add(small(getString(R.string.again_help)), top = 4)
+        card.add(dangerButton(getString(R.string.again_button), Icons.Kind.TRASH) {
+            ui.confirm(
+                this@SettingsActivity,
+                title = getString(R.string.again_confirm_title),
+                message = getString(R.string.again_confirm_message),
+                confirmText = getString(R.string.again_confirm),
+                cancelText = getString(R.string.dialog_cancel),
+                danger = true,
+            ) {
+                try {
+                    ShortcutRepository.replaceAll(this@SettingsActivity, Library())
+                    screen.snack(getString(R.string.again_done))
+                } catch (e: Exception) {
+                    screen.snack(getString(R.string.edit_save_failed), error = true)
+                }
+            }.show()
+        }, top = 14)
+        card
     }
 
     private fun examplesCard(): View = with(ui) {

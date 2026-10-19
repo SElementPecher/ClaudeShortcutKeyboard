@@ -47,4 +47,12 @@
     <string name="examples_offer_title">Want some example quiKies?</string>
     <string name="examples_offer_help">A few ready-made ones to try: Kids, Running late and more. You can change or delete them.</string>
     <string name="examples_no">No thanks</string>
+
+    <string name="again_title">Start again</string>
+    <string name="again_help">Delete every quiKey and folder on this phone.</string>
+    <string name="again_button">Delete everything</string>
+    <string name="again_confirm_title">Delete all your quiKies?</string>
+    <string name="again_confirm_message">Every quiKey and folder is deleted. This cannot be undone. Back up first if you want a copy.</string>
+    <string name="again_confirm">Delete everything</string>
+    <string name="again_done">Everything deleted.</string>
 </resources>
