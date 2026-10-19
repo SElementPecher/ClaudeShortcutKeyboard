@@ -133,14 +133,15 @@ object Looks {
             swatches = Swatches.build(Swatches.Style.CALM_LIGHT),
         ),
         dark = Palette(
-            bg = c(0x15181D), surface = c(0x1F242B), surfaceAlt = c(0x2A3038),
-            ink = c(0xECEFF4), inkSoft = c(0xA5ADBA), accent = c(0x5EEAD4), onAccent = c(0x06352F),
-            outline = c(0x343B45), success = c(0x81C995), danger = c(0xF28B82),
+            // Dark, but still soft: warm charcoal, quiet pastel tiles at low strength, a gentle teal.
+            bg = c(0x181A19), surface = c(0x222524), surfaceAlt = c(0x2C2F2D),
+            ink = c(0xE8E6DF), inkSoft = c(0xA3A59E), accent = c(0x7FBFB3), onAccent = c(0x0C2623),
+            outline = c(0x363A37), success = c(0x8FC7A0), danger = c(0xE59A92),
             tiles = listOf(
-                t(0x284B3F, 0xD5F2E6), t(0x26425F, 0xD6E8FA), t(0x5A4A16, 0xFBEFC8),
-                t(0x5E2E2E, 0xFADCDC), t(0x3F3870, 0xE4DFFA), t(0x62391C, 0xFDE6D2),
+                t(0x2C4038, 0xD3E6DD), t(0x2C3B4A, 0xD4E1EE), t(0x464029, 0xEEE5C6),
+                t(0x4A3636, 0xEFD9D7), t(0x393650, 0xDEDAEE), t(0x4A3C31, 0xF0DECE),
             ),
-            folder = t(0x3A3528, 0xEDE6D4),
+            folder = t(0x39362D, 0xE6E0D0),
             swatches = Swatches.build(Swatches.Style.CALM_DARK),
         ),
         shape = Shape(tileRadiusDp = 24, cardRadiusDp = 24, buttonRadiusDp = 999, strokeDp = 0f, elevationDp = 2f),

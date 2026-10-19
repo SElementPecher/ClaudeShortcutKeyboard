@@ -27,7 +27,7 @@ internal object Swatches {
         val k = SATURATION[i]
         when (style) {
             Style.CALM_LIGHT -> pair(h, 0.20f * k, 0.97f, hsv(h, 0.75f * k, 0.22f), lighter = true)
-            Style.CALM_DARK -> pair(h, 0.45f * k, 0.30f, hsv(h, 0.12f * k, 0.96f), lighter = false)
+            Style.CALM_DARK -> pair(h, 0.24f * k, 0.30f, hsv(h, 0.10f * k, 0.95f), lighter = false)
             Style.BOLD -> pair(h, 0.62f * k, 1.0f, BOLD_INK, lighter = true)
             Style.SQUARES_LIGHT -> pair(h, 0.17f * k, 0.98f, SQUARES_INK, lighter = true)
             Style.SQUARES_DARK -> pair(h, 0.50f * k, 0.26f, SQUARES_LIGHT_INK, lighter = false)
