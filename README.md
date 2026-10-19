@@ -1,4 +1,4 @@
-# Shortcut Keyboard
+# quiKey
 
 A phone keyboard made of **big tiles**. It types **whole messages for you**.
 There are **no letter keys**. You tap tiles, and it does the rest.
@@ -54,24 +54,22 @@ Your saved shortcuts **stay safe**.
 
 ## Turn it on
 
-Open the **Shortcut Keyboard** app. It shows you **2 steps**.
+Open the **quiKey** app. It shows you **1 step**.
 
-1. **Turn on Shortcut Keyboard.**
-   Tap the button. Find **Shortcut Keyboard** in the list and switch it **on**.
+1. **Turn on quiKey.**
+   Tap the button. Find **quiKey** in the list and switch it **on**.
    Your phone shows a warning. This is normal for every keyboard. Tap **OK**.
-2. **Pick it as your keyboard.**
-   Tap the button. Choose **Shortcut Keyboard**.
 
-When both steps are done, you see **✓ Keyboard is ready**.
+When it is on, the box goes away.
 
 **How to use it:** tap the **keyboard icon** at the bottom of your screen.
-Choose **Shortcut Keyboard**. Your normal keyboard comes back by itself after you tap **Add**.
+Choose **quiKey**. Your normal keyboard comes back by itself after you tap **Add**.
 
 ---
 
 ## Make a shortcut
 
-1. Open the **Shortcut Keyboard** app.
+1. Open the **quiKey** app.
 2. Tap **New shortcut**.
 3. **Name it.** Add a picture and a colour if you like.
 4. **Type your message** like you would send it.

@@ -93,5 +93,5 @@ jobs:
           gh release create latest-build ShortcutKeyboard.apk \
             --prerelease \
             --title "Latest build" \
-            --notes "The newest Shortcut Keyboard app. On your phone, tap ShortcutKeyboard.apk below to download it, then open it to install. Built from ${GITHUB_REF_NAME} at ${GITHUB_SHA::7}." \
+            --notes "The newest quiKey app. On your phone, tap ShortcutKeyboard.apk below to download it, then open it to install. Built from ${GITHUB_REF_NAME} at ${GITHUB_SHA::7}." \
             --target "$GITHUB_SHA"

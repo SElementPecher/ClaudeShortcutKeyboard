@@ -22,9 +22,9 @@
 
     <string name="tour_4_title">Turn on your keyboard</string>
     <string name="tour_4_text">One quick step in your phone\'s settings.</string>
-    <string name="tour_4_turn_on">Turn on Shortcut Keyboard</string>
+    <string name="tour_4_turn_on">Turn on quiKey</string>
     <string name="tour_4_on">Keyboard is on</string>
-    <string name="tour_4_use">To use it, tap the keyboard icon at the bottom of your screen when you are typing, then choose Shortcut Keyboard.</string>
+    <string name="tour_4_use">To use it, tap the keyboard icon at the bottom of your screen when you are typing, then choose quiKey.</string>
 
     <string name="tour_again_title">Take the tour again</string>
     <string name="tour_again_help">A quick look at how it works.</string>

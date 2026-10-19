@@ -669,13 +669,11 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             nameCard.addView(names, lp(width = 0, weight = 1f))
             content.add(nameCard, top = if (isNew) 20 else 0)
 
-            content.add(label(getString(R.string.editor_check_types)), top = 24)
-            content.add(exampleCard(), top = 8)
+            content.add(exampleCard(), top = 20)
 
-            content.add(label(getString(R.string.editor_check_asks)), top = 24)
             val asks = draft.questions()
             if (asks.isEmpty()) {
-                content.add(body(getString(R.string.editor_check_nothing)), top = 8)
+                content.add(body(getString(R.string.editor_check_nothing)), top = 16)
             } else {
                 val card = card(8)
                 asks.forEachIndexed { index, q ->
@@ -712,7 +710,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
                     )
                     card.addView(line)
                 }
-                content.add(card, top = 8)
+                content.add(card, top = 16)
             }
 
             val problem = errorLine(R.string.editor_message_error, draft.plainText().isBlank())

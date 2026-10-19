@@ -45,7 +45,6 @@
 
     <!-- Step 3: check and save -->
     <string name="editor_check_title">Check and save</string>
-    <string name="editor_check_asks">The keyboard will ask:</string>
     <string name="editor_check_nothing">Nothing. It types the message as it is.</string>
     <plurals name="editor_check_answers">
         <item quantity="one">%d answer</item>
@@ -57,9 +56,8 @@
     </plurals>
     <string name="editor_check_always">Always %s</string>
     <string name="editor_check_row_desc">%1$s. Tap to change.</string>
-    <string name="editor_check_types">It will type something like:</string>
     <string name="editor_save">Save</string>
-    <string name="editor_change_words">Edit words</string>
+    <string name="editor_change_words">Edit shortcut</string>
     <string name="editor_change_answers">Edit answers</string>
     <string name="editor_change_answers_hint">Tap a coloured part to change it.</string>
     <string name="editor_name_row_hint">Tap to change the name or picture</string>

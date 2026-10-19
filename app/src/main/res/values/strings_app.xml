@@ -8,19 +8,19 @@
 
     <!-- Main screen: setup -->
     <string name="setup_title">Set up your keyboard</string>
-    <string name="setup_step1">Turn on Shortcut Keyboard</string>
+    <string name="setup_step1">Turn on quiKey</string>
     <string name="setup_step1_button">Turn it on</string>
     <string name="setup_step2">Pick it as your keyboard</string>
     <string name="setup_step2_button">Pick keyboard</string>
     <string name="setup_step_done">Done: %1$s</string>
     <string name="setup_step_todo">To do: %1$s</string>
-    <string name="setup_how_to">To type a shortcut: tap the keyboard icon at the bottom of your screen, then choose Shortcut Keyboard.</string>
+    <string name="setup_how_to">To type a shortcut: tap the keyboard icon at the bottom of your screen, then choose quiKey.</string>
     <string name="setup_privacy">This keyboard has no internet access. What you type stays on your phone.</string>
     <string name="setup_no_settings">Could not open settings. Go to Settings, then System, then Keyboard.</string>
 
     <!-- Main screen: try it -->
     <string name="try_hint">Tap here to try your keyboard</string>
-    <string name="try_tip">Tap the keyboard icon at the bottom of your screen and choose Shortcut Keyboard. Pick a shortcut. It is typed here.</string>
+    <string name="try_tip">Tap the keyboard icon at the bottom of your screen and choose quiKey. Pick a shortcut. It is typed here.</string>
 
     <!-- Main screen: list -->
     <string name="shortcuts_empty">Make your first shortcut. It takes a minute.</string>
@@ -129,7 +129,7 @@
     <string name="settings_help_title">How it works</string>
     <string name="settings_help_1">Make a shortcut for a message you send a lot.</string>
     <string name="settings_help_2">Tap the words that change each time, like a name or a time.</string>
-    <string name="settings_help_3">To use it, tap the keyboard icon at the bottom of your screen and choose Shortcut Keyboard.</string>
+    <string name="settings_help_3">To use it, tap the keyboard icon at the bottom of your screen and choose quiKey.</string>
     <string name="settings_help_4">Pick a shortcut. The keyboard asks you for the words that change, one at a time.</string>
     <string name="settings_help_5">Tap Add. Your message is typed for you.</string>
     <string name="settings_about_title">About</string>

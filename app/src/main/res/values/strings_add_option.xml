@@ -4,6 +4,6 @@
     <string name="add_option_save">Save</string>
     <string name="add_option_hint">Type it here</string>
     <string name="add_option_cancel">Cancel</string>
-    <string name="add_option_help">Then go back to your message and switch to Shortcut Keyboard again. It will be picked for you.</string>
+    <string name="add_option_help">Then go back to your message and switch to quiKey again. It will be picked for you.</string>
     <string name="add_option_error_empty">Please type something</string>
 </resources>
