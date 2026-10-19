@@ -760,7 +760,7 @@ class MainActivity : Activity() {
         private const val TAG = "MainActivity"
 
         /** How long a cold start stays on the splash screen. */
-        private const val SPLASH_HOLD_MS = 3000L
+        private const val SPLASH_HOLD_MS = 1500L
 
         /** True once this app process has held the splash, so coming back to the app never waits again. */
         private var splashShown = false
