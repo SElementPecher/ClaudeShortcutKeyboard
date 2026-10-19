@@ -27,9 +27,18 @@ internal class LookPreview(
 
     private fun dp(v: Float) = v * density
 
+    /** How tall a tile is for a picture [w] wide: wide tiles are fixed; square ones follow the width. */
+    private fun tileHeight(w: Float): Float {
+        if (look.tileLayout == TileLayout.WIDE) return dp(60f)
+        val tileW = (w - dp(12f) * 2 - dp(8f) * 2) / 3
+        return tileW * 0.9f
+    }
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val height = dp(if (look.tileLayout == TileLayout.WIDE) 112f else 116f).toInt()
-        setMeasuredDimension(resolveSize(suggestedMinimumWidth, widthMeasureSpec), resolveSize(height, heightMeasureSpec))
+        val width = resolveSize(suggestedMinimumWidth, widthMeasureSpec)
+        // Room for the tiles, a gap and a button, so the button never covers the tiles.
+        val height = dp(12f) + tileHeight(width.toFloat()) + dp(12f) + dp(20f) + dp(12f)
+        setMeasuredDimension(width, resolveSize(maxOf(height, dp(112f)).toInt(), heightMeasureSpec))
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -52,7 +61,7 @@ internal class LookPreview(
         val gap = dp(8f)
         val cols = 3
         val tileW = (w - pad * 2 - gap * (cols - 1)) / cols
-        val tileH = if (look.tileLayout == TileLayout.WIDE) dp(60f) else tileW * 0.9f
+        val tileH = tileHeight(w)
         val top = pad
         val radius = dp(look.shape.tileRadiusDp * 0.55f)
         for (i in 0 until cols) {
