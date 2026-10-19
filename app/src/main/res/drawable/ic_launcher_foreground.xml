@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Grey squiggles for the words, then a teal pill (the part that changes) with its own squiggle. 108dp canvas, safe zone 66dp. -->
+<!-- Grey squiggles for the words, then a teal pill (the part that changes) with a straight line in it. 108dp canvas, safe zone 66dp. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
@@ -47,7 +47,6 @@
         android:strokeColor="#FFFFFF"
         android:strokeWidth="3.0"
         android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M46.00,54.00 L46.50,54.70 L47.00,55.18 L47.50,55.29 L48.00,54.98 L48.50,54.37 L49.00,53.63 L49.50,53.02 L50.00,52.71 L50.50,52.82 L51.00,53.30 L51.50,54.00 L52.00,54.70 L52.50,55.18 L53.00,55.29 L53.50,54.98 L54.00,54.37 L54.50,53.63 L55.00,53.02 L55.50,52.71 L56.00,52.82 L56.50,53.30 L57.00,54.00 L57.50,54.70 L58.00,55.18 L58.50,55.29 L59.00,54.98 L59.50,54.37 L60.00,53.63 L60.50,53.02 L61.00,52.71 L61.50,52.82 L62.00,53.30 L62.50,54.00 L63.00,54.70 L63.50,55.18 L64.00,55.29" />
+        android:pathData="M46,54 L64,54" />
     </group>
 </vector>
