@@ -208,7 +208,12 @@ class MainActivity : Activity() {
                 val tiles = children.map { node -> tileFor(node, library).also { if (shownIds.isNotEmpty() && node.id !in shownIds) Motion.pop(it) } }
                 shownTiles = children.map { it.id }.zip(tiles)
                 shownFolderIds = children.filterIsInstance<Folder>().map { it.id }.toSet()
-                content.add(grid(columns, tiles), top = if (folder != null && !selecting) 12 else 20)
+                // Like the keyboard: every tile the same size, and a "New" tile as the last one.
+                val newTile = ui.tile(
+                    name = getString(R.string.tile_new), icon = "", kind = TileKind.NEW,
+                    description = getString(R.string.shortcut_new), onClick = { openEditor(null) },
+                )
+                content.add(grid(columns, if (selecting) tiles else tiles + newTile), top = if (folder != null && !selecting) 12 else 20)
                 if (!selecting) content.add(small(getString(R.string.home_tip)).apply { gravity = Gravity.CENTER }, top = 20)
             }
             shownIds = children.map { it.id }.toSet()
@@ -679,7 +684,7 @@ class MainActivity : Activity() {
             line.addView(name.apply { layoutParams = lp(width = 0, weight = 1f) })
             dialog.body.add(line, top = 12)
             dialog.body.add(error, top = 8)
-            dialog.body.add(ColorPicker.collapsible(ui, color) { color = it }, top = 16)
+            dialog.body.add(ColorPicker.view(ui, color) { color = it }, top = 16)
             dialog.buttons(
                 listOf(
                     DialogButton(getString(if (existing == null) R.string.folder_create else R.string.folder_rename_save)) {

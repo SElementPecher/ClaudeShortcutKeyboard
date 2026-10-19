@@ -39,13 +39,13 @@
     <string name="home_name">Home</string>
     <string name="folder_new">New folder</string>
     <string name="folder_new_title">New folder</string>
-    <string name="folder_rename_title">Rename folder</string>
+    <string name="folder_rename_title">Edit folder</string>
     <string name="folder_name_hint">For example: Kids</string>
     <string name="folder_name_required">Please give it a name.</string>
     <string name="folder_create">Make folder</string>
     <string name="folder_rename_save">Save</string>
     <string name="folder_save_failed">Could not save. Please try again.</string>
-    <string name="row_rename">Rename</string>
+    <string name="row_rename">Edit folder</string>
     <string name="row_move">Move to…</string>
     <string name="row_delete">Delete</string>
     <string name="move_title">Move “%1$s” to</string>
@@ -162,4 +162,5 @@
         <item quantity="one">%d item deleted</item>
         <item quantity="other">%d items deleted</item>
     </plurals>
+    <string name="tile_new">New</string>
 </resources>

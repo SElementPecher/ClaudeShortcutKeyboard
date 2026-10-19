@@ -449,7 +449,7 @@ internal class Ui(val context: Context, baseLook: Look) {
      * Does not clip, so soft shadows show.
      */
     fun grid(columns: Int, cells: List<View>, gapDp: Int = TileSpec.GRID_GAP_DP): LinearLayout {
-        val grid = column()
+        val grid = UniformColumn(context)
         grid.clipChildren = false
         grid.clipToPadding = false
         cells.chunked(columns).forEachIndexed { index, chunk ->
@@ -861,7 +861,9 @@ internal class AspectFrame(context: Context, private val ratio: Float, private v
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED))
-        val wanted = max(max(measuredHeight, (width * ratio).toInt()), minHeightPx)
+        var wanted = max(max(measuredHeight, (width * ratio).toInt()), minHeightPx)
+        // A grid row may ask for an exact height so that every tile in it is the same.
+        if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.EXACTLY) wanted = max(wanted, MeasureSpec.getSize(heightMeasureSpec))
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(wanted, MeasureSpec.EXACTLY))
     }
 }
@@ -1017,7 +1019,8 @@ internal class AdaptiveRow(context: Context, private val gapPx: Int) : LinearLay
 internal class EqualHeightRow(context: Context) : LinearLayout(context) {
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        var tallest = 0
+        // A grid that wants every row the same height asks for an exact height.
+        var tallest = if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.EXACTLY) MeasureSpec.getSize(heightMeasureSpec) - paddingTop - paddingBottom else 0
         for (i in 0 until childCount) tallest = max(tallest, getChildAt(i).measuredHeight)
         for (i in 0 until childCount) {
             val child = getChildAt(i)
@@ -1026,6 +1029,29 @@ internal class EqualHeightRow(context: Context) : LinearLayout(context) {
             }
         }
         setMeasuredDimension(measuredWidth, tallest + paddingTop + paddingBottom)
+    }
+}
+
+/** Rows stacked top to bottom, every row as tall as the tallest, so a grid of tiles is regular. */
+internal class UniformColumn(context: Context) : LinearLayout(context) {
+    init {
+        orientation = VERTICAL
+    }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED))
+        var tallest = 0
+        for (i in 0 until childCount) tallest = max(tallest, getChildAt(i).measuredHeight)
+        var total = paddingTop + paddingBottom
+        for (i in 0 until childCount) {
+            val child = getChildAt(i)
+            val lp = child.layoutParams as MarginLayoutParams
+            if (child.measuredHeight != tallest) {
+                child.measure(MeasureSpec.makeMeasureSpec(child.measuredWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(tallest, MeasureSpec.EXACTLY))
+            }
+            total += tallest + lp.topMargin + lp.bottomMargin
+        }
+        setMeasuredDimension(measuredWidth, total)
     }
 }
 

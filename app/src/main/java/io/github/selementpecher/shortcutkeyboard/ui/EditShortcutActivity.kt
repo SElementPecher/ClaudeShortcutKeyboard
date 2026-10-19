@@ -805,6 +805,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
     private fun editNameAndPicture() {
         dialog?.dismiss()
         var newIcon = icon
+        var newColor = color
         var newName = name
         with(ui) {
             val panel = dialog(this@EditShortcutActivity, getString(R.string.editor_edit_name_title))
@@ -816,6 +817,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             line.addView(field, lp(width = 0, weight = 1f))
             panel.body.add(line, top = 8)
             panel.body.add(error)
+            panel.body.add(ColorPicker.collapsible(ui, color) { newColor = it }, top = 12)
             panel.buttons(
                 listOf(
                     DialogButton(getString(R.string.editor_done)) {
@@ -825,6 +827,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
                         } else {
                             name = newName.trim()
                             icon = newIcon
+                            color = newColor
                             render()
                             true
                         }

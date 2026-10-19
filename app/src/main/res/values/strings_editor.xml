@@ -60,8 +60,8 @@
     <string name="editor_change_words">Edit quiKey</string>
     <string name="editor_change_answers">Edit answers</string>
     <string name="editor_change_answers_hint">Tap a coloured part to change it.</string>
-    <string name="editor_name_row_hint">Tap to change the name or picture</string>
-    <string name="editor_edit_name_title">Name and picture</string>
+    <string name="editor_name_row_hint">Tap to change the name, picture or colour</string>
+    <string name="editor_edit_name_title">Name, picture and colour</string>
 
     <!-- Delete, saving, leaving -->
     <string name="editor_delete">Delete this quiKey</string>
