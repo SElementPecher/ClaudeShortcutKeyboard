@@ -74,4 +74,5 @@
     <string name="chain_show_current"> · now chosen</string>
     <string name="chain_fixed_label">What the keyboard will ask</string>
     <string name="chain_fixed_note">This is only a preview. This part is set, so there is nothing here to edit.</string>
+    <string name="chain_number_note">The keyboard asks you to type a number each time. There is nothing to edit here.</string>
 </resources>

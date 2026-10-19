@@ -410,8 +410,13 @@ internal class ChainPanel(
 
     /** A pill with no values to change (a clock time, a date, a number): nothing to type, just the extras below. */
     private fun questionLevel(flow: AddFlow) = with(ui) {
-        view.addView(fixedPreview(flow), lp())
-        view.add(small(str(R.string.chain_fixed_note)), top = 12)
+        if (flow.kind() == BlankKind.NUMBER) {
+            // A number is just typed on the number pad: nothing worth previewing.
+            view.add(small(str(R.string.chain_number_note)))
+        } else {
+            view.addView(fixedPreview(flow), lp())
+            view.add(small(str(R.string.chain_fixed_note)), top = 12)
+        }
         typed = null
     }
 
@@ -425,14 +430,12 @@ internal class ChainPanel(
         val question = activity.getString(
             when (kind) {
                 BlankKind.DATE -> R.string.kb_question_date
-                BlankKind.NUMBER -> R.string.kb_question_number
                 else -> R.string.kb_question_time
             },
             name,
         )
         val options: List<String> = when (kind) {
             BlankKind.DATE -> listOf(R.string.kb_today, R.string.kb_yesterday, R.string.kb_tomorrow, R.string.kb_date_other).map { str(it) }
-            BlankKind.NUMBER -> listOf("1", "2", "3", "…", "OK")
             else -> listOf(
                 activity.getString(R.string.kb_time_now, java.time.LocalTime.now().let { String.format("%02d:%02d", it.hour, it.minute) }).replace('\n', ' '),
                 str(R.string.kb_time_ago_15), str(R.string.kb_time_ago_30), str(R.string.kb_time_ago_60), str(R.string.kb_time_other),
