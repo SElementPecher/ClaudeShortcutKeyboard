@@ -51,12 +51,14 @@ object ShortcutJson {
         .put("name", folder.name)
         .put("parentId", folder.parentId ?: JSONObject.NULL)
         .put("order", folder.order)
+        .put("icon", folder.icon)
 
     private fun folderFromJson(json: JSONObject): Folder = Folder(
         id = text(json, "id").ifBlank { UUID.randomUUID().toString() },
         name = text(json, "name"),
         parentId = text(json, "parentId").ifBlank { null },
         order = json.optInt("order", 0),
+        icon = text(json, "icon"),
     )
 
     private fun shortcutToJson(shortcut: Shortcut): JSONObject {
@@ -69,6 +71,7 @@ object ShortcutJson {
             .put("variables", variables)
             .put("parentId", shortcut.parentId ?: JSONObject.NULL)
             .put("order", shortcut.order)
+            .put("icon", shortcut.icon)
     }
 
     private fun variableToJson(variable: VariableDef): JSONObject {
@@ -92,6 +95,7 @@ object ShortcutJson {
             variables = (0 until variables.length()).map { variableFromJson(variables.getJSONObject(it)) },
             parentId = text(json, "parentId").ifBlank { null },
             order = json.optInt("order", 0),
+            icon = text(json, "icon"),
         )
     }
 

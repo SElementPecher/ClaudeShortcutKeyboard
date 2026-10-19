@@ -12,8 +12,8 @@ object SampleShortcuts {
     private const val MEDS = "sample-folder-meds"
 
     val folders: List<Folder> = listOf(
-        Folder(id = KIDS, name = "Kids", order = 0),
-        Folder(id = MEDS, name = "Meds", parentId = KIDS, order = 0),
+        Folder(id = KIDS, name = "Kids", order = 0, icon = "🧒"),
+        Folder(id = MEDS, name = "Meds", parentId = KIDS, order = 0, icon = "💊"),
     )
 
     val all: List<Shortcut> = listOf(
@@ -29,6 +29,7 @@ object SampleShortcuts {
             ),
             parentId = MEDS,
             order = 0,
+            icon = "💊",
         ),
         Shortcut(
             id = "sample-sam-calpol",
@@ -37,6 +38,7 @@ object SampleShortcuts {
             variables = listOf(VariableDef("time", VariableType.TIME)),
             parentId = MEDS,
             order = 1,
+            icon = "🌡️",
         ),
         Shortcut(
             id = "sample-running-late",
@@ -44,6 +46,7 @@ object SampleShortcuts {
             template = "Running late, sorry! I'll be there by {arrival}.",
             variables = listOf(VariableDef("arrival", VariableType.TIME)),
             order = 1,
+            icon = "⏰",
         ),
     )
 

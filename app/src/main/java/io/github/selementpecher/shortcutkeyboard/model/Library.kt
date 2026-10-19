@@ -6,6 +6,9 @@ sealed interface Node {
     val name: String
     val parentId: String?
     val order: Int
+
+    /** A single emoji shown on the tile, or empty (then the tile shows the name's first letter). */
+    val icon: String
 }
 
 /** A folder. Folders can hold shortcuts and other folders. */
@@ -14,6 +17,7 @@ data class Folder(
     override val name: String,
     override val parentId: String? = null,
     override val order: Int = 0,
+    override val icon: String = "",
 ) : Node
 
 /**

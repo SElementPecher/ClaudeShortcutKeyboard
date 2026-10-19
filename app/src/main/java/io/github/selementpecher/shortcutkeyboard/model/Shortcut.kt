@@ -54,6 +54,7 @@ data class Shortcut(
     override val parentId: String? = null,
     /** Position among its neighbours (lowest first). */
     override val order: Int = 0,
+    override val icon: String = "",
 ) : Node {
     fun variable(name: String): VariableDef? {
         val key = VariableDef.keyOf(name)
