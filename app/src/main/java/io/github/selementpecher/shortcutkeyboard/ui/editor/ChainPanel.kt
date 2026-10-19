@@ -441,26 +441,33 @@ internal class ChainPanel(
             (if (isDate) QuickLabels.date(activity, value) else QuickLabels.time(activity, value, now)).replace('\n', ' ')
         val presets = if (isDate) QuickChoices.presets(VariableType.DATE) else QuickChoices.presets(VariableType.TIME)
 
+        // A pill with a small sign at its end: − (tap to take out) or + (tap to add).
+        fun pill(text: String, sign: String, selected: Boolean, onClick: (() -> Unit)?): TextView {
+            val shown = android.text.SpannableString("$text  $sign").apply {
+                setSpan(android.text.style.RelativeSizeSpan(1.3f), length - 1, length, 0)
+            }
+            return chip(shown, selected = selected, onClick = onClick)
+        }
+        fun cell(view: View, span: Int = 1) = LinearLayout.LayoutParams(0, dp(52), span.toFloat())
+
         view.add(label(activity.getString(R.string.chain_quick_chosen, chosen.size, QuickChoices.MAX)))
         val grid = column()
         val odd = QuickChoices.firstIsWide(chosen.size)
         var rowView: LinearLayout? = null
         chosen.forEachIndexed { i, value ->
-            val pill = chip(name(value), selected = i == 0) {
+            val pill = pill(name(value), "−", i == 0) {
                 if (chosen.size > 1) {
                     flow.toggleQuick(value)
                     render()
                 } else {
                     screen.snack(str(R.string.chain_quick_min))
                 }
-            }.apply {
-                contentDescription = name(value) + ", " + str(R.string.chain_quick_tap_remove)
-            }
+            }.apply { contentDescription = name(value) + ", " + str(R.string.chain_quick_tap_remove) }
             val wide = odd && i == 0
             if (wide || rowView == null || rowView!!.childCount == 2) {
                 rowView = row().also { grid.add(it, top = if (i == 0) 0 else 8) }
             }
-            rowView!!.addView(pill, LinearLayout.LayoutParams(0, dp(52), if (wide) 2f else 1f).apply {
+            rowView!!.addView(pill, cell(pill, if (wide) 2 else 1).apply {
                 if (rowView!!.childCount > 0) marginStart = dp(8)
             })
             if (wide) rowView = null
@@ -468,23 +475,27 @@ internal class ChainPanel(
         view.add(grid, top = 8)
         view.add(small(str(R.string.chain_quick_first)), top = 8)
 
-        val others = presets.filter { it !in chosen }
-        if (others.isNotEmpty()) {
-            view.add(label(str(R.string.chain_quick_add)), top = 20)
-            val chips = flow(8)
-            val full = chosen.size >= QuickChoices.MAX
-            for (value in others) {
-                chips.addView(chip(name(value)) {
+        // Every choice has its own place in a tidy grid, so nothing jumps when one is added or taken out.
+        view.add(label(str(R.string.chain_quick_add)), top = 20)
+        val full = chosen.size >= QuickChoices.MAX
+        val all = column()
+        presets.chunked(2).forEachIndexed { r, pair ->
+            val line = row()
+            pair.forEachIndexed { c, value ->
+                val used = value in chosen
+                val pill = if (used) pill(name(value), "✓", false, null) else pill(name(value), "+", false) {
                     flow.toggleQuick(value)
                     render()
-                }.apply {
-                    alpha = if (full) 0.4f else 1f
-                    isEnabled = !full
-                })
+                }
+                pill.alpha = if (used) 0.4f else if (full) 0.4f else 1f
+                pill.isEnabled = !used && !full
+                line.addView(pill, cell(pill).apply { if (c > 0) marginStart = dp(8) })
             }
-            view.add(chips, top = 8)
-            if (full) view.add(small(str(R.string.chain_quick_max)), top = 8)
+            if (pair.size == 1) line.addView(View(activity), cell(line).apply { marginStart = dp(8) })
+            all.add(line, top = if (r == 0) 0 else 8)
         }
+        view.add(all, top = 8)
+        if (full) view.add(small(str(R.string.chain_quick_max)), top = 8)
         view.add(small(str(R.string.chain_quick_other)), top = 12)
     }
 
@@ -545,14 +556,16 @@ internal class ChainPanel(
     }
 
     private fun editExtras(pinned: Boolean) = with(ui) {
+        // Times and dates are not turned into plain words: they only have the quick choices to change.
+        val keepPlain = flow?.kind().let { it != BlankKind.TIME && it != BlankKind.DATE }
         val plain = textButton(str(R.string.chain_make_plain)) { listener.onMakePlain() }
         val remove = dangerButton(str(R.string.chain_remove)) { listener.onRemove() }
         if (pinned) {
-            screen.bottomBar.addView(plain)
+            if (keepPlain) screen.bottomBar.addView(plain)
             screen.bottomBar.addView(remove)
         } else {
-            view.add(plain, top = 12)
-            view.add(remove)
+            if (keepPlain) view.add(plain, top = 12)
+            view.add(remove, top = if (keepPlain) 0 else 12)
         }
     }
 
