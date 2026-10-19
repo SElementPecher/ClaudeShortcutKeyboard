@@ -30,11 +30,21 @@ internal object ExampleParts {
     fun of(draft: MessageDraft): List<Part> {
         val order = draft.questions().withIndex().associate { it.value.blankId to it.index }
         val parts = ArrayList<Part>()
-        for (segment in draft.segments) {
+        for ((index, segment) in draft.segments.withIndex()) {
             when (segment) {
                 is Segment.Text -> if (segment.text.isNotEmpty()) parts += Part(segment.text, FIXED)
                 is Segment.Ref -> parts += Part(segment.shown, order[segment.blankId] ?: 0)
                 is Segment.Fixed -> parts += Part(segment.shown, BUILT_IN)
+            }
+            // The same rule the keyboard uses: a value is always followed by a space before a word.
+            if (segment !is Segment.Text) {
+                val next = draft.segments.getOrNull(index + 1)
+                val needsSpace = when (next) {
+                    is Segment.Text -> next.text.firstOrNull()?.isLetterOrDigit() == true
+                    null -> false
+                    else -> true
+                }
+                if (needsSpace) parts += Part(" ", FIXED)
             }
         }
         return parts

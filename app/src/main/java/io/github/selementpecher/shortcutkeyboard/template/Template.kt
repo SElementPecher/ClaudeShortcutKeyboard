@@ -71,10 +71,14 @@ class Template private constructor(val parts: List<Part>) {
         missing: (Part.Ref) -> String = { "{${it.raw}}" },
     ): String {
         val out = StringBuilder()
-        for (part in parts) {
+        for ((index, part) in parts.withIndex()) {
             when (part) {
                 is Part.Text -> out.append(part.text)
-                is Part.Ref -> out.append(renderRef(part, values, types, now, locale, missing))
+                is Part.Ref -> {
+                    val shown = renderRef(part, values, types, now, locale, missing)
+                    out.append(shown)
+                    if (shown.isNotEmpty() && needsSpaceBefore(parts.getOrNull(index + 1))) out.append(' ')
+                }
             }
         }
         return out.toString()
@@ -116,6 +120,16 @@ class Template private constructor(val parts: List<Part>) {
     }
 
     companion object {
+        /**
+         * True when a filled-in value must be followed by a space: the next thing starts with a letter or digit,
+         * or is another blank. Spaces and punctuation already read fine, and the end of the message needs nothing.
+         */
+        fun needsSpaceBefore(next: Part?): Boolean = when (next) {
+            is Part.Text -> next.text.firstOrNull()?.isLetterOrDigit() == true
+            is Part.Ref -> true
+            null -> false
+        }
+
         const val NOW = "now"
         const val TODAY = "today"
         private const val MINUTES_PER_DAY = 24L * 60L

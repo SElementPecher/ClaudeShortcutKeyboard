@@ -51,7 +51,7 @@ object ResultPieces {
                 pieces += ResultPiece(text, blank)
             }
         }
-        for (part in template.parts) {
+        for ((index, part) in template.parts.withIndex()) {
             when (part) {
                 is Template.Part.Text -> add(part.text, ResultPiece.FIXED)
                 is Template.Part.Ref -> {
@@ -59,6 +59,7 @@ object ResultPieces {
                     // A one-blank message renders that blank exactly as the whole message would.
                     val shown = Template.parse("{${part.raw}}").render(values, types, now, locale) { "" }
                     add(shown, number)
+                    if (shown.isNotEmpty() && Template.needsSpaceBefore(template.parts.getOrNull(index + 1))) add(" ", ResultPiece.FIXED)
                 }
             }
         }

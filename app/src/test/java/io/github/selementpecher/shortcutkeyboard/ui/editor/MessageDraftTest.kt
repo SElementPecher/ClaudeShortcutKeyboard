@@ -338,7 +338,7 @@ class MessageDraftTest {
         assertEquals("{Who}Use {{braces}} }} and {{", shortcut.template)
         val session = FillSession(shortcut, now = { now }, locale = uk)
         session.setValue(session.variables[0], "Sam")
-        assertEquals("SamUse {braces} } and {", session.result())
+        assertEquals("Sam Use {braces} } and {", session.result())
         assertEquals(d.plainText(), MessageDraft.fromShortcut(shortcut, now, uk).plainText())
     }
 

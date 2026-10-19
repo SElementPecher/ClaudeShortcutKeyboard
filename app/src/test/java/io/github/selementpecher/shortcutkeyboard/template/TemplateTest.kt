@@ -42,6 +42,25 @@ class TemplateTest {
     // ---- Parsing ----
 
     @Test
+    fun `a value is always followed by a space before a word or number`() {
+        val values = mapOf("a" to "18:13", "b" to "Sam")
+        assertEquals("18:13 Zipporah", render("{a}Zipporah", values))
+        assertEquals("Sam 5ml", render("{b}5ml", values))
+        assertEquals("Sam Sam", render("{b}{b}", values))
+    }
+
+    @Test
+    fun `no extra space before spaces punctuation or the end`() {
+        val values = mapOf("b" to "Sam")
+        assertEquals("Sam , ok", render("{b} , ok", values))
+        assertEquals("Sam, ok", render("{b}, ok", values))
+        assertEquals("Hi Sam!", render("Hi {b}!", values))
+        assertEquals("Hi Sam", render("Hi {b}", values))
+        // An empty value adds nothing at all.
+        assertEquals("Hi ok", Template.parse("Hi {b}ok").render(emptyMap(), emptyMap(), now, locale) { "" })
+    }
+
+    @Test
     fun `plain text has no blanks and renders unchanged`() {
         val template = Template.parse("Hello there, see you soon.")
         assertEquals(listOf(Template.Part.Text("Hello there, see you soon.")), template.parts)
