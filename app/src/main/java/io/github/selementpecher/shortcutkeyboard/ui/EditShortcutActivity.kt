@@ -737,7 +737,6 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             content.add(nameCard, top = if (isNew) 20 else 0)
 
             content.add(exampleCard(), top = 20)
-            content.add(tryCard(), top = 20)
 
             val asks = draft.questions()
             if (asks.isEmpty()) {
@@ -784,6 +783,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             val problem = errorLine(R.string.editor_message_error, draft.plainText().isBlank())
             content.add(problem)
 
+            content.add(tryCard(), top = 20)
             content.add(secondaryButton(getString(R.string.editor_change_words)) { goTo(Step.MESSAGE) }, top = 20)
             if (!isNew) {
                 content.add(secondaryButton(getString(R.string.editor_duplicate)) { duplicate() }, top = 12)
