@@ -18,7 +18,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "io.github.selementpecher.shortcutkeyboard"
+        applicationId = "designatedfreetime.quiKey"
         minSdk = 26
         targetSdk = 36
         versionCode = buildNumber
