@@ -705,14 +705,6 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
 
     // ---- step 3: check and save ----
 
-    /** Try the new quiKey: tap the box and pick it from the keyboard, so it is typed here. */
-    private fun tryCard(): View = with(ui) {
-        val card = card()
-        card.add(heading(getString(R.string.settings_try_title)))
-        card.add(field(""), top = 14)
-        card
-    }
-
     private fun buildCheck() {
         val content = screen.content
         with(ui) {
@@ -782,7 +774,6 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             val problem = errorLine(R.string.editor_message_error, draft.plainText().isBlank())
             content.add(problem)
 
-            content.add(tryCard(), top = 20)
             content.add(secondaryButton(getString(R.string.editor_change_words)) { goTo(Step.MESSAGE) }, top = 20)
             if (!isNew) {
                 content.add(secondaryButton(getString(R.string.editor_duplicate)) { duplicate() }, top = 12)

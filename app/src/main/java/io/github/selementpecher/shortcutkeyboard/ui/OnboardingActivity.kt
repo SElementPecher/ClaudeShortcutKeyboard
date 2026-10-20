@@ -298,42 +298,16 @@ class OnboardingActivity : Activity() {
      * A drawing of the phone once the keyboard is on: the keyboard key next to the text box, and the list that opens
      * from it with quiKey ticked. It is a drawing, not a photo of the phone.
      */
+    /** Once the keyboard is on: a picture of the keyboard with its globe key highlighted. */
     private fun howToOpen(): View = with(ui) {
-        val card = column().apply {
-            background = shape(palette.surface, 16f, palette.outline, look.shape.strokeDp)
-            setPadding(dp(16), dp(14), dp(16), dp(14))
-        }
-        val typing = row().apply {
-            gravity = Gravity.CENTER_VERTICAL
-            background = shape(palette.surfaceAlt, 999f)
-            setPadding(dp(16), dp(6), dp(6), dp(6))
-        }
-        typing.addView(small(getString(R.string.tour_4_typing)).apply { layoutParams = lp(width = 0, weight = 1f) })
-        val key = ImageView(this@OnboardingActivity).apply {
-            setImageDrawable(Icons.drawable(Icons.Kind.GLOBE, palette.onAccent, dp(22)))
-            scaleType = ImageView.ScaleType.CENTER
-            background = shape(palette.accent, 999f)
+        val picture = ImageView(this@OnboardingActivity).apply {
+            setImageResource(R.drawable.onboard_keyboard)
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_CENTER
             contentDescription = getString(R.string.tour_4_globe_desc)
         }
-        typing.addView(key, LinearLayout.LayoutParams(dp(40), dp(40)))
-        card.add(typing)
-        card.add(small(getString(R.string.tour_4_then)), top = 14)
-        val list = column().apply {
-            background = shape(palette.bg, 14f, palette.outline, 1f)
-            setPadding(dp(12), dp(8), dp(12), dp(8))
-        }
-        list.add(text(getString(R.string.tour_4_other), look.type.bodySp, 400, palette.inkSoft).apply { minHeight = dp(44); gravity = Gravity.CENTER_VERTICAL })
-        list.add(
-            text("${getString(R.string.tour_4_quikey)}   ✓", look.type.bodySp, 700, palette.ink).apply {
-                background = shape(blend(palette.bg, palette.success, 0.12f), 10f)
-                minHeight = dp(44)
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(12), 0, dp(12), 0)
-            },
-            top = 6,
-        )
-        card.add(list, top = 12)
-        card
+        picture.layoutParams = lp()
+        picture
     }
 
     private fun openKeyboardSettings() {

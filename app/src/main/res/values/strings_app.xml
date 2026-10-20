@@ -19,8 +19,6 @@
     <string name="setup_no_settings">Could not open settings. Go to Settings, then System, then Keyboard.</string>
 
     <!-- Main screen: try it -->
-    <string name="try_hint">Tap here to try your keyboard</string>
-    <string name="try_tip">Tap the keyboard icon at the bottom of your screen and choose quiKey. Pick a quiKey. It is typed here.</string>
 
     <!-- Main screen: list -->
     <string name="shortcuts_empty">Make your first quiKey. It takes a minute.</string>
@@ -127,7 +125,6 @@
     <string name="settings_backup_help">Save your quiKies in a file. You can get them back from it later.</string>
     <string name="settings_backup_button">Back up my quiKies</string>
     <string name="settings_restore_button">Restore from a backup</string>
-    <string name="settings_try_title">Try the keyboard</string>
     <string name="settings_about_title">About</string>
     <string name="settings_about_version">Version %1$s</string>
     <string name="settings_about_privacy">quiKey doesn\'t need or ask for internet access.</string>
