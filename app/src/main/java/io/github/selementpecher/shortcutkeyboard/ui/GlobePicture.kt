@@ -4,8 +4,6 @@ import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffXfermode
 import android.graphics.RadialGradient
 import android.graphics.Shader
 import android.graphics.drawable.GradientDrawable
@@ -16,11 +14,12 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import io.github.selementpecher.shortcutkeyboard.R
 import kotlin.math.hypot
+import kotlin.math.max
 
 /**
- * The picture of the phone's keyboard. A dark veil spreads out from the top left corner over the keys, towards the
- * globe key, and stops there: the globe stays clear, with a ring round it. Then the veil fades and the sweep starts
- * again. With the phone's animations turned off, the veil simply sits over the keys with the globe clear.
+ * The picture of the phone's keyboard. A dark veil closes in on the globe key from the edges, in round rings that
+ * match the globe's shape, and stops once the globe is clear, with a ring round it. It plays once. With the phone's
+ * animations turned off, the veil is already in its final place.
  */
 internal class GlobePicture(context: Context) : FrameLayout(context) {
 
@@ -42,14 +41,9 @@ internal class GlobePicture(context: Context) : FrameLayout(context) {
         isClickable = false
     }
     private val veilPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val clearPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR) }
 
-    /** How far the veil has spread from the corner: 0 at the corner, 1 once it has reached the globe. */
-    private var spread = 1f
-
-    /** How strong the veil is, 0 (gone) to 1 (full). */
-    private var strength = 1f
-
+    /** How far the veil has closed in: 0 at the edges (nothing covered yet), 1 once it reaches the globe. */
+    private var progress = 1f
     private var sweep: ValueAnimator? = null
 
     init {
@@ -81,20 +75,16 @@ internal class GlobePicture(context: Context) : FrameLayout(context) {
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         if (!Motion.enabled(context)) {
-            spread = 1f
-            strength = 1f
+            progress = 1f
             veil.invalidate()
             return
         }
+        progress = 0f
         sweep = ValueAnimator.ofFloat(0f, 1f).apply {
             duration = SWEEP_MS
-            repeatCount = ValueAnimator.INFINITE
             interpolator = DecelerateInterpolator()
             addUpdateListener {
-                val t = it.animatedValue as Float
-                // The veil spreads over the first part of the cycle, rests on the globe, then fades away.
-                spread = (t / SPREAD_END).coerceIn(0f, 1f)
-                strength = if (t < FADE_START) 1f else 1f - (t - FADE_START) / (1f - FADE_START)
+                progress = it.animatedValue as Float
                 veil.invalidate()
             }
             start()
@@ -107,22 +97,31 @@ internal class GlobePicture(context: Context) : FrameLayout(context) {
         super.onDetachedFromWindow()
     }
 
-    /** Draws the veil: dark, from the corner out to a soft edge, with a clear hole round the globe. */
+    /**
+     * Draws the veil outside a circle round the globe. The circle starts past the corners (no veil) and shrinks to the
+     * ring round the globe, so the dark edge closes in round the globe's own shape.
+     */
     private fun drawVeil(canvas: Canvas) {
         val w = veil.width.toFloat()
         val h = veil.height.toFloat()
-        if (w <= 0f || strength <= 0f) return
+        if (w <= 0f) return
         val gx = w * GLOBE_X
         val gy = h * GLOBE_Y
-        val reach = hypot(gx, gy) * REACH_OVERSHOOT
-        val radius = (reach * spread).coerceAtLeast(1f)
-        val alpha = (VEIL_ALPHA * strength * 255).toInt()
-        val colour = alpha shl 24
-        veilPaint.shader = RadialGradient(0f, 0f, radius, intArrayOf(colour, colour, 0), floatArrayOf(0f, EDGE_START, 1f), Shader.TileMode.CLAMP)
-        val layer = canvas.saveLayer(0f, 0f, w, h, null)
+        val farthest = hypot(max(gx, w - gx), max(gy, h - gy))
+        val ringRadius = ring.measuredWidth / 2f
+        val radius = farthest + (ringRadius - farthest) * progress
+        // The edge of the veil is a soft ring, EDGE_SOFT of the way across, so it fades rather than cuts.
+        val edge = (radius / farthest).coerceIn(0f, 1f)
+        val soft = (edge - EDGE_SOFT).coerceIn(0f, edge)
+        val veilColour = (VEIL_ALPHA * 255).toInt() shl 24
+        val clear = 0
+        veilPaint.shader = RadialGradient(
+            gx, gy, farthest,
+            intArrayOf(clear, clear, veilColour, veilColour),
+            floatArrayOf(0f, soft, max(edge, soft + 0.0001f).coerceAtMost(1f), 1f),
+            Shader.TileMode.CLAMP,
+        )
         canvas.drawRect(0f, 0f, w, h, veilPaint)
-        canvas.drawCircle(gx, gy, ring.measuredWidth / 2f, clearPaint)
-        canvas.restoreToCount(layer)
     }
 
     private companion object {
@@ -139,16 +138,11 @@ internal class GlobePicture(context: Context) : FrameLayout(context) {
         const val RING_DP = 4
         const val RING_COLOUR = 0xFF34D3B4.toInt()
 
-        /** The veil's darkness, and where its soft edge starts (as a fraction of its radius). */
+        /** How dark the veil is, and how wide its soft edge is (as a fraction of the way across). */
         const val VEIL_ALPHA = 0.72f
-        const val EDGE_START = 0.88f
+        const val EDGE_SOFT = 0.08f
 
-        /** One full cycle: the spread takes the first part, the veil rests, then it fades. */
-        const val SWEEP_MS = 3200L
-        const val SPREAD_END = 0.6f
-        const val FADE_START = 0.85f
-
-        /** The radius reaches a little past the globe, so the veil is clear there and not just edge-soft. */
-        const val REACH_OVERSHOOT = 1.05f
+        /** One slow pass, once. */
+        const val SWEEP_MS = 6000L
     }
 }
