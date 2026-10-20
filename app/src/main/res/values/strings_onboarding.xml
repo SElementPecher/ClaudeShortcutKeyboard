@@ -25,21 +25,21 @@
     <string name="tour_5_added">Examples added</string>
     <string name="tour_5_later">You can add them later in Settings.</string>
 
-    <string name="tour_privacy_title">Your words. Your device. We don\'t snoop.</string>
+    <string name="tour_privacy_title">Your words.\nYour device.\nWe don\'t snoop.</string>
     <string name="tour_privacy_text">quiKey doesn\'t need or ask for internet access.</string>
     <string name="tour_privacy_1">No accounts, no sign-in.</string>
     <string name="tour_privacy_2">No ads, no tracking.</string>
     <string name="tour_privacy_3">Your quiKies are only on this phone.</string>
     <string name="tour_4_typing">Type a message…</string>
-    <string name="tour_4_key_desc">Keyboard key</string>
-    <string name="tour_4_then">Tap the keyboard key, then choose quiKey.</string>
+    <string name="tour_4_globe_desc">Globe key</string>
+    <string name="tour_4_then">Tap the globe at the bottom of your screen, then choose quiKey.</string>
     <string name="tour_4_other">Another keyboard</string>
     <string name="tour_4_quikey">quiKey</string>
     <string name="tour_4_title">Turn on your keyboard</string>
     <string name="tour_4_text">One quick step in your phone\'s settings.</string>
     <string name="tour_4_turn_on">Turn on quiKey</string>
     <string name="tour_4_on">Keyboard is on</string>
-    <string name="tour_4_use">To use it, tap the keyboard icon at the bottom of your screen when you are typing, then choose quiKey.</string>
+    <string name="tour_4_use">To use it, tap the globe at the bottom of your screen when you are typing, then choose quiKey.</string>
 
     <string name="tour_again_help">A quick look at how it works.</string>
     <string name="tour_again_button">Take the tour</string>

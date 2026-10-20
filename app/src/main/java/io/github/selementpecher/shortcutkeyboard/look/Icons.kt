@@ -17,7 +17,7 @@ import kotlin.math.sin
  */
 object Icons {
 
-    enum class Kind { BACK, FORWARD, CLOSE, GEAR, KEYBOARD, PLUS, CHECK, TRASH, FOLDER, BACKSPACE }
+    enum class Kind { BACK, FORWARD, CLOSE, GEAR, KEYBOARD, PLUS, CHECK, TRASH, FOLDER, BACKSPACE, GLOBE }
 
     /** An icon in [color], [sizePx] square. Resize with `setBounds` if needed. */
     fun drawable(kind: Kind, color: Int, sizePx: Int): Drawable = IconDrawable(kind, color, sizePx)
@@ -68,6 +68,7 @@ private class IconDrawable(private val kind: Icons.Kind, color: Int, private val
             )
             Icons.Kind.GEAR -> gear(canvas, cx, cy, s)
             Icons.Kind.KEYBOARD -> keyboard(canvas, cx, cy, s)
+            Icons.Kind.GLOBE -> globe(canvas, cx, cy, s)
             Icons.Kind.TRASH -> trash(canvas, cx, cy, s)
             Icons.Kind.FOLDER -> folder(canvas, cx, cy, s)
             Icons.Kind.BACKSPACE -> backspace(canvas, cx, cy, s)
@@ -125,6 +126,14 @@ private class IconDrawable(private val kind: Icons.Kind, color: Int, private val
         path.close()
         canvas.drawPath(path, stroke)
         canvas.drawCircle(cx, cy, s * 0.14f, stroke)
+    }
+
+    /** A globe: a ring, an upright oval and a middle line, as on the phone's keyboard switch key. */
+    private fun globe(canvas: Canvas, cx: Float, cy: Float, s: Float) {
+        val r = s * 0.36f
+        canvas.drawCircle(cx, cy, r, stroke)
+        canvas.drawOval(RectF(cx - r * 0.5f, cy - r, cx + r * 0.5f, cy + r), stroke)
+        canvas.drawLine(cx - r, cy, cx + r, cy, stroke)
     }
 
     private fun keyboard(canvas: Canvas, cx: Float, cy: Float, s: Float) {

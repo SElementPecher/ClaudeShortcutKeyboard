@@ -310,10 +310,10 @@ class OnboardingActivity : Activity() {
         }
         typing.addView(small(getString(R.string.tour_4_typing)).apply { layoutParams = lp(width = 0, weight = 1f) })
         val key = ImageView(this@OnboardingActivity).apply {
-            setImageDrawable(Icons.drawable(Icons.Kind.KEYBOARD, palette.onAccent, dp(22)))
+            setImageDrawable(Icons.drawable(Icons.Kind.GLOBE, palette.onAccent, dp(22)))
             scaleType = ImageView.ScaleType.CENTER
             background = shape(palette.accent, 999f)
-            contentDescription = getString(R.string.tour_4_key_desc)
+            contentDescription = getString(R.string.tour_4_globe_desc)
         }
         typing.addView(key, LinearLayout.LayoutParams(dp(40), dp(40)))
         card.add(typing)
