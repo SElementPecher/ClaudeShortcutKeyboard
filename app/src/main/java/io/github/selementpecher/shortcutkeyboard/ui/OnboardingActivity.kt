@@ -9,7 +9,6 @@ import android.provider.Settings
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.LinearLayout
 import io.github.selementpecher.shortcutkeyboard.look.Icons
 import android.widget.TextView
@@ -298,16 +297,9 @@ class OnboardingActivity : Activity() {
      * A drawing of the phone once the keyboard is on: the keyboard key next to the text box, and the list that opens
      * from it with quiKey ticked. It is a drawing, not a photo of the phone.
      */
-    /** Once the keyboard is on: a picture of the keyboard with its globe key highlighted. */
-    private fun howToOpen(): View = with(ui) {
-        val picture = ImageView(this@OnboardingActivity).apply {
-            setImageResource(R.drawable.onboard_keyboard)
-            adjustViewBounds = true
-            scaleType = ImageView.ScaleType.FIT_CENTER
-            contentDescription = getString(R.string.tour_4_globe_desc)
-        }
-        picture.layoutParams = lp()
-        picture
+    /** Once the keyboard is on: a picture of the keyboard, with a ring that fades over the globe key. */
+    private fun howToOpen(): View = GlobePicture(this@OnboardingActivity).apply {
+        contentDescription = getString(R.string.tour_4_globe_desc)
     }
 
     private fun openKeyboardSettings() {
