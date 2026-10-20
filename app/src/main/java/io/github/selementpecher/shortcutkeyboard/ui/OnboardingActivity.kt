@@ -115,6 +115,7 @@ class OnboardingActivity : Activity() {
                 2 -> pageSimpleOrComplex()
                 3 -> pageThree()
                 4 -> pageExamples()
+                5 -> pagePrivacy()
                 else -> pageFour()
             }
             content.addView(view, lp())
@@ -246,6 +247,19 @@ class OnboardingActivity : Activity() {
         box
     }
 
+    /** Privacy: nothing leaves the phone. Says it plainly and gives the three facts behind it. */
+    private fun pagePrivacy(): View = with(ui) {
+        val box = intro("🔒", R.string.tour_privacy_title, R.string.tour_privacy_text)
+        val facts = listOf(R.string.tour_privacy_1, R.string.tour_privacy_2, R.string.tour_privacy_3)
+        val card = column().apply {
+            background = shape(palette.surface, look.shape.cardRadiusDp.toFloat().coerceAtMost(20f), palette.outline, look.shape.strokeDp)
+            setPadding(dp(18), dp(16), dp(18), dp(16))
+        }
+        facts.forEachIndexed { index, res -> card.add(body(getString(res)), top = if (index == 0) 0 else 12) }
+        box.add(card, top = 24)
+        box
+    }
+
     private fun pageFour(): View = with(ui) {
         val box = intro("⌨️", R.string.tour_4_title, R.string.tour_4_text)
         val on = KeyboardSetup.isEnabled(this@OnboardingActivity)
@@ -320,7 +334,7 @@ class OnboardingActivity : Activity() {
 
     companion object {
         private const val STATE_PAGE = "page"
-        private const val LAST = 5
+        private const val LAST = 6
 
         fun open(context: Context) {
             context.startActivity(Intent(context, OnboardingActivity::class.java))

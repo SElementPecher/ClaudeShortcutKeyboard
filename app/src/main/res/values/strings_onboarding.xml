@@ -25,6 +25,11 @@
     <string name="tour_5_added">Examples added</string>
     <string name="tour_5_later">You can add them later in Settings.</string>
 
+    <string name="tour_privacy_title">Your words stay on your phone</string>
+    <string name="tour_privacy_text">quiKey has no internet. Nothing you type leaves your phone.</string>
+    <string name="tour_privacy_1">No accounts, no sign-in.</string>
+    <string name="tour_privacy_2">No ads, no tracking.</string>
+    <string name="tour_privacy_3">Your quiKies are only on this phone.</string>
     <string name="tour_4_title">Turn on your keyboard</string>
     <string name="tour_4_text">One quick step in your phone\'s settings.</string>
     <string name="tour_4_turn_on">Turn on quiKey</string>

@@ -156,7 +156,14 @@ class SettingsActivity : Activity() {
         card.add(heading(getString(R.string.settings_about_title)))
         card.add(body(getString(R.string.app_name)), top = 8)
         card.add(small(getString(R.string.settings_about_version, versionName())), top = 2)
-        card.add(small(getString(R.string.settings_about_privacy)), top = 10)
+        // The privacy promise, set off in a tinted box so it is easy to find.
+        card.add(
+            text(getString(R.string.settings_about_privacy), look.type.bodySp, 600, palette.ink, 1.45f).apply {
+                background = shape(blend(palette.surface, palette.success, 0.14f), 14f)
+                setPadding(dp(14), dp(12), dp(14), dp(12))
+            },
+            top = 14,
+        )
         card
     }
 
