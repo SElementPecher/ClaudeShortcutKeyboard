@@ -709,8 +709,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
     private fun tryCard(): View = with(ui) {
         val card = card()
         card.add(heading(getString(R.string.settings_try_title)))
-        card.add(small(getString(R.string.try_tip)), top = 4)
-        card.add(field(getString(R.string.try_hint)), top = 14)
+        card.add(field(""), top = 14)
         card
     }
 
