@@ -130,7 +130,7 @@
     <string name="settings_try_title">Try the keyboard</string>
     <string name="settings_about_title">About</string>
     <string name="settings_about_version">Version %1$s</string>
-    <string name="settings_about_privacy">No internet. Nothing you type leaves your phone.</string>
+    <string name="settings_about_privacy">quiKey doesn\'t need or ask for internet access.</string>
 
     <!-- Moving and choosing several -->
     <string name="drag_up">Drop here to move up to %1$s</string>
