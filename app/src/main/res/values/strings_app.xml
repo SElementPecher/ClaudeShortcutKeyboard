@@ -114,6 +114,8 @@
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
+    <string name="preferences_title">Preferences</string>
+    <string name="settings_preferences_button">Preferences</string>
     <string name="settings_look_title">Look</string>
     <string name="settings_look_help">Pick how the app and the keyboard look. It changes straight away.</string>
     <string name="look_chosen">%1$s. This one is chosen.</string>
@@ -126,12 +128,6 @@
     <string name="settings_backup_button">Back up my quiKies</string>
     <string name="settings_restore_button">Restore from a backup</string>
     <string name="settings_try_title">Try the keyboard</string>
-    <string name="settings_help_title">How it works</string>
-    <string name="settings_help_1">Make a quiKey for a message you send a lot.</string>
-    <string name="settings_help_2">Where a word is different each time, like a name or a time, add something that changes.</string>
-    <string name="settings_help_3">To use it, tap the keyboard icon at the bottom of your screen and choose quiKey.</string>
-    <string name="settings_help_4">Pick a quiKey. The keyboard asks you for the words that change, one at a time.</string>
-    <string name="settings_help_5">Tap Add. Your message is typed for you.</string>
     <string name="settings_about_title">About</string>
     <string name="settings_about_version">Version %1$s</string>
     <string name="settings_about_privacy">No internet. Nothing you type leaves your phone.</string>

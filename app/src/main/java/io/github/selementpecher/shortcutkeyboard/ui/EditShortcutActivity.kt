@@ -705,6 +705,15 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
 
     // ---- step 3: check and save ----
 
+    /** Try the new quiKey: tap the box and pick it from the keyboard, so it is typed here. */
+    private fun tryCard(): View = with(ui) {
+        val card = card()
+        card.add(heading(getString(R.string.settings_try_title)))
+        card.add(small(getString(R.string.try_tip)), top = 4)
+        card.add(field(getString(R.string.try_hint)), top = 14)
+        card
+    }
+
     private fun buildCheck() {
         val content = screen.content
         with(ui) {
@@ -728,6 +737,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             content.add(nameCard, top = if (isNew) 20 else 0)
 
             content.add(exampleCard(), top = 20)
+            content.add(tryCard(), top = 20)
 
             val asks = draft.questions()
             if (asks.isEmpty()) {

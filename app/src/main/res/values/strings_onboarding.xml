@@ -31,9 +31,8 @@
     <string name="tour_4_on">Keyboard is on</string>
     <string name="tour_4_use">To use it, tap the keyboard icon at the bottom of your screen when you are typing, then choose quiKey.</string>
 
-    <string name="tour_again_title">Take the tour again</string>
     <string name="tour_again_help">A quick look at how it works.</string>
-    <string name="tour_again_button">Show the tour</string>
+    <string name="tour_again_button">Take the tour</string>
 
     <string name="examples_title">Example quiKies</string>
     <string name="examples_help">Add the starter folders and quiKies again. Yours stay as they are.</string>

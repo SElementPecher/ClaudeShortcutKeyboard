@@ -74,15 +74,10 @@ class SettingsActivity : Activity() {
 
     private fun build() = with(ui) {
         val content = screen.content
-        content.add(textSizeCard(), top = 8)
-        content.add(lookCard(), top = 16)
-        content.add(cheatCard(), top = 16)
-        content.add(examplesCard(), top = 16)
-        content.add(tourCard(), top = 16)
+        content.add(preferencesCard(), top = 8)
+        content.add(cheatAndExamplesCard(), top = 16)
         content.add(backupCard(), top = 16)
         content.add(startAgainCard(), top = 16)
-        content.add(tryCard(), top = 16)
-        content.add(helpCard(), top = 16)
         content.add(aboutCard(), top = 16)
     }
 
@@ -111,139 +106,40 @@ class SettingsActivity : Activity() {
         card
     }
 
-    private fun examplesCard(): View = with(ui) {
+    /** Preferences (Look and text size, on their own page), with Take the tour under it. */
+    private fun preferencesCard(): View = with(ui) {
         val card = card()
-        card.add(heading(getString(R.string.examples_title)))
-        card.add(small(getString(R.string.examples_help)), top = 4)
-        card.add(secondaryButton(getString(R.string.examples_button)) {
-            val before = ShortcutRepository.library(this@SettingsActivity).shortcuts.size
-            try {
-                ShortcutRepository.addExamples(this@SettingsActivity)
-                val added = ShortcutRepository.library(this@SettingsActivity).shortcuts.size - before
-                screen.snack(if (added > 0) resources.getQuantityString(R.plurals.examples_added, added, added) else getString(R.string.examples_none))
-            } catch (e: Exception) {
-                screen.snack(getString(R.string.edit_save_failed), error = true)
-            }
-        }, top = 14)
+        card.add(secondaryButton(getString(R.string.settings_preferences_button)) {
+            startActivity(Intent(this@SettingsActivity, PreferencesActivity::class.java))
+        })
+        card.add(secondaryButton(getString(R.string.tour_again_button)) { OnboardingActivity.open(this@SettingsActivity) }, top = 12)
         card
     }
 
-    private fun tourCard(): View = with(ui) {
-        val card = card()
-        card.add(heading(getString(R.string.tour_again_title)))
-        card.add(small(getString(R.string.tour_again_help)), top = 4)
-        card.add(secondaryButton(getString(R.string.tour_again_button)) { OnboardingActivity.open(this@SettingsActivity) }, top = 14)
-        card
-    }
-
-    private fun cheatCard(): View = with(ui) {
+    /** The cheat sheet and the example quiKeys, grouped together in one card. */
+    private fun cheatAndExamplesCard(): View = with(ui) {
         val card = card()
         card.add(heading(getString(R.string.cheat_settings_title)))
         card.add(small(getString(R.string.cheat_settings_help)), top = 4)
         card.add(secondaryButton(getString(R.string.cheat_open_button)) {
             startActivity(Intent(this@SettingsActivity, CheatSheetActivity::class.java))
         }, top = 14)
+        card.add(heading(getString(R.string.examples_title)), top = 24)
+        card.add(small(getString(R.string.examples_help)), top = 4)
+        card.add(secondaryButton(getString(R.string.examples_button)) { addExamples() }, top = 14)
         card
     }
 
-    private fun lookCard(): View = with(ui) {
-        val card = card()
-        card.add(heading(getString(R.string.settings_look_title)))
-        card.add(small(getString(R.string.settings_look_help)), top = 4)
-        for (option in Looks.all) card.add(lookOption(option), top = 14)
-        card
-    }
-
-    /** One selectable Look: a live mini preview, its name and tagline, a ring when chosen. */
-    private fun lookOption(option: Look): View = with(ui) {
-        val chosen = option.id == look.id
-        val box = column().apply {
-            val r = 18f
-            background = rippled(
-                shape(palette.surfaceAlt.let { if (chosen) blend(palette.surface, palette.accent, 0.06f) else palette.surface }, r, if (chosen) palette.accent else palette.outline, if (chosen) 3f else 1.5f),
-                r,
-            )
-            setPadding(dp(12), dp(12), dp(12), dp(14))
-            isClickable = true
-            isFocusable = true
-            contentDescription = getString(if (chosen) R.string.look_chosen else R.string.look_choose, option.displayName)
-            setOnClickListener { chooseLook(option) }
+    /** Adds the starter quiKeys and folders that are missing, and says how many were added. */
+    private fun addExamples() {
+        val before = ShortcutRepository.library(this).shortcuts.size
+        try {
+            ShortcutRepository.addExamples(this)
+            val added = ShortcutRepository.library(this).shortcuts.size - before
+            screen.snack(if (added > 0) resources.getQuantityString(R.plurals.examples_added, added, added) else getString(R.string.examples_none))
+        } catch (e: Exception) {
+            screen.snack(getString(R.string.edit_save_failed), error = true)
         }
-        val labels = listOf(
-            getString(R.string.look_preview_shortcut_1),
-            getString(R.string.look_preview_shortcut_2),
-            getString(R.string.look_preview_folder),
-        )
-        box.addView(LookPreview(this@SettingsActivity, option, labels).apply { layoutParams = lp() })
-        val line = row()
-        val names = column().apply { layoutParams = lp(width = 0, weight = 1f) }
-        names.addView(text(option.displayName, look.type.headingSp, look.type.headingWeight, palette.ink))
-        names.add(small(option.tagline), top = 2)
-        line.addView(names)
-        if (chosen) line.addView(checkBadge(32))
-        box.add(line, top = 12)
-        box
-    }
-
-    /** A round accent badge with a tick: marks the chosen option. */
-    private fun checkBadge(sizeDp: Int): View = with(ui) {
-        ImageView(this@SettingsActivity).apply {
-            setImageDrawable(icon(Icons.Kind.CHECK, sizeDp * 3 / 4, palette.onAccent))
-            scaleType = ImageView.ScaleType.CENTER
-            background = shape(palette.accent, 999f)
-            layoutParams = LinearLayout.LayoutParams(dp(sizeDp), dp(sizeDp))
-        }
-    }
-
-    /** "Text size": two big choices, each showing a sample line at its own size. */
-    private fun textSizeCard(): View = with(ui) {
-        val card = card()
-        card.add(heading(getString(R.string.settings_text_title)))
-        card.add(small(getString(R.string.settings_text_help)), top = 4)
-        card.add(textChoice(large = false), top = 16)
-        card.add(textChoice(large = true), top = 10)
-        card
-    }
-
-    private fun textChoice(large: Boolean): View = with(ui) {
-        val chosen = LookStore.isLargeText(this@SettingsActivity) == large
-        val name = getString(if (large) R.string.text_size_large else R.string.text_size_normal)
-        // The Ui's sizes already include the current choice; take it out, then apply this option's.
-        val base = look.type.bodySp / LookStore.textScale(this@SettingsActivity)
-        val sampleSp = base * (if (large) LookStore.LARGE_TEXT_SCALE else 1f)
-        val box = column().apply {
-            val r = 18f
-            background = rippled(
-                shape(if (chosen) blend(palette.surface, palette.accent, 0.06f) else palette.surface, r, if (chosen) palette.accent else buttonOutline(), if (chosen) 3f else 1.5f),
-                r,
-            )
-            setPadding(dp(16), dp(14), dp(16), dp(16))
-            isClickable = true
-            isFocusable = true
-            contentDescription = getString(if (chosen) R.string.text_size_chosen else R.string.text_size_choose, name)
-            setOnClickListener { chooseTextSize(large) }
-            Motion.pressable(this, 0.98f)
-        }
-        val line = row()
-        line.addView(text(name, look.type.headingSp, look.type.headingWeight, palette.ink, Ui.HEADING_LINE_SPACING).apply { layoutParams = lp(width = 0, weight = 1f) })
-        if (chosen) line.addView(checkBadge(28))
-        box.addView(line)
-        box.add(text(getString(R.string.text_size_sample), sampleSp, 400, palette.ink), top = 8)
-        box
-    }
-
-    private fun Ui.buttonOutline(): Int = blend(palette.outline, palette.inkSoft, 0.55f)
-
-    private fun chooseTextSize(large: Boolean) {
-        if (LookStore.isLargeText(this) == large) return
-        LookStore.setLargeText(this, large)
-        recreate()
-    }
-
-    private fun chooseLook(option: Look) {
-        if (option.id == ui.look.id) return
-        LookStore.set(this, option)
-        recreate()
     }
 
     private fun backupCard(): View = with(ui) {
@@ -252,39 +148,6 @@ class SettingsActivity : Activity() {
         card.add(small(getString(R.string.settings_backup_help)), top = 4)
         card.add(secondaryButton(getString(R.string.settings_backup_button)) { startBackup() }, top = 16)
         card.add(secondaryButton(getString(R.string.settings_restore_button)) { startRestore() }, top = 10)
-        card
-    }
-
-    private fun tryCard(): View = with(ui) {
-        val card = card()
-        card.add(heading(getString(R.string.settings_try_title)))
-        card.add(small(getString(R.string.try_tip)), top = 4)
-        card.add(field(getString(R.string.try_hint)), top = 14)
-        card
-    }
-
-    private fun helpCard(): View = with(ui) {
-        val card = card()
-        card.add(heading(getString(R.string.settings_help_title)))
-        val steps = listOf(
-            R.string.settings_help_1, R.string.settings_help_2, R.string.settings_help_3,
-            R.string.settings_help_4, R.string.settings_help_5,
-        )
-        steps.forEachIndexed { index, res ->
-            val line = LinearLayout(this@SettingsActivity).apply { orientation = LinearLayout.HORIZONTAL }
-            line.addView(TextView(this@SettingsActivity).apply {
-                text = (index + 1).toString()
-                gravity = Gravity.CENTER
-                textSize = ui.sp(14f)
-                typeface = typefaceOf(700)
-                setTextColor(palette.ink)
-                background = shape(palette.surfaceAlt, 999f)
-                includeFontPadding = false
-                layoutParams = LinearLayout.LayoutParams(dp(28), dp(28)).apply { topMargin = dp(1) }
-            })
-            line.addView(body(getString(res)).apply { layoutParams = lp(width = 0, weight = 1f, start = 12) })
-            card.add(line, top = if (index == 0) 14 else 12)
-        }
         card
     }
 
