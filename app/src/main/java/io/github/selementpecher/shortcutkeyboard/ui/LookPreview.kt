@@ -112,11 +112,14 @@ internal class LookPreview(
 
     private fun tileColors(index: Int) = palette.tiles[index % palette.tiles.size]
 
+    /** The pictures of the three sample tiles, as on the real ones. */
+    private fun glyphFor(index: Int, folder: Boolean) = if (folder) GLYPH_FOLDER else if (index == 0) GLYPH_MEDICINE else GLYPH_LATE
+
     /** A quiKey tile in this Look's style. */
     private fun drawQuikey(canvas: Canvas, left: Float, top: Float, w: Float, h: Float, radius: Float, index: Int, label: String) {
         val colors = tileColors(index)
         if (look.ruled) {
-            drawIndexCard(canvas, left, top, w, h, radius, colors.bg, label, folder = false)
+            drawIndexCard(canvas, left, top, w, h, radius, colors.bg, label, folder = false, glyph = glyphFor(index, false))
             return
         }
         rect.set(left, top, left + w, top + h)
@@ -129,7 +132,7 @@ internal class LookPreview(
             paint.color = palette.outline
             canvas.drawRoundRect(rect, radius, radius, paint)
         }
-        drawTileText(canvas, left, top, w, h, colors.fg, label, folder = false)
+        drawTileText(canvas, left, top, w, h, colors.fg, label, glyphFor(index, false))
     }
 
     /** A folder tile: the same, with the little tab on top the real folders have. */
@@ -137,7 +140,7 @@ internal class LookPreview(
         val colors = palette.folder
         val tab = u(6f)
         if (look.ruled) {
-            drawIndexCard(canvas, left, top, w, h, radius, tileColors(2).bg, label, folder = true)
+            drawIndexCard(canvas, left, top, w, h, radius, tileColors(2).bg, label, folder = true, glyph = glyphFor(0, true))
             return
         }
         paint.style = Paint.Style.FILL
@@ -157,7 +160,7 @@ internal class LookPreview(
             paint.color = ring
             canvas.drawRoundRect(rect, radius, radius, paint)
         }
-        drawTileText(canvas, left, top + tab, w, h - tab, colors.fg, label, folder = true)
+        drawTileText(canvas, left, top + tab, w, h - tab, colors.fg, label, glyphFor(0, true))
     }
 
     /** The dashed New tile. */
@@ -182,18 +185,17 @@ internal class LookPreview(
      * Name and picture inside a tile, fitted like the real tiles: wide Looks have a round picture with the name beside it
      * (two lines if it is long); Squares has a big letter with the name under it. The text shrinks before it is ever cut.
      */
-    private fun drawTileText(canvas: Canvas, left: Float, top: Float, w: Float, h: Float, fg: Int, label: String, folder: Boolean) {
+    private fun drawTileText(canvas: Canvas, left: Float, top: Float, w: Float, h: Float, fg: Int, label: String, glyph: String) {
         paint.style = Paint.Style.FILL
         paint.typeface = typefaceOf(look.type.tileWeight)
-        val initial = (label.firstOrNull() ?: '?').uppercaseChar().toString()
         if (look.tileLayout == TileLayout.WIDE) {
-            val textLeft = drawPicture(canvas, left, top, h, fg, if (folder) "▤" else initial)
+            val textLeft = drawPicture(canvas, left, top, h, fg, glyph)
             drawFitted(canvas, label, textLeft, top, h, left + w - u(6f) - textLeft, fg, centre = false)
         } else {
             paint.color = fg
             paint.textAlign = Paint.Align.CENTER
             paint.textSize = u(18f)
-            canvas.drawText(if (folder) "▤" else initial, left + w / 2f, top + h * 0.5f, paint)
+            canvas.drawText(glyph, left + w / 2f, top + h * 0.5f, paint)
             paint.textAlign = Paint.Align.LEFT
             drawFitted(canvas, label, left + u(4f), top + h * 0.56f, h * 0.4f, w - u(8f), fg, centre = true)
         }
@@ -209,8 +211,8 @@ internal class LookPreview(
         canvas.drawCircle(cx, cy, circle / 2f, paint)
         paint.color = fg
         paint.textAlign = Paint.Align.CENTER
-        paint.textSize = textSize()
-        canvas.drawText(glyph, cx, cy + textSize() / 3f, paint)
+        paint.textSize = u(11f)
+        canvas.drawText(glyph, cx, cy + u(4f), paint)
         paint.textAlign = Paint.Align.LEFT
         return left + u(8f) + circle + u(6f)
     }
@@ -269,7 +271,7 @@ internal class LookPreview(
     }
 
     /** A white card with a shadow and a highlighter swipe in [swipe] under the name; a coloured binder tab if a folder. */
-    private fun drawIndexCard(canvas: Canvas, left: Float, top: Float, w: Float, h: Float, radius: Float, swipe: Int, label: String, folder: Boolean) {
+    private fun drawIndexCard(canvas: Canvas, left: Float, top: Float, w: Float, h: Float, radius: Float, swipe: Int, label: String, folder: Boolean, glyph: String) {
         val bodyTop = if (folder) top + u(7f) else top
         rect.set(left, bodyTop, left + w, top + h)
         paint.style = Paint.Style.FILL
@@ -280,8 +282,7 @@ internal class LookPreview(
         paint.color = palette.surface
         canvas.drawRoundRect(rect, radius, radius, paint)
         paint.typeface = typefaceOf(look.type.tileWeight)
-        val initial = (label.firstOrNull() ?: '?').uppercaseChar().toString()
-        val textLeft = drawPicture(canvas, left, bodyTop, top + h - bodyTop, palette.ink, if (folder) "▤" else initial)
+        val textLeft = drawPicture(canvas, left, bodyTop, top + h - bodyTop, palette.ink, glyph)
         if (folder) {
             paint.color = swipe
             rect.set(left + u(6f), top, left + w * 0.5f, bodyTop + u(3f))
@@ -302,5 +303,8 @@ internal class LookPreview(
         /** The width (in dp) the sizes are drawn for; narrower or wider pictures scale from it. */
         const val REFERENCE_DP = 200f
         const val PAD = 12f
+        const val GLYPH_MEDICINE = "💊"
+        const val GLYPH_FOLDER = "🧒"
+        const val GLYPH_LATE = "⏰"
     }
 }
