@@ -19,7 +19,6 @@ import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository
 import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.Look
-import io.github.selementpecher.shortcutkeyboard.look.RuledSnap
 import io.github.selementpecher.shortcutkeyboard.look.handwritingFont
 import io.github.selementpecher.shortcutkeyboard.look.HANDWRITING_EXTRA_SP
 import io.github.selementpecher.shortcutkeyboard.look.LookStore
@@ -86,7 +85,7 @@ class SettingsActivity : Activity() {
         refreshKeyboardStatus()
         content.add(grid(2, tiles()), top = 16)
         content.add(aboutBox(), top = 20)
-        content.add(deleteLink(), top = 8)
+        content.add(deleteButton(), top = 32)
     }
 
     /** First thing on the screen: is the keyboard on? Tap to turn it on, or to switch to it. */
@@ -161,11 +160,12 @@ class SettingsActivity : Activity() {
 
     /** The privacy promise, set off in a tinted box so it is easy to find, with the version under it. */
     private fun aboutBox(): View = with(ui) {
-        val box = column()
+        val box = column().apply {
+            background = shape(blend(palette.bg, palette.success, 0.14f), 14f)
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+        }
         box.add(
             text(getString(R.string.settings_about_privacy), look.type.bodySp, 600, palette.ink, 1.45f).apply {
-                background = shape(blend(palette.bg, palette.success, 0.14f), 14f)
-                setPadding(dp(14), dp(12), dp(14), dp(12))
                 // Exercise book: written by hand.
                 if (look.ruled) handwritingFont(this@SettingsActivity)?.let { font ->
                     typeface = font
@@ -173,13 +173,15 @@ class SettingsActivity : Activity() {
                 }
             },
         )
-        box.add(small(getString(R.string.settings_about_version, versionName())), top = 8)
+        // The version, quiet, as the last line of the same box.
+        box.add(text(getString(R.string.settings_about_version, versionName()), look.type.smallSp, 400, palette.ink), top = 6)
         box
     }
 
-    /** The one thing that deletes, last and on its own. Asks first. */
-    private fun deleteLink(): View = with(ui) {
-        dangerButton(getString(R.string.again_button), Icons.Kind.TRASH) {
+    /** The one thing that deletes: a red button on its own at the very bottom, with the picture beside the words. Asks first. */
+    private fun deleteButton(): View = with(ui) {
+        val r = look.shape.buttonRadiusDp.toFloat()
+        primaryButton(getString(R.string.again_button), Icons.Kind.TRASH) {
             ui.confirm(
                 this@SettingsActivity,
                 title = getString(R.string.again_confirm_title),
@@ -195,7 +197,18 @@ class SettingsActivity : Activity() {
                     screen.snack(getString(R.string.edit_save_failed), error = true)
                 }
             }.show()
-        }.also { if (look.ruled) RuledSnap.snapToo(it) }
+        }.apply {
+            background = rippled(shape(palette.danger, r), r)
+            setTextColor(readableOn(palette.danger))
+            setCompoundDrawablesRelativeWithIntrinsicBounds(icon(Icons.Kind.TRASH, 22, readableOn(palette.danger)), null, null, null)
+            compoundDrawablePadding = dp(10)
+            gravity = Gravity.CENTER
+            // As wide as its words and picture, in the middle, so the picture sits beside the words.
+            setPadding(dp(28), paddingTop, dp(28), paddingBottom)
+            layoutParams = lp(width = android.view.ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                (this as? LinearLayout.LayoutParams)?.gravity = Gravity.CENTER_HORIZONTAL
+            }
+        }
     }
 
     private fun versionName(): String = try {
