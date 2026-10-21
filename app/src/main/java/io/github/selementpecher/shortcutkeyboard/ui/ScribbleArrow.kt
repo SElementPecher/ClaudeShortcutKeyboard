@@ -13,9 +13,9 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * A quick pen arrow, the way you would point at a word by hand: it starts at the bottom left of its bounds, sweeps
- * right and curves up to its tip at the top right, then the two strokes of the head. [progress] (0 to 1) is how much
- * of it is drawn so far: the line first, then the head.
+ * A quick pen arrow, the way you would point at a word by hand: the tip is at the top right of its bounds and the line
+ * curves down and away to the bottom left. It is drawn the way a hand would: the head first, in one stroke from left to
+ * right through the tip, then the line from the tip down. [progress] (0 to 1) is how much of it is drawn so far.
  */
 internal class ScribbleArrow(colour: Int, strokePx: Float, private val headPx: Float) : Drawable() {
 
@@ -26,12 +26,10 @@ internal class ScribbleArrow(colour: Int, strokePx: Float, private val headPx: F
         strokeCap = Paint.Cap.ROUND
         strokeJoin = Paint.Join.ROUND
     }
+    private val head = Path()
     private val line = Path()
     private val shown = Path()
     private val measure = PathMeasure()
-    private var tipX = 0f
-    private var tipY = 0f
-    private var backAngle = 0.0
 
     var progress: Float = 1f
         set(value) {
@@ -45,31 +43,38 @@ internal class ScribbleArrow(colour: Int, strokePx: Float, private val headPx: F
         val t = bounds.top.toFloat()
         val w = bounds.width().toFloat()
         val h = bounds.height().toFloat()
-        tipX = l + w
-        tipY = t
-        // Along the bottom, then a curve up into the tip.
-        val c2x = l + w * 0.93f
-        val c2y = t + h * 0.5f
+        val tipX = l + w
+        val tipY = t
+        // From the tip, a curve down and round to the bottom left.
+        val c1x = l + w * 0.93f
+        val c1y = t + h * 0.5f
         line.reset()
-        line.moveTo(l, t + h)
-        line.cubicTo(l + w * 0.5f, t + h * 1.02f, c2x, c2y, tipX, tipY)
-        // The head points back along the line's last direction.
-        backAngle = atan2((c2y - tipY).toDouble(), (c2x - tipX).toDouble())
+        line.moveTo(tipX, tipY)
+        line.cubicTo(c1x, c1y, l + w * 0.5f, t + h * 1.02f, l, t + h)
+        // The head's two strokes point back along the line, made into one stroke from the left barb to the right one.
+        val back = atan2((c1y - tipY).toDouble(), (c1x - tipX).toDouble())
+        val barbs = listOf(-1, 1).map { side ->
+            val a = back + side * HEAD_SPREAD
+            floatArrayOf(tipX + headPx * cos(a).toFloat(), tipY + headPx * sin(a).toFloat())
+        }.sortedBy { it[0] }
+        head.reset()
+        head.moveTo(barbs[0][0], barbs[0][1])
+        head.lineTo(tipX, tipY)
+        head.lineTo(barbs[1][0], barbs[1][1])
     }
 
     override fun draw(canvas: Canvas) {
         if (progress <= 0f) return
-        measure.setPath(line, false)
+        stroke(canvas, head, (progress / HEAD_SHARE).coerceAtMost(1f))
+        if (progress > HEAD_SHARE) stroke(canvas, line, (progress - HEAD_SHARE) / (1f - HEAD_SHARE))
+    }
+
+    /** Draws the first [part] (0 to 1) of [path]. */
+    private fun stroke(canvas: Canvas, path: Path, part: Float) {
+        measure.setPath(path, false)
         shown.reset()
-        val lineDone = (progress / LINE_SHARE).coerceAtMost(1f)
-        measure.getSegment(0f, measure.length * lineDone, shown, true)
+        measure.getSegment(0f, measure.length * part, shown, true)
         canvas.drawPath(shown, paint)
-        if (progress <= LINE_SHARE) return
-        val head = headPx * ((progress - LINE_SHARE) / (1f - LINE_SHARE))
-        for (side in listOf(-1, 1)) {
-            val a = backAngle + side * HEAD_SPREAD
-            canvas.drawLine(tipX, tipY, tipX + head * cos(a).toFloat(), tipY + head * sin(a).toFloat(), paint)
-        }
     }
 
     override fun setAlpha(alpha: Int) {
@@ -84,8 +89,8 @@ internal class ScribbleArrow(colour: Int, strokePx: Float, private val headPx: F
     override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
 
     private companion object {
-        /** How much of [progress] is the line; the rest draws the head. */
-        const val LINE_SHARE = 0.75f
+        /** How much of [progress] draws the head; the rest draws the line. */
+        const val HEAD_SHARE = 0.3f
         const val HEAD_SPREAD = 0.55 // radians either side of the line, about 30°
     }
 }
