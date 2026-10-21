@@ -229,6 +229,19 @@ internal class Ui(val context: Context, baseLook: Look) {
 
     private fun buttonBorder(): Int = blend(palette.outline, palette.inkSoft, 0.55f)
 
+    /**
+     * Puts [kind] in front of the words of [view] as part of the text, so the picture and the words are centred
+     * together (a compound drawable would stick to the left edge of a wide button).
+     */
+    fun iconBeforeText(view: TextView, kind: Icons.Kind, color: Int) {
+        val size = dp(22)
+        val picture = icon(kind, 22, color).apply { setBounds(0, 0, size, size) }
+        val shown = android.text.SpannableStringBuilder("  ").append(view.text)
+        shown.setSpan(android.text.style.ImageSpan(picture, android.text.style.ImageSpan.ALIGN_BOTTOM), 0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        view.setCompoundDrawablesRelative(null, null, null, null)
+        view.text = shown
+    }
+
     /** A line icon from the shared family, [sizeDp] square, in [color]. */
     fun icon(kind: Icons.Kind, sizeDp: Int, color: Int): Drawable = Icons.drawable(kind, color, dp(sizeDp))
 

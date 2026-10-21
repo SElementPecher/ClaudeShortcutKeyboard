@@ -212,8 +212,7 @@ class SettingsActivity : Activity() {
         }.apply {
             background = rippled(shape(palette.danger, r), r)
             setTextColor(readableOn(palette.danger))
-            setCompoundDrawablesRelativeWithIntrinsicBounds(icon(Icons.Kind.TRASH, 22, readableOn(palette.danger)), null, null, null)
-            compoundDrawablePadding = dp(10)
+            iconBeforeText(this, Icons.Kind.TRASH, readableOn(palette.danger))
             gravity = Gravity.CENTER
         }
     }

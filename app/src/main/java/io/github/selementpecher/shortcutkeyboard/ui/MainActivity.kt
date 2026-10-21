@@ -291,7 +291,7 @@ class MainActivity : Activity() {
         return primaryButton(text, Icons.Kind.TRASH) { onClick() }.apply {
             background = rippled(shape(palette.danger, r), r)
             setTextColor(readableOn(palette.danger))
-            setCompoundDrawablesRelativeWithIntrinsicBounds(icon(Icons.Kind.TRASH, 22, readableOn(palette.danger)), null, null, null)
+            iconBeforeText(this, Icons.Kind.TRASH, readableOn(palette.danger))
         }
     }
 
