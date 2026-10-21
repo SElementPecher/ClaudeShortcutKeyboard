@@ -601,6 +601,19 @@ internal class ChainPanel(
                     refreshControls()
                     listener.onChanged()
                 })
+                // Enter on the last line starts a new one (if this one has something in it); on others it moves down.
+                setOnEditorActionListener { _, _, _ ->
+                    if (index == flow.answers.lastIndex) {
+                        if (flow.answers[index].isNotBlank()) {
+                            flow.addAnswerRow()
+                            listener.onChanged()
+                            render()
+                        }
+                    } else {
+                        answerFields.getOrNull(index + 1)?.requestFocus()
+                    }
+                    true
+                }
             }
             if (firstField == null) firstField = f
             answerFields += f
