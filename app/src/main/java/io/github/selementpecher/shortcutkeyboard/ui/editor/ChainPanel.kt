@@ -448,7 +448,8 @@ internal class ChainPanel(
                 setSpan(android.text.style.RelativeSizeSpan(1.3f), length - 1, length, 0)
             }
             return chip(shown, onClick = onClick).apply {
-                if (tinted) background = rippled(shape((palette.accent and 0x00FFFFFF) or (0x40 shl 24), 999f), 999f)
+                // A solid tint, not see-through, so the ruled lines of the page never show through a pill.
+                if (tinted) background = rippled(shape(blend(palette.surface, palette.accent, 0.28f), 999f), 999f)
             }
         }
         fun cell(view: View, span: Int = 1) = LinearLayout.LayoutParams(0, dp(52), span.toFloat())
@@ -490,7 +491,11 @@ internal class ChainPanel(
                     flow.toggleQuick(value)
                     render()
                 }
-                pill.alpha = if (used) 0.4f else if (full) 0.4f else 1f
+                if (used || full) {
+                    // Faded by colour, not by see-through: a solid pale pill with softer words.
+                    pill.background = rippled(shape(blend(palette.surfaceAlt, palette.bg, 0.5f), 999f), 999f)
+                    pill.setTextColor(blend(palette.surfaceAlt, palette.ink, 0.5f))
+                }
                 pill.isEnabled = !used && !full
                 line.addView(pill, cell(pill).apply { if (c > 0) marginStart = dp(8) })
             }
