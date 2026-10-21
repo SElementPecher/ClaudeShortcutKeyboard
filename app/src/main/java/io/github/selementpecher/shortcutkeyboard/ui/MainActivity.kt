@@ -83,7 +83,7 @@ class MainActivity : Activity() {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
         selectButton = ui.iconButton(Icons.Kind.CHECK, getString(R.string.select_open)) { startSelecting(null) }
-        screen = ui.screen(getString(R.string.app_name), trailing = listOf(selectButton, gear), large = true, withBottomBar = true)
+        screen = ui.screen(getString(R.string.app_name), trailing = listOf(selectButton, gear), large = true, withBottomBar = true, logo = true)
         screen.install(this)
         // A cold start keeps the splash screen up for a few seconds before anything else appears.
         val hold = savedInstanceState == null && !splashShown

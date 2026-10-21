@@ -672,6 +672,7 @@ internal class Ui(val context: Context, baseLook: Look) {
         trailing: List<View> = emptyList(),
         large: Boolean = false,
         withBottomBar: Boolean = false,
+        logo: Boolean = false,
     ): UiScreen {
         val rootPaper = if (look.ruled) RuledPaper(context, palette.bg, palette.outline) else null
         val root = column().apply {
@@ -690,6 +691,19 @@ internal class Ui(val context: Context, baseLook: Look) {
             maxLines = if (large) 2 else 1
             ellipsize = TextUtils.TruncateAt.END
             layoutParams = lp(width = 0, weight = 1f, start = if (onBack == null) 0 else 6, end = 8)
+        }
+        if (logo) {
+            // The app icon, then the name with "Key" in a pill: the part of the word that changes.
+            val word = android.text.SpannableString(title).apply {
+                val at = title.indexOf("Key")
+                if (at >= 0) setSpan(RoundedHighlightSpan(palette.accent, palette.onAccent, dpf(7f), dpf(9f), dpf(1f), true, true), at, at + 3, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            titleView.text = word
+            val mark = io.github.selementpecher.shortcutkeyboard.look.LogoMark(blend(palette.ink, palette.bg, 0.5f), palette.accent, palette.onAccent)
+            mark.setBounds(0, 0, dp(44), dp(44))
+            titleView.setCompoundDrawablesRelative(mark, null, null, null)
+            titleView.compoundDrawablePadding = dp(10)
+            titleView.gravity = Gravity.CENTER_VERTICAL
         }
         bar.addView(titleView)
         trailing.forEach { bar.addView(it) }
