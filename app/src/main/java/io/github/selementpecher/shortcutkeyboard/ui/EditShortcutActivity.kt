@@ -305,25 +305,6 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
         finish()
     }
 
-    private fun confirmDelete() {
-        dialog?.dismiss()
-        dialog = ui.confirm(
-            this,
-            getString(R.string.editor_delete_title),
-            getString(R.string.editor_delete_message, name.ifBlank { getString(R.string.editor_title_new) }),
-            getString(R.string.editor_delete_confirm),
-            getString(R.string.editor_cancel),
-            danger = true,
-        ) {
-            try {
-                ShortcutRepository.delete(this, shortcutId)
-            } catch (e: Exception) {
-                Log.w(TAG, "Could not delete the shortcut", e)
-            }
-            finish()
-        }.show()
-    }
-
     // ---- drawing the steps ----
 
     private fun render() {
@@ -762,10 +743,6 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             content.add(secondaryButton(getString(R.string.editor_change_words)) { goTo(Step.MESSAGE) }, top = 20)
             if (!isNew) {
                 content.add(secondaryButton(getString(R.string.editor_duplicate)) { duplicate() }, top = 12)
-                content.add(
-                    dangerButton(getString(R.string.editor_delete), Icons.Kind.TRASH) { confirmDelete() },
-                    top = 12,
-                )
             }
             screen.bottomBar.addView(primaryButton(getString(R.string.editor_save)) { save() })
         }

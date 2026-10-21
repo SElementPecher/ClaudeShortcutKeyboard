@@ -68,10 +68,6 @@
     <!-- Delete, saving, leaving -->
     <string name="editor_duplicate">Duplicate this quiKey</string>
     <string name="editor_copied">Copied</string>
-    <string name="editor_delete">Delete this quiKey</string>
-    <string name="editor_delete_title">Delete this quiKey?</string>
-    <string name="editor_delete_message">“%s” will be gone for good.</string>
-    <string name="editor_delete_confirm">Delete</string>
     <string name="editor_saved">Saved</string>
     <string name="editor_save_failed">Sorry, that could not be saved.</string>
     <string name="editor_unsaved_title">Save your changes?</string>

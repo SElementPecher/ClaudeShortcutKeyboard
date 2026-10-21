@@ -280,7 +280,7 @@ class MainActivity : Activity() {
                 copy.alpha = if (count > 0) 1f else 0.4f
                 val cancel = secondaryButton(getString(R.string.dialog_cancel)) { stopSelecting() }
                 screen.bottomBar.addView(buttonRow(delete, copy))
-                screen.bottomBar.addView(cancel)
+                screen.bottomBar.add(cancel, top = 12)
             }
         }
     }
