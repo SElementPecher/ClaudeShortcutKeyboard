@@ -28,7 +28,7 @@ object DemoShortcuts {
     val folders: List<Folder> = listOf(Folder(id = FOLDER, name = "Demo", order = 0, icon = "🧪"))
 
     val all: List<Shortcut> = listOf(
-        demo("List", "{List}", 0, "☰", VariableDef("List", VariableType.CHOICE, options = listOf("Line 1", "Line 2", "Line 3"))),
+        demo("List", "{List}", 0, "📋", VariableDef("List", VariableType.CHOICE, options = listOf("Line 1", "Line 2", "Line 3"))),
         demo("Text", "{Text}", 1, "✏️", VariableDef("Text", VariableType.TEXT)),
         demo("Number", "{Number}", 2, "🔢", VariableDef("Number", VariableType.NUMBER)),
         demo("Time", "{Time}", 3, "🕒", VariableDef("Time", VariableType.TIME)),

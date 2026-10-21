@@ -2,4 +2,14 @@
 <resources>
     <string name="icon_picker_title">Pick a picture</string>
     <string name="icon_picker_none">No picture</string>
+    <string name="icon_group_people">People</string>
+    <string name="icon_group_health">Health</string>
+    <string name="icon_group_food">Food and drink</string>
+    <string name="icon_group_home">Home</string>
+    <string name="icon_group_time">Time and weather</string>
+    <string name="icon_group_travel">Getting about</string>
+    <string name="icon_group_work">School and work</string>
+    <string name="icon_group_nature">Animals and nature</string>
+    <string name="icon_group_fun">Fun and sport</string>
+    <string name="icon_group_signs">Signs</string>
 </resources>

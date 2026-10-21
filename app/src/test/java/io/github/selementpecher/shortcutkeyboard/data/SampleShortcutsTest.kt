@@ -2,6 +2,7 @@ package io.github.selementpecher.shortcutkeyboard.data
 
 import io.github.selementpecher.shortcutkeyboard.fill.FillSession
 import io.github.selementpecher.shortcutkeyboard.template.Template
+import io.github.selementpecher.shortcutkeyboard.ui.IconPicker
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -21,6 +22,15 @@ class SampleShortcutsTest {
         assertEquals(samples.size, samples.map { it.id }.toSet().size)
         val all = samples.map { it.id } + SampleShortcuts.folders.map { it.id }
         assertEquals(all.size, all.toSet().size)
+    }
+
+    @Test
+    fun `every picture the examples use can be picked`() {
+        val nodes = SampleShortcuts.all + SampleShortcuts.folders + DemoShortcuts.all + DemoShortcuts.folders
+        for (node in nodes.filter { it.icon.isNotEmpty() }) {
+            assertTrue("${node.name}: ${node.icon} is not in the picture picker", node.icon in IconPicker.ICONS)
+        }
+        assertEquals(IconPicker.ICONS.size, IconPicker.ICONS.toSet().size)
     }
 
     @Test
