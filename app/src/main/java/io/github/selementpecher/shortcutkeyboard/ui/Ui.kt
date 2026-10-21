@@ -35,6 +35,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.Look
+import io.github.selementpecher.shortcutkeyboard.look.pageBackground
 import io.github.selementpecher.shortcutkeyboard.look.LookStore
 import io.github.selementpecher.shortcutkeyboard.look.Palette
 import io.github.selementpecher.shortcutkeyboard.look.TileColors
@@ -635,7 +636,7 @@ internal class Ui(val context: Context, baseLook: Look) {
         withBottomBar: Boolean = false,
     ): UiScreen {
         val root = column().apply {
-            setBackgroundColor(palette.bg)
+            background = look.pageBackground(context, palette)
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         }
         val topBar = column()

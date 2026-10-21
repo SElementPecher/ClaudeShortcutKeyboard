@@ -20,7 +20,7 @@ internal object Swatches {
     /** How much of the colour each swatch keeps (the last, "Slate", is nearly grey). */
     private val SATURATION = FloatArray(COUNT) { if (it == COUNT - 1) 0.18f else 1f }
 
-    enum class Style { CALM_LIGHT, CALM_DARK, BOLD, SQUARES_LIGHT, SQUARES_DARK }
+    enum class Style { CALM_LIGHT, CALM_DARK, BOLD, SQUARES_LIGHT, SQUARES_DARK, EXERCISE_LIGHT, EXERCISE_DARK }
 
     fun build(style: Style): List<TileColors> = (0 until COUNT).map { i ->
         val h = HUES[i]
@@ -31,12 +31,16 @@ internal object Swatches {
             Style.BOLD -> pair(h, 0.62f * k, 1.0f, BOLD_INK, lighter = true)
             Style.SQUARES_LIGHT -> pair(h, 0.17f * k, 0.98f, SQUARES_INK, lighter = true)
             Style.SQUARES_DARK -> pair(h, 0.50f * k, 0.26f, SQUARES_LIGHT_INK, lighter = false)
+            Style.EXERCISE_LIGHT -> pair(h, 0.42f * k, 1.0f, EXERCISE_INK, lighter = true)
+            Style.EXERCISE_DARK -> pair(h, 0.40f * k, 0.30f, EXERCISE_LIGHT_INK, lighter = false)
         }
     }
 
     private val BOLD_INK = rgb(0x0B, 0x0C, 0x10)
     private val SQUARES_INK = rgb(0x11, 0x18, 0x27)
     private val SQUARES_LIGHT_INK = rgb(0xF3, 0xF4, 0xF6)
+    private val EXERCISE_INK = rgb(0x1B, 0x2A, 0x4E)
+    private val EXERCISE_LIGHT_INK = rgb(0xE8, 0xEC, 0xF7)
 
     /** Background from hue/saturation/value, moved lighter or darker until [fg] is readable on it. */
     private fun pair(h: Float, s: Float, v: Float, fg: Int, lighter: Boolean): TileColors {

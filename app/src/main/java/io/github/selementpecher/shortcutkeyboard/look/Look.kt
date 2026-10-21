@@ -53,7 +53,7 @@ fun Type.scaled(factor: Float): Type = copy(
 
 /** The same Look with other text sizes (e.g. [Type.scaled] for "Large" text). */
 fun Look.withType(type: Type): Look =
-    Look(id, displayName, tagline, light, dark, shape, type, tileLayout, keyboardColumns, keyboardRows)
+    Look(id, displayName, tagline, light, dark, shape, type, tileLayout, keyboardColumns, keyboardRows, ruled)
 
 /**
  * One complete design: colours (light and dark), shapes, text sizes and the tile layout.
@@ -73,6 +73,8 @@ class Look(
     /** Keyboard grid shape when the phone is upright (always 6 tiles per page). */
     val keyboardColumns: Int,
     val keyboardRows: Int,
+    /** Ruled paper with a margin behind screens and the keyboard, instead of a plain colour. */
+    val ruled: Boolean = false,
 ) {
     init {
         require(keyboardColumns * keyboardRows == 6) { "The keyboard shows 6 tiles at a time" }
@@ -113,7 +115,7 @@ fun Palette.folderColors(color: Int = -1): TileColors = swatches.getOrNull(color
 private fun c(hex: Long) = (0xFF000000L or hex).toInt()
 private fun t(bg: Long, fg: Long) = TileColors(c(bg), c(fg))
 
-/** The three designs the owner can try. */
+/** The designs the owner can try. */
 object Looks {
 
     /** Soft and friendly: warm paper, pastel tiles, big rounded corners. */
@@ -219,7 +221,42 @@ object Looks {
         keyboardRows = 2,
     )
 
-    val all: List<Look> = listOf(CALM, BOLD, SQUARES)
+    /** Ruled school paper: cool white page, navy ink, highlighter-pen tiles, small corners. */
+    val EXERCISE = Look(
+        id = "exercise",
+        displayName = "Exercise book",
+        tagline = "Ruled paper, highlighter pens",
+        light = Palette(
+            bg = c(0xF3F7F9), surface = c(0xFFFFFF), surfaceAlt = c(0xE6EEF3),
+            ink = c(0x1B2A4E), inkSoft = c(0x44527A), accent = c(0x1B2A4E), onAccent = c(0xFFFFFF),
+            outline = c(0xBFD6E8), success = c(0x2E7D32), danger = c(0xB3261E),
+            tiles = listOf(
+                t(0xFFE55C, 0x1B2A4E), t(0xFFA6C9, 0x1B2A4E), t(0xA9EA7B, 0x1B2A4E),
+                t(0x94DEFF, 0x1B2A4E), t(0xFFC36B, 0x1B2A4E), t(0xD9C7FF, 0x1B2A4E),
+            ),
+            folder = t(0xFFFFFF, 0x1B2A4E),
+            swatches = Swatches.build(Swatches.Style.EXERCISE_LIGHT),
+        ),
+        dark = Palette(
+            bg = c(0x141A2E), surface = c(0x1D2440), surfaceAlt = c(0x28315A),
+            ink = c(0xE8ECF7), inkSoft = c(0xA9B4D6), accent = c(0x94DEFF), onAccent = c(0x0B1630),
+            outline = c(0x3A4670), success = c(0x8FD19A), danger = c(0xF0968E),
+            tiles = listOf(
+                t(0x4A4520, 0xFFF2A8), t(0x5A2C42, 0xFFD3E6), t(0x35502A, 0xD8F5C5),
+                t(0x24485A, 0xCDEEFF), t(0x5A4222, 0xFFE0B3), t(0x3E3560, 0xE5DAFF),
+            ),
+            folder = t(0x2A3358, 0xE8ECF7),
+            swatches = Swatches.build(Swatches.Style.EXERCISE_DARK),
+        ),
+        shape = Shape(tileRadiusDp = 8, cardRadiusDp = 10, buttonRadiusDp = 12, strokeDp = 0f, elevationDp = 2f),
+        type = Type(titleSp = 28f, headingSp = 20f, bodySp = 17f, smallSp = 14f, tileSp = 19f, tileWeight = 700, headingWeight = 800),
+        tileLayout = TileLayout.WIDE,
+        keyboardColumns = 2,
+        keyboardRows = 3,
+        ruled = true,
+    )
+
+    val all: List<Look> = listOf(CALM, BOLD, SQUARES, EXERCISE)
 
     fun byId(id: String?): Look = all.firstOrNull { it.id == id } ?: CALM
 }
