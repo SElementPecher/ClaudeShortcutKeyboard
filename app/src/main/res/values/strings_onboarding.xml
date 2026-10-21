@@ -8,8 +8,7 @@
 
     <string name="tour_1_title">Type a whole message with one tap</string>
     <string name="tour_1_text">Make a quiKey once. Then tap it on your keyboard and the message is typed for you.</string>
-    <string name="tour_1_fixed_start">Running late,</string>
-    <string name="tour_1_fixed_end">back in</string>
+    <string name="tour_1_fixed_start">Running late, back in</string>
     <!-- The changing part of the example, turning like a drum. -->
     <string-array name="tour_1_values">
         <item>10 mins</item>

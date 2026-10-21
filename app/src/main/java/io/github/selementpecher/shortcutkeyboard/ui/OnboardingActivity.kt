@@ -220,7 +220,7 @@ class OnboardingActivity : Activity() {
             clipChildren = false
             // Android trims the space at the end of a string, so it is added here.
             val wrap = { LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT) }
-            addView(text(getString(R.string.tour_1_fixed_end).trimEnd() + " ", size, 500, palette.ink), wrap())
+            addView(text(getString(R.string.tour_1_fixed_start).trimEnd() + " ", size, 500, palette.ink), wrap())
             addView(word, wrap())
             addView(text(".", size, 500, palette.ink), wrap())
         }
@@ -229,9 +229,8 @@ class OnboardingActivity : Activity() {
             clipChildren = false
             clipToPadding = false
         }
-        // Two lines, so the changing word sits near the middle and its cylinder has room to turn.
-        card.addView(text(getString(R.string.tour_1_fixed_start), size, 500, palette.ink))
-        card.add(line, top = 4)
+        // One line; the turning words may go past the edge of the screen on their way round.
+        card.addView(line)
         box.clipChildren = false
         box.add(card, top = 24)
         box
