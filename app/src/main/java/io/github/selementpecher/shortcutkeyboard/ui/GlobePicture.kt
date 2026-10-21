@@ -145,12 +145,12 @@ internal class GlobePicture(context: Context) : FrameLayout(context) {
 
     private companion object {
         /** The screenshot's size in pixels. */
-        const val IMAGE_WIDTH = 864
-        const val IMAGE_HEIGHT = 700
+        const val IMAGE_WIDTH = 1080
+        const val IMAGE_HEIGHT = 891
 
         /** Where the globe key is, as a fraction of the picture's width and height. */
-        const val GLOBE_X = 736f / IMAGE_WIDTH
-        const val GLOBE_Y = 650f / IMAGE_HEIGHT
+        const val GLOBE_X = 920f / IMAGE_WIDTH
+        const val GLOBE_Y = 830f / IMAGE_HEIGHT
 
         /** The ring's width as a fraction of the picture's width, and its line width in dp. */
         const val RING_FRACTION = 0.1f
