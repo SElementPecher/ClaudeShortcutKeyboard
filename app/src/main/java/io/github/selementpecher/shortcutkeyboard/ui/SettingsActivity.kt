@@ -84,8 +84,8 @@ class SettingsActivity : Activity() {
         content.add(keyboardStatus, top = 8)
         refreshKeyboardStatus()
         content.add(grid(2, tiles()), top = 16)
-        content.add(aboutBox(), top = 20)
-        content.add(deleteButton(), top = 32)
+        content.add(deleteButton(), top = 24)
+        content.add(aboutBox(), top = 24)
     }
 
     /** First thing on the screen: is the keyboard on? Tap to turn it on, or to switch to it. */
@@ -166,6 +166,9 @@ class SettingsActivity : Activity() {
         }
         box.add(
             text(getString(R.string.settings_about_privacy), look.type.bodySp, 600, palette.ink, 1.45f).apply {
+                // One line at any text size: the words shrink a little before they would wrap.
+                maxLines = 1
+                setAutoSizeTextTypeUniformWithConfiguration(9, look.type.bodySp.toInt() + HANDWRITING_EXTRA_SP.toInt(), 1, android.util.TypedValue.COMPLEX_UNIT_SP)
                 // Exercise book: written by hand.
                 if (look.ruled) handwritingFont(this@SettingsActivity)?.let { font ->
                     typeface = font
@@ -173,8 +176,11 @@ class SettingsActivity : Activity() {
                 }
             },
         )
-        // The version, quiet, as the last line of the same box.
-        box.add(text(getString(R.string.settings_about_version, versionName()), look.type.smallSp, 400, palette.ink), top = 6)
+        // The version stays hidden until the box is tapped three times.
+        val version = text(getString(R.string.settings_about_version, versionName()), look.type.smallSp, 400, palette.ink).apply { visibility = View.GONE }
+        box.add(version, top = 6)
+        var taps = 0
+        box.setOnClickListener { if (++taps >= VERSION_TAPS) version.visibility = View.VISIBLE }
         box
     }
 
@@ -346,6 +352,7 @@ class SettingsActivity : Activity() {
 
     companion object {
         private const val TAG = "SettingsActivity"
+        private const val VERSION_TAPS = 3
         private const val REQUEST_BACKUP = 1
         private const val REQUEST_RESTORE = 2
         private const val STATE_PENDING_RESTORE = "pendingRestore"

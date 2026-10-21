@@ -740,11 +740,12 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             val problem = errorLine(R.string.editor_message_error, draft.plainText().isBlank())
             content.add(problem)
 
-            content.add(secondaryButton(getString(R.string.editor_change_words)) { goTo(Step.MESSAGE) }, top = 20)
+            // The secondary choices sit with Save at the bottom, so the empty space is not under the cards.
+            screen.bottomBar.addView(secondaryButton(getString(R.string.editor_change_words)) { goTo(Step.MESSAGE) })
             if (!isNew) {
-                content.add(secondaryButton(getString(R.string.editor_duplicate)) { duplicate() }, top = 12)
+                screen.bottomBar.add(secondaryButton(getString(R.string.editor_duplicate)) { duplicate() }, top = 12)
             }
-            screen.bottomBar.addView(primaryButton(getString(R.string.editor_save)) { save() })
+            screen.bottomBar.add(primaryButton(getString(R.string.editor_save)) { save() }, top = 12)
         }
     }
 
