@@ -228,7 +228,9 @@ class OnboardingActivity : Activity() {
             // A little room before the word, so the pen loop round it passes between the words and covers none.
             addView(word, wrap().apply { marginStart = dp(LOOP_ROOM_DP) })
         }
-        val card = card(20)
+        // The card is the window the words roll through: the whole card, padding included, so a word bouncing a little
+        // past its place is never cut; it is only hidden once it passes the card's edge.
+        val card = card(20).apply { clipToPadding = false }
         card.addView(line)
         box.add(card, top = 24)
         if (!circled) {
