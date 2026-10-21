@@ -179,7 +179,11 @@ internal class ChainPanel(
         FlowStep.UNIT -> str(if (flow.timeChoice == TimeChoice.AFTER_OTHER) R.string.chain_title_unit_short else R.string.chain_title_unit)
         FlowStep.AMOUNTS, FlowStep.AFTER_NUMBER -> str(R.string.chain_title_amount)
         FlowStep.SHOW -> str(R.string.chain_title_show)
-        FlowStep.QUESTION, FlowStep.LIST_QUESTION -> if (flow.kind() == BlankKind.TIME || flow.kind() == BlankKind.DATE) "" else str(R.string.chain_title_question)
+        FlowStep.QUESTION, FlowStep.LIST_QUESTION -> when (flow.kind()) {
+            BlankKind.TIME, BlankKind.DATE -> ""
+            BlankKind.NUMBER -> str(R.string.chain_title_number)
+            else -> str(R.string.chain_title_question)
+        }
         FlowStep.LIST_ANSWERS -> str(if (flow.isEditing) R.string.chain_title_values else R.string.chain_title_answers)
     }
 
@@ -425,7 +429,22 @@ internal class ChainPanel(
     private fun questionLevel(flow: AddFlow) = with(ui) {
         when (flow.kind()) {
             BlankKind.TIME, BlankKind.DATE -> quickLevel(flow)
-            else -> view.add(small(str(R.string.chain_number_note)))
+            else -> {
+                // A number can be named, e.g. Temperature: it is the question the keyboard asks.
+                val name = field(str(R.string.chain_number_name_hint)).apply {
+                    setText(flow.question.takeUnless { it == BlankQuestions.default(BlankKind.NUMBER) }.orEmpty())
+                    setSelection(text.length)
+                    imeOptions = EditorInfo.IME_ACTION_DONE
+                    addTextChangedListener(afterText { s ->
+                        flow.setQuestion(s)
+                        listener.onChanged()
+                    })
+                }
+                view.add(name)
+                view.add(small(str(R.string.chain_number_note)), top = 8)
+                typed = name
+                return@with
+            }
         }
         typed = null
     }

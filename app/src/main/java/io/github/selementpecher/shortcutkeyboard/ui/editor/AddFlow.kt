@@ -213,7 +213,9 @@ class AddFlow private constructor(
                 TimeChoice.FROM_NOW, TimeChoice.AGO -> 5
                 TimeChoice.AFTER_OTHER -> if (clockBlanks.size > 1) 5 else 4
             }
-            else -> 1
+            nav.top == null -> 1
+            // A date or a number: pick it, then change it (quick choices, or its name).
+            else -> 2
         }
         return total?.takeIf { it >= 2 }?.let { position.coerceAtMost(it) to it }
     }
@@ -428,8 +430,6 @@ class AddFlow private constructor(
     private fun go(next: Nav) {
         history += nav
         nav = next
-        // Only a list asks for a name while making. The rest get their default name; tapping the pill renames.
-        if (next.step == FlowStep.QUESTION && !isEditing) isDone = true
     }
 
     private fun resetContent() {

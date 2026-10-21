@@ -268,6 +268,31 @@ class AddFlowTest {
         assertNull(g.spec().lastValue)
     }
 
+    @Test
+    fun aNewDateTimeOrNumberStopsOnItsEditScreenUntilAdded() {
+        for (kind in listOf(BlankKind.DATE, BlankKind.NUMBER)) {
+            val f = flow()
+            f.chooseKind(kind)
+            assertFalse(kind.toString(), f.isDone)
+            assertEquals(FlowStep.QUESTION, f.step)
+            f.advance()
+            assertTrue(kind.toString(), f.isDone)
+        }
+        val t = flow()
+        t.chooseKind(BlankKind.TIME); t.chooseTime(TimeChoice.CLOCK)
+        assertFalse(t.isDone)
+        assertEquals(FlowStep.QUESTION, t.step)
+    }
+
+    @Test
+    fun aNumberCanBeNamed() {
+        val f = flow()
+        f.chooseKind(BlankKind.NUMBER)
+        f.setQuestion("Temperature")
+        f.advance()
+        assertEquals("Temperature", f.spec().question)
+    }
+
     // ---- a clock time ----
 
     @Test
@@ -855,7 +880,7 @@ class AddFlowTest {
         assertEquals(2 to 2, list.progress())
         val date = flow()
         date.chooseKind(BlankKind.DATE)
-        assertNull(date.progress())
+        assertEquals(2 to 2, date.progress())   // pick it, then change it
     }
 
     @Test

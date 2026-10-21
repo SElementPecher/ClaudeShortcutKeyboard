@@ -78,5 +78,7 @@
     <string name="chain_remove">Remove it</string>
     <string name="chain_name_hint">Name (optional)</string>
     <string name="chain_show_current"> · now chosen</string>
+    <string name="chain_title_number">Name your number</string>
+    <string name="chain_number_name_hint">Name it, like Temperature</string>
     <string name="chain_number_note">The keyboard asks you to type a number each time.</string>
 </resources>
