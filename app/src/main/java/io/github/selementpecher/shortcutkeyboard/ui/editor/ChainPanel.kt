@@ -431,7 +431,7 @@ internal class ChainPanel(
             BlankKind.TIME, BlankKind.DATE -> quickLevel(flow)
             else -> {
                 // A number can be named, e.g. Temperature: it is the question the keyboard asks.
-                val name = field(str(R.string.chain_name_hint)).apply {
+                val name = field(str(R.string.chain_number_name_hint)).apply {
                     setText(flow.question.takeUnless { it == BlankQuestions.default(BlankKind.NUMBER) }.orEmpty())
                     setSelection(text.length)
                     imeOptions = EditorInfo.IME_ACTION_DONE
