@@ -67,6 +67,31 @@ internal class ChainPanel(
     private var addAnother: TextView? = null
     private var typed: EditText? = null
 
+    /** While the phone's keyboard is open on the list screen, the main button adds a line; hidden, it says Done. */
+    private var keyboardOpen = false
+    private var layoutWatch: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
+
+    private fun watchKeyboard(onChange: () -> Unit) {
+        stopWatchingKeyboard()
+        val decor = activity.window.decorView
+        val listener = android.view.ViewTreeObserver.OnGlobalLayoutListener {
+            val frame = android.graphics.Rect()
+            decor.getWindowVisibleDisplayFrame(frame)
+            val open = decor.height > 0 && decor.height - frame.bottom > decor.height * KEYBOARD_FRACTION
+            if (open != keyboardOpen) {
+                keyboardOpen = open
+                onChange()
+            }
+        }
+        layoutWatch = listener
+        decor.viewTreeObserver.addOnGlobalLayoutListener(listener)
+    }
+
+    private fun stopWatchingKeyboard() {
+        layoutWatch?.let { activity.window.decorView.viewTreeObserver.removeOnGlobalLayoutListener(it) }
+        layoutWatch = null
+    }
+
     private fun str(id: Int) = activity.getString(id)
 
     /** Draws the level the flow is on. Call again after the flow moved. */
@@ -76,6 +101,8 @@ internal class ChainPanel(
     }
 
     fun clear() {
+        stopWatchingKeyboard()
+        keyboardOpen = false
         flow = null
         view.removeAllViews()
         screen.bottomBar.removeAllViews()
@@ -86,6 +113,8 @@ internal class ChainPanel(
 
     private fun render() {
         val flow = flow ?: return
+        stopWatchingKeyboard()
+        if (flow.step != FlowStep.LIST_ANSWERS) keyboardOpen = false
         view.removeAllViews()
         screen.bottomBar.removeAllViews()
         primary = null
@@ -111,10 +140,21 @@ internal class ChainPanel(
         if (extras) editExtras(pinned)
         val button = primaryLabel(flow)
         if (button != null) {
-            val b = ui.primaryButton(button) { advance() }
+            val listScreen = flow.step == FlowStep.LIST_ANSWERS
+            val b = ui.primaryButton(button) {
+                if (listScreen && keyboardOpen) {
+                    // Keyboard up: the main button adds another line; Done comes back when the keyboard is hidden.
+                    flow.addAnswerRow()
+                    listener.onChanged()
+                    render()
+                } else {
+                    advance()
+                }
+            }
             primary = b
             screen.bottomBar.addView(b)
             screen.showBottomBar(true)
+            if (listScreen) watchKeyboard { refreshControls() }
             refreshControls()
         } else {
             screen.showBottomBar(pinned)
@@ -191,7 +231,7 @@ internal class ChainPanel(
         // Amounts always go on to "what to show", so it is "Next" even when changing an existing one.
         FlowStep.AMOUNTS -> str(R.string.chain_next)
         FlowStep.LIST_QUESTION -> str(if (flow.isEditing) R.string.chain_done else R.string.chain_next)
-        FlowStep.LIST_ANSWERS, FlowStep.AFTER_NUMBER, FlowStep.QUESTION -> str(if (flow.isEditing) R.string.chain_done else R.string.chain_add)
+        FlowStep.LIST_ANSWERS, FlowStep.AFTER_NUMBER, FlowStep.QUESTION -> str(R.string.chain_done)
         FlowStep.SHOW -> if (flow.isEditing) str(R.string.chain_done) else null
         else -> null
     }
@@ -228,8 +268,11 @@ internal class ChainPanel(
     private fun refreshControls() {
         val flow = flow ?: return
         primary?.let {
-            it.isEnabled = flow.canAdvance
-            it.alpha = if (flow.canAdvance) 1f else 0.4f
+            val listKeyboard = flow.step == FlowStep.LIST_ANSWERS && keyboardOpen
+            val enabled = if (listKeyboard) flow.answers.lastOrNull()?.isNotBlank() == true else flow.canAdvance
+            if (flow.step == FlowStep.LIST_ANSWERS) it.text = str(if (listKeyboard) R.string.chain_answer_add else R.string.chain_done)
+            it.isEnabled = enabled
+            it.alpha = if (enabled) 1f else 0.4f
         }
         addAnother?.let {
             val ok = flow.pendingAmount != null
@@ -699,5 +742,10 @@ internal class ChainPanel(
         }
         walk(root)
         return out
+    }
+
+    private companion object {
+        /** The phone keyboard counts as open when it covers more than this much of the screen. */
+        const val KEYBOARD_FRACTION = 0.15f
     }
 }

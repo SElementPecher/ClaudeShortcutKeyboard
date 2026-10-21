@@ -4,7 +4,6 @@
     <string name="chain_back">Back one step</string>
     <string name="chain_cancel">Cancel</string>
     <string name="chain_crumb_separator">"  ›  "</string>
-    <string name="chain_add">Add</string>
     <string name="chain_next">Next</string>
     <string name="chain_done">Done</string>
 
@@ -66,11 +65,11 @@
     <string name="chain_quick_min">You need at least one choice.</string>
     <string name="chain_quick_other">The keyboard also shows Other, to pick anything else.</string>
     <string name="chain_title_question">Nothing to edit here</string>
-    <string name="chain_title_answers">What are the answers?</string>
-    <string name="chain_title_values">Its answers</string>
+    <string name="chain_title_answers">What’s in the list?</string>
+    <string name="chain_title_values">What’s in the list?</string>
     <string name="chain_answers_help">The keyboard shows them as buttons.</string>
     <string name="chain_answer_hint">An answer</string>
-    <string name="chain_answer_add">Add another answer</string>
+    <string name="chain_answer_add">Add another line</string>
     <string name="chain_answer_remove">Remove %s</string>
     <string name="chain_answer_remove_empty">Remove this answer</string>
 
