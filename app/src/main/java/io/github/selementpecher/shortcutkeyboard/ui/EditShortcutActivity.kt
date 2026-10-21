@@ -374,7 +374,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
         with(ui) {
             stepBar(1)
             content.add(title(getString(R.string.editor_name_title)))
-            content.add(small(getString(R.string.editor_name_help)), top = 12)
+            content.add(small(getString(R.string.editor_name_help)), top = if (look.ruled) 0 else 12)
 
             val line = row()
             val field = field(getString(R.string.editor_name_hint)).apply {
@@ -402,7 +402,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
         with(ui) {
             stepBar(2)
             content.add(title(getString(R.string.editor_message_title)))
-            content.add(small(getString(R.string.editor_message_help)), top = 12)
+            content.add(small(getString(R.string.editor_message_help)), top = if (look.ruled) 0 else 12)
 
             val edit = messageEdit ?: createMessageEdit()
             (edit.parent as? ViewGroup)?.removeView(edit)
