@@ -67,6 +67,8 @@ class OnboardingActivity : Activity() {
     private lateinit var screen: UiScreen
     private lateinit var skip: View
     private var page = 0
+    private var slide = 0
+    private lateinit var swipes: android.view.GestureDetector
     private lateinit var chosenLookId: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,6 +78,19 @@ class OnboardingActivity : Activity() {
         Highlighter.on = false
         ui = Ui(this, Looks.CALM)
         page = savedInstanceState?.getInt(STATE_PAGE) ?: 0
+        // Swipe left for the next page, right for the one before.
+        swipes = android.view.GestureDetector(this, object : android.view.GestureDetector.SimpleOnGestureListener() {
+            override fun onFling(e1: android.view.MotionEvent?, e2: android.view.MotionEvent, velocityX: Float, velocityY: Float): Boolean {
+                val start = e1 ?: return false
+                val dx = e2.x - start.x
+                val dy = e2.y - start.y
+                if (kotlin.math.abs(dx) > ui.dp(SWIPE_MIN_DP) && kotlin.math.abs(dx) > kotlin.math.abs(dy) * 1.5f && kotlin.math.abs(velocityX) > SWIPE_MIN_SPEED) {
+                    go(if (dx < 0) 1 else -1)
+                    return true
+                }
+                return false
+            }
+        })
         skip = ui.textButton(getString(R.string.tour_skip)) { finishTour() }.apply {
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ui.dp(48))
         }
@@ -109,6 +124,21 @@ class OnboardingActivity : Activity() {
         }
     }
 
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+        swipes.onTouchEvent(ev)
+        return super.dispatchTouchEvent(ev)
+    }
+
+    /** One page on ([delta] 1) or back (-1), sliding the new page in from that side. */
+    private fun go(delta: Int) {
+        val next = (page + delta).coerceIn(0, LAST)
+        if (next == page) return
+        slide = delta
+        page = next
+        render()
+        screen.scroll.scrollTo(0, 0)
+    }
+
     private fun finishTour() {
         Onboarding.setDone(this)
         finish()
@@ -129,12 +159,19 @@ class OnboardingActivity : Activity() {
                 else -> pageFour()
             }
             content.addView(view, lp())
-            Motion.pop(view)
+            if (slide != 0 && Motion.enabled(this@OnboardingActivity)) {
+                view.translationX = slide * resources.displayMetrics.widthPixels * 0.3f
+                view.alpha = 0f
+                view.animate().translationX(0f).alpha(1f).setDuration(SLIDE_MS).setInterpolator(android.view.animation.DecelerateInterpolator()).start()
+            } else {
+                Motion.pop(view)
+            }
+            slide = 0
             screen.bottomBar.removeAllViews()
             screen.bottomBar.add(dots(), bottom = 14)
             val last = page == LAST
             screen.bottomBar.addView(primaryButton(getString(if (last) R.string.tour_done else R.string.tour_next)) {
-                if (last) finishTour() else { page++; render(); screen.scroll.scrollTo(0, 0) }
+                if (last) finishTour() else go(1)
             })
         }
         skip.visibility = if (page == LAST) View.INVISIBLE else View.VISIBLE
@@ -162,14 +199,17 @@ class OnboardingActivity : Activity() {
 
     private fun pageOne(): View = with(ui) {
         val box = intro("👋", R.string.tour_1_title, R.string.tour_1_text)
-        // Short on purpose: the whole message fits on one line.
-        val parts = listOf(
-            // Android trims the space at the end of a string, so it is added here.
-            ExampleParts.Part(getString(R.string.tour_1_fixed_start).trimEnd() + " ", ExampleParts.FIXED),
-            ExampleParts.Part("10 mins", 0),
-            ExampleParts.Part(".", ExampleParts.FIXED),
-        )
-        box.add(exampleCard(parts), top = 24)
+        // Example messages slide in, bounce a little, wait, and slide out. The words between | | are the changing parts.
+        val examples = resources.getStringArray(R.array.tour_1_examples)
+        val carousel = MessageCarousel(this@OnboardingActivity, examples.size) { i ->
+            var colour = 0
+            exampleCard(
+                examples[i].split('|').mapIndexed { n, piece ->
+                    if (n % 2 == 1) ExampleParts.Part(piece, colour++) else ExampleParts.Part(piece, ExampleParts.FIXED)
+                }.filter { it.text.isNotEmpty() },
+            )
+        }.apply { minimumHeight = dp(150) }
+        box.add(carousel, top = 24)
         box
     }
 
@@ -265,25 +305,34 @@ class OnboardingActivity : Activity() {
             getString(R.string.look_preview_shortcut_2),
             getString(R.string.look_preview_folder),
         )
-        val choices = Looks.all.map { option ->
+        // Picking a look only moves the highlight: the page itself is not redrawn.
+        val cards = ArrayList<Pair<io.github.selementpecher.shortcutkeyboard.look.Look, View>>()
+        fun mark(option: io.github.selementpecher.shortcutkeyboard.look.Look, card: View) {
             val chosen = option.id == chosenLookId
+            card.background = rippled(
+                shape(palette.surface, 16f, if (chosen) palette.accent else palette.outline, if (chosen) 3f else 1.5f),
+                16f,
+            )
+            card.contentDescription = getString(if (chosen) R.string.look_chosen else R.string.look_choose, option.displayName)
+        }
+        val choices = Looks.all.map { option ->
             column().apply {
-                background = rippled(
-                    shape(palette.surface, 16f, if (chosen) palette.accent else palette.outline, if (chosen) 3f else 1.5f),
-                    16f,
-                )
                 setPadding(dp(8), dp(8), dp(8), dp(10))
                 isClickable = true
                 isFocusable = true
-                contentDescription = getString(if (chosen) R.string.look_chosen else R.string.look_choose, option.displayName)
                 setOnClickListener {
-                    if (!chosen) {
+                    if (option.id != chosenLookId) {
                         LookStore.set(this@OnboardingActivity, option)
-                        recreate()
+                        chosenLookId = option.id
+                        // The tour stays in Calm, so the look change must not redraw it.
+                        Highlighter.on = false
+                        cards.forEach { (o, c) -> mark(o, c) }
                     }
                 }
                 addView(LookPreview(this@OnboardingActivity, option, labels).apply { layoutParams = lp() })
                 add(text(option.displayName, look.type.bodySp, 700, palette.ink).apply { gravity = Gravity.CENTER }, top = 8)
+                cards += option to this
+                mark(option, this)
             }
         }
         box.add(grid(2, choices), top = 24)
@@ -395,6 +444,9 @@ class OnboardingActivity : Activity() {
     companion object {
         private const val STATE_PAGE = "page"
         private const val LAST = 7
+        private const val SWIPE_MIN_DP = 80
+        private const val SWIPE_MIN_SPEED = 600f
+        private const val SLIDE_MS = 220L
 
         fun open(context: Context) {
             context.startActivity(Intent(context, OnboardingActivity::class.java))

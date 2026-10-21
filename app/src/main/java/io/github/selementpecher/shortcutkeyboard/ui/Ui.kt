@@ -238,7 +238,7 @@ internal class Ui(val context: Context, baseLook: Look) {
         val size = dp(22)
         val picture = icon(kind, 22, color).apply { setBounds(0, 0, size, size) }
         val shown = android.text.SpannableStringBuilder("  ").append(view.text)
-        shown.setSpan(android.text.style.ImageSpan(picture, android.text.style.ImageSpan.ALIGN_BOTTOM), 0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        shown.setSpan(CenteredIconSpan(picture), 0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         view.setCompoundDrawablesRelative(null, null, null, null)
         view.text = shown
     }
@@ -358,7 +358,10 @@ internal class Ui(val context: Context, baseLook: Look) {
         isFocusable = true
         includeFontPadding = false
         if (icon != null) {
-            setCompoundDrawablesRelativeWithIntrinsicBounds(icon(icon, 22, fg), null, null, null)
+            // The picture stays at the left; an empty space of the same size at the right keeps the words truly centred.
+            val picture = icon(icon, 22, fg)
+            val spacer = ColorDrawable(Color.TRANSPARENT).apply { setBounds(0, 0, dp(22), dp(22)) }
+            setCompoundDrawablesRelativeWithIntrinsicBounds(picture, null, spacer, null)
             compoundDrawablePadding = dp(8)
         }
         setOnClickListener { onClick?.invoke() }
@@ -1308,4 +1311,18 @@ internal class FolderDrawable(
 
     @Deprecated("Deprecated in Java")
     override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
+}
+
+/** A picture in a line of text, centred on the line without making the line taller (so the words stay centred in a button). */
+internal class CenteredIconSpan(private val picture: Drawable) : android.text.style.ReplacementSpan() {
+    override fun getSize(paint: Paint, text: CharSequence?, start: Int, end: Int, fm: Paint.FontMetricsInt?): Int = picture.bounds.right
+
+    override fun draw(canvas: Canvas, text: CharSequence?, start: Int, end: Int, x: Float, top: Int, y: Int, bottom: Int, paint: Paint) {
+        val metrics = paint.fontMetricsInt
+        val middle = y + (metrics.ascent + metrics.descent) / 2f
+        canvas.save()
+        canvas.translate(x, middle - picture.bounds.height() / 2f)
+        picture.draw(canvas)
+        canvas.restore()
+    }
 }

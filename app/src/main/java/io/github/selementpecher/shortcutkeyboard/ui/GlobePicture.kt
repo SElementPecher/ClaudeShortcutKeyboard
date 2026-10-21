@@ -50,6 +50,25 @@ internal class GlobePicture(context: Context) : FrameLayout(context) {
         addView(image, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         addView(veil, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         addView(ring)
+        // Rounded corners, like the cards around it.
+        val radius = 20f * resources.displayMetrics.density
+        outlineProvider = object : android.view.ViewOutlineProvider() {
+            override fun getOutline(view: View, outline: android.graphics.Outline) {
+                outline.setRoundRect(0, 0, view.width, view.height, radius)
+            }
+        }
+        clipToOutline = true
+    }
+
+    private val clip = android.graphics.Path()
+
+    override fun dispatchDraw(canvas: Canvas) {
+        clip.reset()
+        clip.addRoundRect(0f, 0f, width.toFloat(), height.toFloat(), 20f * resources.displayMetrics.density, 20f * resources.displayMetrics.density, android.graphics.Path.Direction.CW)
+        val saved = canvas.save()
+        canvas.clipPath(clip)
+        super.dispatchDraw(canvas)
+        canvas.restoreToCount(saved)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
