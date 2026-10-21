@@ -175,3 +175,42 @@ internal class RoundedHighlightSpan(
         paint.color = oldColor
     }
 }
+
+/** A subheading written with a pen and underlined with one slightly wobbly stroke (Exercise book). */
+internal class PenUnderlineSpan(
+    private val ink: Int,
+    private val strokePx: Float,
+    private val dropPx: Float,
+) : ReplacementSpan() {
+
+    private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
+    private val path = Path()
+
+    override fun getSize(paint: Paint, text: CharSequence, start: Int, end: Int, fm: Paint.FontMetricsInt?): Int {
+        if (fm != null) {
+            val m = paint.fontMetricsInt
+            fm.ascent = m.ascent
+            fm.top = fm.ascent
+            fm.descent = m.descent + Math.ceil(dropPx.toDouble()).toInt()
+            fm.bottom = fm.descent
+        }
+        return (paint.measureText(text, start, end) + 0.5f).toInt()
+    }
+
+    override fun draw(canvas: Canvas, text: CharSequence, start: Int, end: Int, x: Float, top: Int, y: Int, bottom: Int, paint: Paint) {
+        val width = paint.measureText(text, start, end)
+        val oldColor = paint.color
+        paint.color = ink
+        canvas.drawText(text, start, end, x, y.toFloat(), paint)
+        paint.color = oldColor
+
+        val base = y + dropPx
+        path.reset()
+        path.moveTo(x, base + strokePx * 0.3f)
+        path.quadTo(x + width * 0.35f, base - strokePx * 0.7f, x + width * 0.7f, base + strokePx * 0.2f)
+        path.quadTo(x + width * 0.88f, base + strokePx * 0.6f, x + width + strokePx, base - strokePx * 0.4f)
+        line.color = ink
+        line.strokeWidth = strokePx
+        canvas.drawPath(path, line)
+    }
+}

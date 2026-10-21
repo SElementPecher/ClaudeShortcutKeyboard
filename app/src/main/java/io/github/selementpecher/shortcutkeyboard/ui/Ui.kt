@@ -168,8 +168,8 @@ internal class Ui(val context: Context, baseLook: Look) {
     fun sp(value: Float): Float = value * textScale
 
     /** True when the chosen Look, light/dark setting or text size is no longer the one this Ui was built with. */
-    fun isStale(): Boolean =
-        LookStore.current(context).id != look.id || Look.isNight(context) != nightWhenBuilt || LookStore.textScale(context) != textScale
+    fun isStale(ignoreLook: Boolean = false): Boolean =
+        (!ignoreLook && LookStore.current(context).id != look.id) || Look.isNight(context) != nightWhenBuilt || LookStore.textScale(context) != textScale
 
     val isWide: Boolean get() = look.tileLayout == TileLayout.WIDE
 
@@ -312,13 +312,12 @@ internal class Ui(val context: Context, baseLook: Look) {
 
     /** A small bold caption above a field or group. */
     fun label(text: CharSequence): TextView {
-        // Exercise book: a short subheading is written by hand on a highlighter mark, so it stands out on the page.
+        // Exercise book: a short subheading is written by hand and underlined with a pen stroke.
         if (look.ruled && text.length <= RULED_LABEL_MAX_CHARS) {
-            val tile = palette.tiles[0]
             val marked = android.text.SpannableString(text).apply {
-                setSpan(RoundedHighlightSpan(tile.bg, tile.fg, dpf(7f), dpf(6f), dpf(2f), true, true), 0, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                setSpan(PenUnderlineSpan(palette.ink, dpf(2f), dpf(3f)), 0, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
-            return text(marked, look.type.smallSp + HANDWRITING_EXTRA_SP + 2f, 400, tile.fg).apply {
+            return text(marked, look.type.smallSp + HANDWRITING_EXTRA_SP + 2f, 400, palette.ink).apply {
                 handwritingFont(context)?.let { typeface = it }
             }
         }
@@ -358,7 +357,8 @@ internal class Ui(val context: Context, baseLook: Look) {
     /** A second choice: an outlined button. */
     fun secondaryButton(text: CharSequence, icon: Icons.Kind? = null, onClick: (() -> Unit)? = null): TextView {
         val r = look.shape.buttonRadiusDp.toFloat()
-        val bg = shape(Color.TRANSPARENT, r, buttonBorder(), max(1.5f, look.shape.strokeDp))
+        // Exercise book: a solid white button, so the ruled lines never show through it.
+        val bg = shape(if (look.ruled) palette.surface else Color.TRANSPARENT, r, buttonBorder(), max(1.5f, look.shape.strokeDp))
         return buttonView(text, palette.ink, rippled(bg, r), icon, onClick)
     }
 

@@ -78,8 +78,7 @@
     <!-- Changing something already there -->
     <string name="chain_make_plain">Make it plain words</string>
     <string name="chain_remove">Remove it</string>
-    <string name="chain_name_label">Name (optional)</string>
-    <string name="chain_name_hint">List</string>
+    <string name="chain_name_hint">Name (optional)</string>
     <string name="chain_show_current"> · now chosen</string>
     <string name="chain_number_note">The keyboard asks you to type a number each time.</string>
 </resources>

@@ -10,6 +10,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import io.github.selementpecher.shortcutkeyboard.look.Highlighter
 import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.handwritingFont
 import io.github.selementpecher.shortcutkeyboard.look.HANDWRITING_EXTRA_SP
@@ -66,10 +67,14 @@ class OnboardingActivity : Activity() {
     private lateinit var screen: UiScreen
     private lateinit var skip: View
     private var page = 0
+    private lateinit var chosenLookId: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        ui = Ui(this, LookStore.current(this))
+        // The tour is always drawn in Calm; the chosen Look only shows in the Look previews' selection.
+        chosenLookId = LookStore.current(this).id
+        Highlighter.on = false
+        ui = Ui(this, Looks.CALM)
         page = savedInstanceState?.getInt(STATE_PAGE) ?: 0
         skip = ui.textButton(getString(R.string.tour_skip)) { finishTour() }.apply {
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ui.dp(48))
@@ -81,7 +86,7 @@ class OnboardingActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        if (ui.isStale()) {
+        if (ui.isStale(ignoreLook = true)) {
             recreate()
             return
         }
@@ -261,7 +266,7 @@ class OnboardingActivity : Activity() {
             getString(R.string.look_preview_folder),
         )
         val choices = Looks.all.map { option ->
-            val chosen = option.id == look.id
+            val chosen = option.id == chosenLookId
             column().apply {
                 background = rippled(
                     shape(palette.surface, 16f, if (chosen) palette.accent else palette.outline, if (chosen) 3f else 1.5f),

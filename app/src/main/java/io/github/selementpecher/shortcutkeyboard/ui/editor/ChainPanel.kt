@@ -520,7 +520,6 @@ internal class ChainPanel(
 
     private fun answersLevel(flow: AddFlow) = with(ui) {
         // The list's name: optional, no suggestions. Left empty, it is called "List".
-        view.add(label(str(R.string.chain_name_label)), bottom = 6)
         view.add(
             field(str(R.string.chain_name_hint)).apply {
                 setText(flow.question.takeUnless { it == BlankQuestions.default(BlankKind.LIST) }.orEmpty())
