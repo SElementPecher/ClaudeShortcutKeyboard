@@ -681,10 +681,12 @@ internal class Ui(val context: Context, baseLook: Look) {
             foreground = look.marginLine(context, palette)
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         }
-        val topBar = column()
+        // Exercise book: the header is a clean band of plain paper (no ruled lines through the title), a little taller.
+        val topBar = column().apply { if (look.ruled) setBackgroundColor(palette.bg) }
         val bar = row().apply {
             setPadding(dp(if (onBack == null) TileSpec.SCREEN_MARGIN_DP else 8), dp(8), dp(8), dp(8))
-            minimumHeight = dp(56)
+            minimumHeight = dp(if (look.ruled) 72 else 56)
+            gravity = Gravity.CENTER_VERTICAL
         }
         if (onBack != null) bar.addView(iconButton(Icons.Kind.BACK, context.getString(io.github.selementpecher.shortcutkeyboard.R.string.action_back), onClick = onBack))
         val titleView = (if (large) title(title).apply { setTextSize(TypedValue.COMPLEX_UNIT_SP, min(look.type.titleSp, sp(28f))) } else heading(title)).apply {
