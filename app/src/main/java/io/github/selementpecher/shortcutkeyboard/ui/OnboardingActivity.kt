@@ -261,11 +261,19 @@ class OnboardingActivity : Activity() {
                 val setProgress: (Float) -> Unit
                 when (POINTER) {
                     Pointer.ARROW -> {
-                        // The tip sits just under the middle of the word; the arrow comes from below and to the left.
-                        val tipX = area.centerX()
+                        // The tip sits just under the start of the word (every word starts there, whatever its
+                        // length); the arrow comes from below and from the side the line starts on.
+                        val rtl = box.layoutDirection == View.LAYOUT_DIRECTION_RTL
+                        val reach = minOf(area.width() / 2, dp(ARROW_TIP_IN_DP))
+                        val tipX = if (rtl) area.right - reach else area.left + reach
                         val tipY = area.bottom + dp(6)
-                        val arrow = ScribbleArrow(palette.accent, dpf(ARROW_STROKE_DP), dpf(ARROW_HEAD_DP))
-                        arrow.bounds = android.graphics.Rect(tipX - dp(ARROW_WIDTH_DP), tipY, tipX, tipY + dp(ARROW_HEIGHT_DP))
+                        val arrow = ScribbleArrow(palette.accent, dpf(ARROW_STROKE_DP), dpf(ARROW_HEAD_DP), mirrored = rtl)
+                        val edge = arrow.edgePx
+                        arrow.bounds = if (rtl) {
+                            android.graphics.Rect(tipX - edge, tipY - edge, tipX + dp(ARROW_WIDTH_DP), tipY + dp(ARROW_HEIGHT_DP))
+                        } else {
+                            android.graphics.Rect(tipX - dp(ARROW_WIDTH_DP), tipY - edge, tipX + edge, tipY + dp(ARROW_HEIGHT_DP))
+                        }
                         mark = arrow
                         setProgress = { arrow.progress = it }
                     }
@@ -544,6 +552,7 @@ class OnboardingActivity : Activity() {
         private const val ARROW_HEIGHT_DP = 100
         private const val ARROW_STROKE_DP = 5.5f
         private const val ARROW_HEAD_DP = 20f
+        private const val ARROW_TIP_IN_DP = 34
 
         /** The arrow for now; switch to [Pointer.LOOP] to bring the pen loop back. */
         private val POINTER = Pointer.ARROW

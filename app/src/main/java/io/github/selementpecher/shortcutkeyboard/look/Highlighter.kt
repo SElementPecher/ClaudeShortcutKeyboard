@@ -84,7 +84,8 @@ internal class IndexCardDrawable(
         if (right > left + swipeHeightPx) {
             rect.set(left, bottom - swipeHeightPx, right, bottom)
             path.reset()
-            Highlighter.addShape(path, rect, swipeHeightPx / 2f)
+            // Index cards only exist in the Exercise book, so the swipe is always hand-drawn (whatever Look the app has).
+            Highlighter.addShape(path, rect, swipeHeightPx / 2f, uneven = true)
             paint.color = swipe
             canvas.drawPath(path, paint)
         }

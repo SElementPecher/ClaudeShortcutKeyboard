@@ -773,6 +773,27 @@ class AddFlowTest {
         assertEquals(RelativeUnit.MINS, g.unit)
     }
 
+    @Test
+    fun anOffsetTheBoxCannotShowIsKeptUnlessANumberIsTyped() {
+        // 20 hours 30 minutes: more than 999 minutes and not whole hours.
+        val f = AddFlow.editReference(1, 1230, 0, listOf(ClockBlank(1, "When")), now, uk)
+        assertEquals("", f.digits)
+        assertTrue(f.canAdvance)
+        f.advance()
+        assertEquals(1230L, (f.result() as AddResult.Reference).offsetMinutes)
+        // Surviving a turn of the phone.
+        val g = AddFlow.editReference(1, 1230, 0, listOf(ClockBlank(1, "When")), now, uk)
+        val back = AddFlow.fromJson(g.toJson(), now, uk)!!
+        back.advance()
+        assertEquals(1230L, (back.result() as AddResult.Reference).offsetMinutes)
+        // A typed number replaces it.
+        val h = AddFlow.editReference(1, 1230, 0, listOf(ClockBlank(1, "When")), now, uk)
+        h.typeNumber("2")
+        h.setUnit(RelativeUnit.HOURS)
+        h.advance()
+        assertEquals(120L, (h.result() as AddResult.Reference).offsetMinutes)
+    }
+
     // ---- turning the phone ----
 
     @Test

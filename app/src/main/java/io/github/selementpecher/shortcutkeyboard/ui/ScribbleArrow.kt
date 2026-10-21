@@ -17,7 +17,16 @@ import kotlin.math.sin
  * curves down and away to the bottom left. It is drawn the way a hand would: the head first, in one stroke from left to
  * right through the tip, then the line from the tip down. [progress] (0 to 1) is how much of it is drawn so far.
  */
-internal class ScribbleArrow(colour: Int, strokePx: Float, private val headPx: Float) : Drawable() {
+internal class ScribbleArrow(
+    colour: Int,
+    strokePx: Float,
+    private val headPx: Float,
+    /** For right-to-left reading: the arrow comes from the bottom right instead. */
+    private val mirrored: Boolean = false,
+) : Drawable() {
+
+    /** Room kept inside the bounds, at the tip's side and above it, so the head and the pen's width stay inside them. */
+    val edgePx: Int = Math.ceil((headPx * 0.6f + strokePx).toDouble()).toInt()
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = colour
@@ -42,10 +51,11 @@ internal class ScribbleArrow(colour: Int, strokePx: Float, private val headPx: F
 
     override fun onBoundsChange(bounds: Rect) {
         super.onBoundsChange(bounds)
+        // The tip sits [edgePx] in from the top right, so nothing is drawn outside the bounds.
         val l = bounds.left.toFloat()
-        val t = bounds.top.toFloat()
-        val w = bounds.width().toFloat()
-        val h = bounds.height().toFloat()
+        val t = bounds.top.toFloat() + edgePx
+        val w = bounds.width().toFloat() - edgePx
+        val h = bounds.height().toFloat() - edgePx
         val tipX = l + w
         val tipY = t
         // From the tip, a curve down and round to the bottom left.
@@ -71,12 +81,19 @@ internal class ScribbleArrow(colour: Int, strokePx: Float, private val headPx: F
 
     override fun draw(canvas: Canvas) {
         if (progress <= 0f) return
+        val saved = canvas.save()
+        if (mirrored) canvas.scale(-1f, 1f, bounds.exactCenterX(), 0f)
         stroke(canvas, head, (progress / headShare).coerceAtMost(1f))
         if (progress > headShare) stroke(canvas, line, (progress - headShare) / (1f - headShare))
+        canvas.restoreToCount(saved)
     }
 
-    /** Draws the first [part] (0 to 1) of [path]. */
+    /** Draws the first [part] (0 to 1) of [path]; once drawn in full, simply the path. */
     private fun stroke(canvas: Canvas, path: Path, part: Float) {
+        if (part >= 1f) {
+            canvas.drawPath(path, paint)
+            return
+        }
         measure.setPath(path, false)
         shown.reset()
         measure.getSegment(0f, measure.length * part, shown, true)

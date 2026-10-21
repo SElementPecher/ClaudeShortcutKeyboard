@@ -57,6 +57,10 @@ internal class ScribbleCircle(colour: Int, strokePx: Float) : Drawable() {
 
     override fun draw(canvas: Canvas) {
         if (progress <= 0f) return
+        if (progress >= 1f) {
+            canvas.drawPath(loop, paint)
+            return
+        }
         measure.setPath(loop, false)
         shown.reset()
         measure.getSegment(0f, measure.length * progress, shown, true)

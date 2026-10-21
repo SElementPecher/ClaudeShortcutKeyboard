@@ -132,6 +132,9 @@ class AddFlow private constructor(
     private var amountUnit = RelativeUnit.MINS
     private var isAfter = true
 
+    /** When changing a time counted from another: an offset the number box cannot show, kept unless a number is typed. */
+    private var keptOffset: Long? = null
+
     var isDone: Boolean = false
         private set
 
@@ -228,7 +231,7 @@ class AddFlow private constructor(
             FlowStep.AMOUNTS -> chosenAmounts.isNotEmpty() || pendingAmount != null
             // Changing an existing one: keep what it already shows without tapping it again.
             FlowStep.SHOW -> isEditing
-            FlowStep.AFTER_NUMBER -> pendingAmount != null
+            FlowStep.AFTER_NUMBER -> pendingAmount != null || keptOffset != null
             else -> false
         }
 
@@ -446,8 +449,8 @@ class AddFlow private constructor(
 
     private fun reference(): AddResult.Reference {
         val id = (editing as? Editing.OfReference)?.blankId ?: nav.base ?: clockBlanks.first().id
-        val minutes = pendingAmount?.minutes ?: 0L
-        return AddResult.Reference(id, if (isAfter) minutes else -minutes)
+        val typed = pendingAmount ?: return AddResult.Reference(id, keptOffset ?: 0L)
+        return AddResult.Reference(id, if (isAfter) typed.minutes else -typed.minutes)
     }
 
     /** The ready-made answers of a time or date, as saved: nothing when they are the usual ones. */
@@ -528,6 +531,7 @@ class AddFlow private constructor(
         o.put("example", example)
         o.put("unit", amountUnit.name)
         o.put("after", isAfter)
+        o.put("kept", keptOffset ?: JSONObject.NULL)
         o.put("done", isDone)
         o.put("cancelled", isCancelled)
         o.put("selected", selected)
@@ -609,6 +613,9 @@ class AddFlow private constructor(
             val n = (size / unit.minutes).toInt()
             flow.amountUnit = unit
             flow.typedDigits = if (n in 1..RelativeAmount.MAX) n.toString() else ""
+            // An offset the number box cannot show (like 20 hours 30 minutes, from an older version) is kept as it is
+            // unless a new number is typed.
+            if (flow.typedDigits.isEmpty() && offsetMinutes != 0L) flow.keptOffset = offsetMinutes
             flow.isAfter = offsetMinutes >= 0
             flow.nav = Nav(step = FlowStep.AFTER_NUMBER, top = null, time = TimeChoice.AFTER_OTHER, base = blankId)
             return flow
@@ -644,6 +651,7 @@ class AddFlow private constructor(
             flow.example = o.getString("example")
             flow.amountUnit = RelativeUnit.valueOf(o.getString("unit"))
             flow.isAfter = o.getBoolean("after")
+            flow.keptOffset = if (o.isNull("kept") || !o.has("kept")) null else o.getLong("kept")
             flow.isDone = o.getBoolean("done")
             flow.isCancelled = o.optBoolean("cancelled", false)
             flow

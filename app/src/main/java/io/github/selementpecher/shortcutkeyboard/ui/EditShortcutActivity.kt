@@ -511,9 +511,10 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
         return ChipStyle(spec.kind.glyph, label, colours.bg, colours.fg, ring)
     }
 
-    /** Which chip the chain is making: the one at its offset. */
+    /** Which chip the chain is making: the one at its offset, or -1 while there is none yet (before a kind is picked). */
     private fun pendingChipIndex(open: Chain): Int =
-        (0 until open.base.chips().size).count { open.base.chipOffset(it) < open.offset }
+        if (open.adding && open.flow.preview() == null) -1
+        else (0 until open.base.chips().size).count { open.base.chipOffset(it) < open.offset }
 
     // ---- the chain of choices ----
 
@@ -543,7 +544,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             // Tapping another pill while one is open: drop the unfinished one and open the tapped pill.
             val current = if (open.adding) pendingChipIndex(open) else open.chipIndex
             if (index == current) return
-            val target = if (open.adding && index > current) index - 1 else index
+            val target = if (open.adding && current >= 0 && index > current) index - 1 else index
             draft = open.original
             openChipAfterDraw = target
             closeChain(open.selStart, open.selEnd)
