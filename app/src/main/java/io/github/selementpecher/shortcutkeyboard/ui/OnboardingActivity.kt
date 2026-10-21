@@ -69,7 +69,7 @@ class OnboardingActivity : Activity() {
     private var page = 0
     private var slide = 0
 
-    /** The pen loop round the changing word draws itself the first time the first page shows; after that it is just there. */
+    /** The pen mark pointing at the changing word draws itself the first time the first page shows; after that it is just there. */
     private var circled = false
     private lateinit var swipes: android.view.GestureDetector
     private lateinit var chosenLookId: String
@@ -228,42 +228,66 @@ class OnboardingActivity : Activity() {
             val wrap = { LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT) }
             addView(text(getString(R.string.tour_1_fixed_start).trimEnd() + " ", size, 500, palette.ink), wrap())
             // A little room before the word, so the pen loop round it passes between the words and covers none.
-            addView(word, wrap().apply { marginStart = dp(LOOP_ROOM_DP) })
+            // The pen loop needs a little room before the word so it covers no other words; the arrow needs none.
+            addView(word, wrap().apply { marginStart = if (POINTER == Pointer.LOOP) dp(LOOP_ROOM_DP) else 0 })
         }
         // The card is the window the words roll through: the whole card, padding included, so a word bouncing a little
         // past its place is never cut; it is only hidden once it passes the card's edge.
         val card = card(20).apply { clipToPadding = false }
         card.addView(line)
         box.add(card, top = 24)
-        circle(box, word, draw = !circled)
+        // Room under the card for the arrow.
+        if (POINTER == Pointer.ARROW) box.setPadding(box.paddingLeft, box.paddingTop, box.paddingRight, dp(ARROW_HEIGHT_DP + 12))
+        pointAt(box, word, draw = !circled)
         circled = true
         box
     }
 
+    /** How the moving word on the first page is pointed out. The pen loop is kept for later. */
+    private enum class Pointer { ARROW, LOOP }
+
     /**
-     * Puts a pen loop round [target] (in the Next button's colour) once its place on the page is known. With [draw] it
-     * draws itself stroke by stroke; otherwise (coming back to the page) it is simply there.
+     * Points at [target] with a pen mark in the Next button's colour, once its place on the page is known: an arrow
+     * coming up from below, or (kept for later) a loop round it. With [draw] the mark draws itself stroke by stroke;
+     * otherwise (coming back to the page) it is simply there.
      */
-    private fun circle(box: ViewGroup, target: View, draw: Boolean) = with(ui) {
-        val loop = ScribbleCircle(palette.accent, dpf(3f))
+    private fun pointAt(box: ViewGroup, target: View, draw: Boolean) = with(ui) {
         target.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
             override fun onGlobalLayout() {
                 if (target.width == 0) return
                 target.viewTreeObserver.removeOnGlobalLayoutListener(this)
                 val area = android.graphics.Rect(0, 0, target.width, target.height)
                 box.offsetDescendantRectToMyCoords(target, area)
-                area.inset(-dp(LOOP_ROOM_DP - 2), -dp(12))
-                loop.bounds = area
-                // Drawn by the page itself (a plain layout skips its own drawing, and the loop with it).
+                val mark: android.graphics.drawable.Drawable
+                val setProgress: (Float) -> Unit
+                when (POINTER) {
+                    Pointer.ARROW -> {
+                        // The tip sits just under the middle of the word; the arrow comes from below and to the left.
+                        val tipX = area.centerX()
+                        val tipY = area.bottom + dp(6)
+                        val arrow = ScribbleArrow(palette.accent, dpf(3.5f), dpf(16f))
+                        arrow.bounds = android.graphics.Rect(tipX - dp(ARROW_WIDTH_DP), tipY, tipX, tipY + dp(ARROW_HEIGHT_DP))
+                        mark = arrow
+                        setProgress = { arrow.progress = it }
+                    }
+                    Pointer.LOOP -> {
+                        val loop = ScribbleCircle(palette.accent, dpf(3f))
+                        area.inset(-dp(LOOP_ROOM_DP - 2), -dp(12))
+                        loop.bounds = area
+                        mark = loop
+                        setProgress = { loop.progress = it }
+                    }
+                }
+                // Drawn by the page itself (a plain layout skips its own drawing, and the mark with it).
                 box.setWillNotDraw(false)
-                box.overlay.add(loop)
+                box.overlay.add(mark)
                 if (!draw || !Motion.enabled(this@OnboardingActivity)) return
-                loop.progress = 0f
+                setProgress(0f)
                 android.animation.ValueAnimator.ofFloat(0f, 1f).apply {
                     startDelay = CIRCLE_DELAY_MS
                     duration = CIRCLE_MS
                     interpolator = android.view.animation.DecelerateInterpolator()
-                    addUpdateListener { loop.progress = it.animatedValue as Float }
+                    addUpdateListener { setProgress(it.animatedValue as Float) }
                     start()
                 }
             }
@@ -507,6 +531,11 @@ class OnboardingActivity : Activity() {
         private const val CIRCLE_DELAY_MS = 500L
         private const val CIRCLE_MS = 700L
         private const val LOOP_ROOM_DP = 12
+        private const val ARROW_WIDTH_DP = 124
+        private const val ARROW_HEIGHT_DP = 100
+
+        /** The arrow for now; switch to [Pointer.LOOP] to bring the pen loop back. */
+        private val POINTER = Pointer.ARROW
 
         fun open(context: Context) {
             context.startActivity(Intent(context, OnboardingActivity::class.java))
