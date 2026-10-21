@@ -58,6 +58,10 @@
     <string name="backup_file_name" translatable="false">quiKies-backup.json</string>
     <string name="backup_failed">Could not save the backup. Please try again.</string>
     <string name="no_file_app">Your phone has no app for picking files.</string>
+    <string name="demo_title">Add the demo quiKeys?</string>
+    <string name="demo_message">One quiKey for each kind of changing part, in a folder called Demo. Nothing you have is changed.</string>
+    <string name="demo_add">Add</string>
+    <string name="demo_added">Demo quiKeys added.</string>
     <string name="restore_failed">Could not open that file. Please try again.</string>
     <string name="restore_bad_file">That file is not a quiKies backup.</string>
     <string name="restore_empty">There are no quiKies in that file.</string>

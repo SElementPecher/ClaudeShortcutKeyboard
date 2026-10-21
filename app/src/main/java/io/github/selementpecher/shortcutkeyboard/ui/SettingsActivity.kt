@@ -161,6 +161,25 @@ class SettingsActivity : Activity() {
         }
     }
 
+    /** Hidden: asks, then adds one demo quiKey for each kind of changing part. */
+    private fun offerDemo() {
+        ui.confirm(
+            this,
+            title = getString(R.string.demo_title),
+            message = getString(R.string.demo_message),
+            confirmText = getString(R.string.demo_add),
+            cancelText = getString(R.string.dialog_cancel),
+            danger = false,
+        ) {
+            try {
+                ShortcutRepository.addDemo(this)
+                screen.snack(getString(R.string.demo_added))
+            } catch (e: Exception) {
+                screen.snack(getString(R.string.edit_save_failed), error = true)
+            }
+        }.show()
+    }
+
     /** The privacy promise, set off in a tinted box so it is easy to find, with the version under it. */
     private fun aboutBox(): View = with(ui) {
         val box = column().apply {
@@ -186,7 +205,16 @@ class SettingsActivity : Activity() {
         val version = text(getString(R.string.settings_about_version, versionName()), look.type.smallSp, 400, palette.ink).apply { visibility = View.GONE }
         box.add(version, top = 6)
         var taps = 0
-        box.setOnClickListener { if (++taps >= VERSION_TAPS) version.visibility = View.VISIBLE }
+        box.setOnClickListener {
+            taps++
+            if (taps == VERSION_TAPS) version.visibility = View.VISIBLE
+            // Hidden: five more taps after the version shows offers the demo quiKeys.
+            if (taps >= VERSION_TAPS + DEMO_TAPS) {
+                taps = 0
+                version.visibility = View.GONE
+                offerDemo()
+            }
+        }
         box
     }
 
@@ -353,6 +381,7 @@ class SettingsActivity : Activity() {
     companion object {
         private const val TAG = "SettingsActivity"
         private const val VERSION_TAPS = 3
+        private const val DEMO_TAPS = 5
         private const val REQUEST_BACKUP = 1
         private const val REQUEST_RESTORE = 2
         private const val STATE_PENDING_RESTORE = "pendingRestore"

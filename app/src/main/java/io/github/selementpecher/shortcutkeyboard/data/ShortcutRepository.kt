@@ -56,6 +56,9 @@ object ShortcutRepository {
     /** Adds the starter folders and quiKies that are missing, without touching anything you have. */
     fun addExamples(context: Context) = update(context) { it.withExamples(SampleShortcuts.library) }
 
+    /** Adds the demo folder and its quiKeys (one per kind of changing part) that are missing. */
+    fun addDemo(context: Context) = update(context) { it.withExamples(DemoShortcuts.library) }
+
     /** Deletes several shortcuts and folders in one go (one save). */
     fun deleteMany(context: Context, ids: Set<String>) = update(context) { it.withoutAll(ids) }
 
