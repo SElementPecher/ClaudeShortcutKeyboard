@@ -58,7 +58,7 @@ internal class WordCarousel(context: Context, private val count: Int, build: (In
             // 180° is the left (in the sentence); each later word is a quarter turn further round: top, right, bottom.
             val degrees = 180.0 + 90.0 * (place - progress)
             val rad = Math.toRadians(degrees)
-            // The word in use is full size and solid; the waiting ones are smaller and lighter.
+            // The word in use is solid; the waiting ones are lighter (all the same size).
             val inUse = 1f - Math.min(1.0, (1 + Math.cos(rad)) * 2).toFloat() // 1 at the left .. 0 a quarter turn away
             val scale = WAITING_SCALE + (1f - WAITING_SCALE) * inUse
             // Its inner end stays just clear of the axis.
@@ -116,8 +116,8 @@ internal class WordCarousel(context: Context, private val count: Int, build: (In
         const val TURN_MS = 650L
         const val HOLD_MS = 1000L
         const val OVERSHOOT = 1.6f
-        const val HUB_DP = 46f
-        const val WAITING_SCALE = 0.55f
+        const val HUB_DP = 40f
+        const val WAITING_SCALE = 1f
         const val WAITING_ALPHA = 0.5f
     }
 }
