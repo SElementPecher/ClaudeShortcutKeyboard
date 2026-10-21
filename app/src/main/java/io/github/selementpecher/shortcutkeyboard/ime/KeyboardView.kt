@@ -43,6 +43,14 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
     private var gridScreen: GridScreen? = null
     private var shownKey: String? = null
 
+    // Swiping sideways turns the page on screens that have pages (the tiles, the answers).
+    private var swipeToPrevious: (() -> Unit)? = null
+    private var swipeToNext: (() -> Unit)? = null
+    private var swipeDownX = 0f
+    private var swipeDownY = 0f
+    private var swiping = false
+    private val touchSlop = android.view.ViewConfiguration.get(context).scaledTouchSlop
+
     var gridDragCallbacks: TileGrid.DragCallbacks? = null
         set(value) {
             field = value
@@ -88,6 +96,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
             content.addView(screen.root, LayoutParams(MATCH, MATCH))
         }
         screen.bind(model)
+        setSwipe(model.page, model.pageCount, model.onPrevious, model.onNext)
         reveal("grid:${model.pathText}:${model.page}:${model.isEmpty}")
     }
 
@@ -111,6 +120,8 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
             is StepBody.Adjust -> addAdjustBody(column, body)
         }
         content.addView(column, LayoutParams(MATCH, MATCH))
+        val tiles = model.body as? StepBody.Tiles
+        if (tiles != null) setSwipe(tiles.page, tiles.pageCount, tiles.onPrevious, tiles.onNext) else setSwipe(0, 1, {}, {})
         val page = (model.body as? StepBody.Tiles)?.page ?: 0
         reveal("step:${model.step}:${model.body::class.simpleName}:$page")
     }
@@ -232,6 +243,60 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         content.alpha = 0f
         content.translationY = theme.dp(6).toFloat()
         content.animate().alpha(1f).translationY(0f).setDuration(Motion.POP_MS).setInterpolator(DecelerateInterpolator()).start()
+    }
+
+    // ---- Swiping between pages ----
+
+    /** Which way a sideways swipe goes on the screen now showing; nothing at the first or last page. */
+    private fun setSwipe(page: Int, pageCount: Int, onPrevious: () -> Unit, onNext: () -> Unit) {
+        swipeToPrevious = if (pageCount > 1 && page > 0) onPrevious else null
+        swipeToNext = if (pageCount > 1 && page < pageCount - 1) onNext else null
+    }
+
+    /**
+     * Takes over a touch once it is clearly a sideways swipe, so the tile under the finger is not tapped. Dragging a
+     * tile (after a long press) asks not to be taken over, so it is never mistaken for a swipe.
+     */
+    override fun onInterceptTouchEvent(ev: android.view.MotionEvent): Boolean {
+        when (ev.actionMasked) {
+            android.view.MotionEvent.ACTION_DOWN -> {
+                swipeDownX = ev.x
+                swipeDownY = ev.y
+                swiping = false
+            }
+            android.view.MotionEvent.ACTION_MOVE -> if (swipeToPrevious != null || swipeToNext != null) {
+                val dx = Math.abs(ev.x - swipeDownX)
+                val dy = Math.abs(ev.y - swipeDownY)
+                if (dx > touchSlop * 2 && dx > dy * SWIPE_SIDEWAYS) {
+                    swiping = true
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    /** A swipe that started on empty space (no tile under the finger) comes here from the start. */
+    override fun onTouchEvent(ev: android.view.MotionEvent): Boolean {
+        if (swipeToPrevious == null && swipeToNext == null) return super.onTouchEvent(ev)
+        when (ev.actionMasked) {
+            android.view.MotionEvent.ACTION_DOWN -> {
+                swipeDownX = ev.x
+                swipeDownY = ev.y
+                swiping = false
+            }
+            android.view.MotionEvent.ACTION_MOVE -> if (!swiping) {
+                val dx = Math.abs(ev.x - swipeDownX)
+                swiping = dx > touchSlop * 2 && dx > Math.abs(ev.y - swipeDownY) * SWIPE_SIDEWAYS
+            }
+            android.view.MotionEvent.ACTION_UP -> {
+                val dx = ev.x - swipeDownX
+                if (swiping && Math.abs(dx) >= theme.dp(SWIPE_MIN_DP)) (if (dx < 0) swipeToNext else swipeToPrevious)?.invoke()
+                swiping = false
+            }
+            android.view.MotionEvent.ACTION_CANCEL -> swiping = false
+        }
+        return true
     }
 
     // ---- Drag ghost ----
@@ -665,6 +730,10 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         private const val OK_SP = 20f
         private const val SMALL_TITLE_SP = 15f
         private const val LOGO_DP = 30
+
+        /** How far a finger must move sideways to turn the page, and how much more sideways than up or down. */
+        private const val SWIPE_MIN_DP = 48
+        private const val SWIPE_SIDEWAYS = 1.5f
         private const val EMPTY_EMOJI_SP = 40f
         private const val READING_LINE_SPACING = 1.3f
         private const val MAX_BAR_EXTRA_DP = 12
