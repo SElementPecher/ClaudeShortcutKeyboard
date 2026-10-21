@@ -161,7 +161,8 @@ internal class ChainPanel(
                 top = 2,
             )
         }
-        box.layoutParams = lp(bottom = 14)
+        // On ruled paper the line below sits on the next rule, so there is no room to spare under the heading.
+        box.layoutParams = lp(bottom = if (look.ruled) 2 else 14)
         box
     }
 

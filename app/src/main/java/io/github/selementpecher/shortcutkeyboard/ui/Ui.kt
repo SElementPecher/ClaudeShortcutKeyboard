@@ -34,6 +34,8 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import io.github.selementpecher.shortcutkeyboard.look.Highlighter
+import io.github.selementpecher.shortcutkeyboard.look.handwritingFont
+import io.github.selementpecher.shortcutkeyboard.look.HANDWRITING_EXTRA_SP
 import io.github.selementpecher.shortcutkeyboard.look.IndexCardDrawable
 import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.Look
@@ -309,7 +311,19 @@ internal class Ui(val context: Context, baseLook: Look) {
     fun small(text: CharSequence): TextView = text(text, look.type.smallSp, 400, palette.inkSoft)
 
     /** A small bold caption above a field or group. */
-    fun label(text: CharSequence): TextView = text(text, look.type.smallSp, 600, palette.inkSoft)
+    fun label(text: CharSequence): TextView {
+        // Exercise book: a short subheading is written by hand on a highlighter mark, so it stands out on the page.
+        if (look.ruled && text.length <= RULED_LABEL_MAX_CHARS) {
+            val tile = palette.tiles[0]
+            val marked = android.text.SpannableString(text).apply {
+                setSpan(RoundedHighlightSpan(tile.bg, tile.fg, dpf(7f), dpf(6f), dpf(2f), true, true), 0, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            return text(marked, look.type.smallSp + HANDWRITING_EXTRA_SP + 2f, 400, tile.fg).apply {
+                handwritingFont(context)?.let { typeface = it }
+            }
+        }
+        return text(text, look.type.smallSp, 600, palette.inkSoft)
+    }
 
     // ---------------------------------------------------------------- buttons
 
@@ -810,6 +824,9 @@ internal class Ui(val context: Context, baseLook: Look) {
         /** Reading text is never smaller than this (sp, before "Large text"). */
         const val MIN_BODY_SP = 17f
         const val MIN_SMALL_SP = 14f
+
+        /** A label up to this long is a subheading; longer ones are sentences and keep the plain style. */
+        const val RULED_LABEL_MAX_CHARS = 28
 
         /** Roomy lines and a touch of extra letter spacing help dyslexic readers. */
         const val READING_LINE_SPACING = 1.3f
