@@ -17,7 +17,9 @@ import android.widget.ScrollView
 import android.widget.TextView
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.look.Icons
+import io.github.selementpecher.shortcutkeyboard.look.LogoMark
 import io.github.selementpecher.shortcutkeyboard.look.Look
+import io.github.selementpecher.shortcutkeyboard.look.TileColors
 import io.github.selementpecher.shortcutkeyboard.look.marginLine
 import io.github.selementpecher.shortcutkeyboard.look.RuledKeyboardSnap
 import io.github.selementpecher.shortcutkeyboard.look.RuledPaper
@@ -273,6 +275,15 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         val grid = TileGrid(context, theme)
         private val back = iconButton(Icons.Kind.BACK, R.string.kb_desc_up) { onBack() }
         private val title = label("", look.type.headingSp, heading = true, gravity = Gravity.CENTER_VERTICAL or Gravity.START)
+        private val logoMark = LogoMark(palette.inkSoft, palette.accent, palette.onAccent).apply {
+            setBounds(0, 0, theme.dp(LOGO_DP), theme.dp(LOGO_DP))
+        }
+        private val logoWord = android.text.SpannableString("quiKey").apply {
+            setSpan(
+                PillSpan(TileColors(palette.accent, palette.onAccent), theme.dp(7).toFloat(), theme.dp(5).toFloat(), theme.dp(1).toFloat(), roundStart = true, roundEnd = true, uneven = look.ruled),
+                3, 6, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+        }
         private val settings = iconButton(Icons.Kind.GEAR, R.string.kb_desc_open_app) { onSettings() }
         private val strip = row()
         private val dots = DotsView(context, theme)
@@ -331,10 +342,21 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
             back.visibility = if (model.inFolder) VISIBLE else GONE
             back.setHighlighted(model.backHighlighted)
             (title.layoutParams as LinearLayout.LayoutParams).marginStart = if (model.inFolder) -theme.dp(4) else 0
-            title.text = if (model.inFolder) model.pathText else getString(R.string.kb_title)
+            if (model.inFolder) {
+                title.text = model.pathText
+                title.setCompoundDrawables(null, null, null, null)
+                title.contentDescription = title.text
+            } else {
+                // At the top level: the logo, as in the app (the mark, then "qui" and "Key" on a pill).
+                title.text = logoWord
+                // Set on the reading side directly: relative drawables only appear once the view knows its direction.
+                if (resources.configuration.layoutDirection == LAYOUT_DIRECTION_RTL) title.setCompoundDrawables(null, null, logoMark, null)
+                else title.setCompoundDrawables(logoMark, null, null, null)
+                title.compoundDrawablePadding = theme.dp(8)
+                title.contentDescription = getString(R.string.app_name)
+            }
             // The breadcrumb keeps its end when it is long; the plain title never loses its first letter.
             title.ellipsize = if (model.inFolder) TextUtils.TruncateAt.START else TextUtils.TruncateAt.END
-            title.contentDescription = title.text
             val paged = model.pageCount > 1
 
             grid.visibility = if (model.isEmpty) INVISIBLE else VISIBLE
@@ -642,6 +664,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         private const val PAD_SP = 22f
         private const val OK_SP = 20f
         private const val SMALL_TITLE_SP = 15f
+        private const val LOGO_DP = 30
         private const val EMPTY_EMOJI_SP = 40f
         private const val READING_LINE_SPACING = 1.3f
         private const val MAX_BAR_EXTRA_DP = 12
