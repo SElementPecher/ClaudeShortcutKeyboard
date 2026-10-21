@@ -571,7 +571,9 @@ class ShortcutKeyboardService : InputMethodService() {
         other: TileSpec,
         pick: (Long) -> Unit,
     ): StepBody {
-        val entries: List<Long?> = choices + null
+        // Now (or Today) goes first, in the big tile; the rest follow in order, then Other.
+        val first = QuickChoices.default(choices)
+        val entries: List<Long?> = listOf<Long?>(first) + (choices - first) + null
         answerPage = GridPaging.clampPage(answerPage, entries.size)
         val onPage = GridPaging.pageItems(entries, answerPage)
         val tiles = onPage.mapIndexed { slot, value ->
