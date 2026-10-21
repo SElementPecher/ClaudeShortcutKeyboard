@@ -167,6 +167,9 @@ internal class TileGrid(context: Context, private val theme: KeyboardTheme) : Vi
         val cancel = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_CANCEL, downX, downY, 0)
         super.dispatchTouchEvent(cancel)
         cancel.recycle()
+        // The picked-up tile is now an empty place that can't be tapped, and Android only lets go of the press on
+        // tiles that can: let go of it here, or it stays dark after the move.
+        tiles.forEach { it.isPressed = false }
         performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
         dwell.reset()
         lastEdge = 0
