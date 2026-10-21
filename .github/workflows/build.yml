@@ -3,6 +3,8 @@ name: Build
 on:
   push:
     branches: ["**"]
+    # A tag like v1.1 publishes that version as its own release (see "versioned-release" below).
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
     inputs:
@@ -100,6 +102,50 @@ jobs:
             --title "Latest build" \
             --notes "The newest quiKey app. On your phone, tap quiKey.apk below to download it, then open it to install. Built from ${GITHUB_REF_NAME} at ${GITHUB_SHA::7}." \
             --target "$GITHUB_SHA"
+
+  # A named version ("quiKey 1.1") with its own download, kept alongside "Latest build". Runs when a tag like v1.1
+  # is pushed; the notes come from docs/releases/<version>.md.
+  versioned-release:
+    name: Publish the version
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Download the APK
+        uses: actions/download-artifact@v4
+        with:
+          name: quiKey-apk
+          path: apk
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          shopt -s nullglob
+          files=(apk/*.apk)
+          if [ "${#files[@]}" -ne 1 ]; then
+            echo "Expected exactly one APK, found ${#files[@]}" >&2
+            exit 1
+          fi
+          mv "${files[0]}" quiKey.apk
+          version="${GITHUB_REF_NAME#v}"
+          notes="docs/releases/${version}.md"
+          if [ ! -f "$notes" ]; then
+            echo "Missing $notes" >&2
+            exit 1
+          fi
+          gh release delete "$GITHUB_REF_NAME" -y || true
+          gh release create "$GITHUB_REF_NAME" quiKey.apk \
+            --title "quiKey ${version}" \
+            --notes-file "$notes" \
+            --verify-tag
 
   # The file to upload to the Google Play Console. Needs the four QUIKEY_* secrets (see docs/play-store/STEPS.md).
   # Run it by hand: Actions > Build > Run workflow > tick "Also build the signed Play Store bundle".
