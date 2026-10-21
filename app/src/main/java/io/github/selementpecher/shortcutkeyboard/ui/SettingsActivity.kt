@@ -49,7 +49,7 @@ class SettingsActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ui = Ui(this, LookStore.current(this))
-        screen = ui.screen(getString(R.string.settings_title), onBack = { finish() })
+        screen = ui.screen(getString(R.string.settings_title), onBack = { finish() }, withBottomBar = true)
         build()
         screen.install(this)
         savedInstanceState?.getString(STATE_PENDING_RESTORE)?.let { readBackup(Uri.parse(it)) }
@@ -84,8 +84,11 @@ class SettingsActivity : Activity() {
         content.add(keyboardStatus, top = 8)
         refreshKeyboardStatus()
         content.add(grid(2, tiles()), top = 16)
-        content.add(deleteButton(), top = 24)
-        content.add(aboutBox(), top = 24)
+        // Delete and the privacy line sit together at the bottom, the same width and height.
+        screen.bottomBar.removeAllViews()
+        screen.bottomBar.addView(deleteButton())
+        screen.bottomBar.add(aboutBox(), top = 12)
+        screen.showBottomBar(true)
     }
 
     /** First thing on the screen: is the keyboard on? Tap to turn it on, or to switch to it. */
@@ -162,10 +165,13 @@ class SettingsActivity : Activity() {
     private fun aboutBox(): View = with(ui) {
         val box = column().apply {
             background = shape(blend(palette.bg, palette.success, 0.14f), 14f)
-            setPadding(dp(14), dp(12), dp(14), dp(12))
+            setPadding(dp(14), dp(8), dp(14), dp(8))
+            gravity = Gravity.CENTER
+            minimumHeight = dp(56)
         }
         box.add(
             text(getString(R.string.settings_about_privacy), look.type.bodySp, 600, palette.ink, 1.45f).apply {
+                gravity = Gravity.CENTER
                 // One line at any text size: the words shrink a little before they would wrap.
                 maxLines = 1
                 setAutoSizeTextTypeUniformWithConfiguration(9, look.type.bodySp.toInt() + HANDWRITING_EXTRA_SP.toInt(), 1, android.util.TypedValue.COMPLEX_UNIT_SP)
@@ -209,11 +215,6 @@ class SettingsActivity : Activity() {
             setCompoundDrawablesRelativeWithIntrinsicBounds(icon(Icons.Kind.TRASH, 22, readableOn(palette.danger)), null, null, null)
             compoundDrawablePadding = dp(10)
             gravity = Gravity.CENTER
-            // As wide as its words and picture, in the middle, so the picture sits beside the words.
-            setPadding(dp(28), paddingTop, dp(28), paddingBottom)
-            layoutParams = lp(width = android.view.ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                (this as? LinearLayout.LayoutParams)?.gravity = Gravity.CENTER_HORIZONTAL
-            }
         }
     }
 
