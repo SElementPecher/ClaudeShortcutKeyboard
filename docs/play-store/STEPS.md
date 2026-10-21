@@ -49,7 +49,7 @@ When it finishes, download **quiKey-play-bundle**. Inside is the `.aab` file.
 - Answer **Data safety** and **Content rating** with the answers in `LISTING.md`.
 
 ## 4b. Know this
-- The app id `io.github.selementpecher.shortcutkeyboard` becomes **permanent** after the first upload.
+- The app id `designatedfreetime.quiKey` becomes **permanent** after the first upload.
   Decide now if you want a different one (for example `com.akarigo.quikey`). Tell me and I will change it.
 - Phones with the **test (GitHub) version** cannot update to the Play version (different signing key).
   Uninstall the test version first. Your quiKies are in the backup, so they come back.
