@@ -196,10 +196,19 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         holder.addView(scroll, FrameLayout.LayoutParams(MATCH, WRAP, Gravity.CENTER_VERTICAL))
         column.addView(holder, LinearLayout.LayoutParams(MATCH, 0, 1f))
 
+        model.hint?.let { hint ->
+            column.addView(
+                label(hint, SMALL_TITLE_SP - 1f, heading = false, gravity = Gravity.CENTER).apply {
+                    setTextColor(palette.inkSoft)
+                    maxLines = 2
+                },
+                LinearLayout.LayoutParams(MATCH, WRAP).apply { bottomMargin = gap / 2 },
+            )
+        }
         val add = TileView(context, theme)
         add.bind(
             TileSpec(
-                getString(R.string.kb_add), TileLook(TileLook.Kind.OK, pill = true),
+                model.addLabel.ifEmpty { getString(R.string.kb_add) }, TileLook(TileLook.Kind.OK, pill = true),
                 icon = Icons.Kind.CHECK, onClick = model.onAdd, textSp = look.type.headingSp + 3f,
             ),
         )

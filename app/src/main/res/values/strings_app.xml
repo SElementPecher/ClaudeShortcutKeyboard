@@ -59,7 +59,7 @@
     <string name="backup_failed">Could not save the backup. Please try again.</string>
     <string name="no_file_app">Your phone has no app for picking files.</string>
     <string name="settings_send_title">Send after adding</string>
-    <string name="settings_send_help">Only works in apps whose message box has a Send button. Everywhere else the words are just added.</string>
+    <string name="settings_send_help">Works in apps whose message box has a Send button. WhatsApp, Telegram and Signal need their own Enter to send setting on first: the keyboard tells you where. Everywhere else the words are just added.</string>
     <string name="send_off">Just add the words</string>
     <string name="send_on">Add the words and send</string>
     <string name="demo_title">Add the demo quiKeys?</string>

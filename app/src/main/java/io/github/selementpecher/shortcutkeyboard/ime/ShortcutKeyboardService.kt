@@ -716,8 +716,17 @@ class ShortcutKeyboardService : InputMethodService() {
                 },
                 onCancel = ::leaveFill,
                 onAdd = ::addToApp,
+                addLabel = getString(if (sendPlan() == SendAfterAdd.Plan.Send) R.string.kb_add_send else R.string.kb_add),
+                hint = (sendPlan() as? SendAfterAdd.Plan.TurnOnInApp)?.let { getString(R.string.kb_send_hint, it.setting.appName, it.setting.setting, it.setting.where) },
             ),
         )
+    }
+
+    /** What Add will do here when "Send after adding" is on; null when it is off. */
+    private fun sendPlan(): SendAfterAdd.Plan? {
+        if (!SendAfterAdd.isOn(this)) return null
+        val info = inputInfo ?: return SendAfterAdd.Plan.AddOnly
+        return SendAfterAdd.plan(info.imeOptions, info.packageName)
     }
 
     private fun addToApp() {
@@ -727,10 +736,7 @@ class ShortcutKeyboardService : InputMethodService() {
             ic.commitText(current.result(), 1)
             rememberValues(current)
             // If the person turned it on, and this box has a Send button, press it too.
-            val info = inputInfo
-            if (info != null && SendAfterAdd.isOn(this) && SendAfterAdd.canSend(info.imeOptions)) {
-                ic.performEditorAction(EditorInfo.IME_ACTION_SEND)
-            }
+            if (sendPlan() == SendAfterAdd.Plan.Send) ic.performEditorAction(EditorInfo.IME_ACTION_SEND)
         }
         leaveFill()
         switchBack(fromAbc = false)

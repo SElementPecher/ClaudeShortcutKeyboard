@@ -83,4 +83,8 @@ internal class CheckModel(
     val onBack: () -> Unit,
     val onCancel: () -> Unit,
     val onAdd: () -> Unit,
+    /** The words on the Add button: "Add", or "Add and send" when it will send too. */
+    val addLabel: String = "",
+    /** A short line above the Add button, e.g. how to let quiKey send in this app. Null for none. */
+    val hint: String? = null,
 )
