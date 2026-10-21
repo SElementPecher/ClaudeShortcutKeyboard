@@ -13,6 +13,7 @@ import android.view.View
 import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
+import io.github.selementpecher.shortcutkeyboard.data.SendAfterAdd
 import android.view.inputmethod.InputMethodManager
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository
@@ -113,8 +114,12 @@ class ShortcutKeyboardService : InputMethodService() {
         return view
     }
 
+    /** The text box being typed into, for its Send button. */
+    private var inputInfo: EditorInfo? = null
+
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        inputInfo = info
         val saved = pending
         if (saved != null) {
             if (info?.packageName == packageName) {
@@ -721,6 +726,11 @@ class ShortcutKeyboardService : InputMethodService() {
         if (ic != null) {
             ic.commitText(current.result(), 1)
             rememberValues(current)
+            // If the person turned it on, and this box has a Send button, press it too.
+            val info = inputInfo
+            if (info != null && SendAfterAdd.isOn(this) && SendAfterAdd.canSend(info.imeOptions)) {
+                ic.performEditorAction(EditorInfo.IME_ACTION_SEND)
+            }
         }
         leaveFill()
         switchBack(fromAbc = false)

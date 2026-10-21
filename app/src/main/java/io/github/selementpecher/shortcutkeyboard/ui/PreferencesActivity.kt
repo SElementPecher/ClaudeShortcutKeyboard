@@ -8,6 +8,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.ImageView
 import io.github.selementpecher.shortcutkeyboard.R
+import io.github.selementpecher.shortcutkeyboard.data.SendAfterAdd
 import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.Look
 import io.github.selementpecher.shortcutkeyboard.look.LookStore
@@ -69,6 +70,7 @@ class PreferencesActivity : Activity() {
     private fun build() = with(ui) {
         val content = screen.content
         content.add(textSizeCard(), top = 8)
+        content.add(sendCard(), top = 16)
         content.add(lookCard(), top = 16)
     }
 
@@ -129,6 +131,41 @@ class PreferencesActivity : Activity() {
         card.add(textChoice(large = false), top = 16)
         card.add(textChoice(large = true), top = 10)
         card
+    }
+
+    /** "Send after adding": two choices. Sending only works where the app's message box has a Send button. */
+    private fun sendCard(): View = with(ui) {
+        val card = card()
+        card.add(heading(getString(R.string.settings_send_title)))
+        card.add(small(getString(R.string.settings_send_help)), top = 4)
+        card.add(sendChoice(on = false), top = 16)
+        card.add(sendChoice(on = true), top = 10)
+        card
+    }
+
+    private fun sendChoice(on: Boolean): View = with(ui) {
+        val chosen = SendAfterAdd.isOn(this@PreferencesActivity) == on
+        val name = getString(if (on) R.string.send_on else R.string.send_off)
+        val box = row().apply {
+            val r = 18f
+            background = rippled(
+                shape(if (chosen) blend(palette.surface, palette.accent, 0.06f) else palette.surface, r, if (chosen) palette.accent else buttonOutline(), if (chosen) 3f else 1.5f),
+                r,
+            )
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+            gravity = Gravity.CENTER_VERTICAL
+            isClickable = true
+            isFocusable = true
+            contentDescription = name
+            setOnClickListener {
+                SendAfterAdd.set(this@PreferencesActivity, on)
+                recreate()
+            }
+            Motion.pressable(this, 0.98f)
+        }
+        box.addView(text(name, look.type.headingSp, look.type.headingWeight, palette.ink, Ui.HEADING_LINE_SPACING).apply { layoutParams = lp(width = 0, weight = 1f) })
+        if (chosen) box.addView(checkBadge(28))
+        box
     }
 
     private fun textChoice(large: Boolean): View = with(ui) {
