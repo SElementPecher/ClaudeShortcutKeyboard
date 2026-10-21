@@ -79,7 +79,7 @@ class OnboardingActivity : Activity() {
         skip = ui.textButton(getString(R.string.tour_skip)) { finishTour() }.apply {
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ui.dp(48))
         }
-        screen = ui.screen("", trailing = listOf(skip), withBottomBar = true)
+        screen = ui.screen(getString(R.string.app_name), trailing = listOf(skip), withBottomBar = true, logo = true)
         screen.install(this)
         render()
     }
