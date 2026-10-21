@@ -218,4 +218,32 @@ class LibraryTest {
         // Asking again changes nothing.
         assertEquals(merged, merged.withExamples(examples))
     }
+
+    // ---- moving and exporting a selection ----
+
+    @Test
+    fun `several tiles move together and keep their order`() {
+        val moved = library.movedAll(listOf("other", "meds"), null)
+        assertEquals(listOf("kids", "late", "meds", "other"), ids(null, moved))
+        assertTrue(ids("kids", moved).isEmpty())
+        // What was inside a moved folder goes with it.
+        assertEquals(listOf("giddy", "zippy"), ids("calpol", moved))
+    }
+
+    @Test
+    fun `a folder never moves into itself, the rest still move`() {
+        val moved = library.movedAll(listOf("meds", "late"), "meds")
+        assertEquals("kids", moved.folder("meds")!!.parentId)
+        assertEquals("meds", moved.shortcut("late")!!.parentId)
+    }
+
+    @Test
+    fun `only keeps the chosen tiles with what is inside them, at the top level`() {
+        val part = library.only(setOf("meds", "late"))
+        assertEquals(setOf("meds", "calpol"), part.folders.map { it.id }.toSet())
+        assertEquals(setOf("giddy", "zippy", "late"), part.shortcuts.map { it.id }.toSet())
+        assertNull(part.folder("meds")!!.parentId)
+        assertEquals("meds", part.folder("calpol")!!.parentId)
+        assertNull(part.shortcut("late")!!.parentId)
+    }
 }

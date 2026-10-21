@@ -66,6 +66,17 @@ object ShortcutRepository {
     fun duplicateMany(context: Context, ids: Set<String>, suffix: String) =
         update(context) { it.withCopiesOf(ids, ::newId, suffix) }
 
+    /** Moves several tiles into [newParentId] (null = top level) in one go. Says how many actually moved. */
+    fun moveMany(context: Context, ids: Set<String>, newParentId: String?): Int {
+        var moved = 0
+        update(context) { lib ->
+            val result = lib.movedAll(ids, newParentId)
+            moved = ids.count { id -> (result.folder(id)?.parentId ?: result.shortcut(id)?.parentId) == newParentId && (lib.folder(id)?.parentId ?: lib.shortcut(id)?.parentId) != newParentId }
+            result
+        }
+        return moved
+    }
+
     /** Deletes a folder and everything inside it. */
     fun deleteFolder(context: Context, id: String) = update(context) { it.withoutFolder(id) }
 

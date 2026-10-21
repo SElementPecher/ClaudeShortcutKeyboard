@@ -151,6 +151,22 @@
         <item quantity="other">%d selected</item>
     </plurals>
     <string name="select_duplicate">Duplicate</string>
+    <string name="select_move">Move</string>
+    <string name="select_export">Export</string>
+    <string name="export_file_name" translatable="false">quiKies-export.json</string>
+    <string name="export_failed">Could not save the file. Please try again.</string>
+    <plurals name="move_many_title">
+        <item quantity="one">Move %d item to</item>
+        <item quantity="other">Move %d items to</item>
+    </plurals>
+    <plurals name="moved_many">
+        <item quantity="one">Moved %d item</item>
+        <item quantity="other">Moved %d items</item>
+    </plurals>
+    <plurals name="exported_many">
+        <item quantity="one">Saved %d quiKey to the file. Open it with Restore on another phone.</item>
+        <item quantity="other">Saved %d quiKies to the file. Open it with Restore on another phone.</item>
+    </plurals>
     <string name="copy_suffix">" copy"</string>
     <plurals name="select_copied">
         <item quantity="one">Copied %d item</item>

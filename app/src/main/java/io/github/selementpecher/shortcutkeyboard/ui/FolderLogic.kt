@@ -42,6 +42,26 @@ object FolderLogic {
         return result
     }
 
+    /**
+     * Where several chosen tiles ([ids], all from one folder) can be moved: Home and every folder, except the chosen
+     * folders and anything inside them.
+     */
+    fun moveTargetsForMany(library: Library, ids: Set<String>, homeName: String): List<MoveTarget> {
+        val currentParent = ids.firstNotNullOfOrNull { library.folder(it) ?: library.shortcut(it) }?.parentId
+        val result = ArrayList<MoveTarget>()
+        result += MoveTarget(null, homeName, 0, isCurrent = currentParent == null)
+
+        fun add(parentId: String?, depth: Int, seen: Set<String>) {
+            for (node in library.children(parentId)) {
+                if (node !is Folder || node.id in ids || node.id in seen) continue
+                result += MoveTarget(node.id, node.name, depth, isCurrent = currentParent == node.id, icon = node.icon)
+                add(node.id, depth + 1, seen + node.id)
+            }
+        }
+        add(null, 1, emptySet())
+        return result
+    }
+
     /** How many tiles are directly inside [folderId]. */
     fun itemCount(library: Library, folderId: String): Int = library.children(folderId).size
 

@@ -125,6 +125,30 @@ data class Library(
 
     private fun orderOf(id: String): Int = (folder(id)?.order ?: shortcut(id)?.order) ?: 0
 
+    /**
+     * Moves every tile in [ids] into [newParentId] (null = top level), at the end, keeping their order. A tile that
+     * cannot go there (a folder into itself or into something it holds) stays where it is.
+     */
+    fun movedAll(ids: Collection<String>, newParentId: String?): Library =
+        ids.sortedBy { orderOf(it) }.fold(this) { lib, id -> lib.moved(id, newParentId, Int.MAX_VALUE) ?: lib }
+
+    /**
+     * Just the tiles in [ids] (a folder with everything inside it), as a library of their own, for exporting. The
+     * chosen tiles sit at the top level, so the file opens cleanly anywhere.
+     */
+    fun only(ids: Set<String>): Library {
+        val keptFolders = LinkedHashSet<String>()
+        fun collect(folderId: String) {
+            if (!keptFolders.add(folderId)) return
+            folders.filter { it.parentId == folderId }.forEach { collect(it.id) }
+        }
+        ids.filter { folder(it) != null }.forEach { collect(it) }
+        return Library(
+            folders = folders.filter { it.id in keptFolders }.map { if (it.id in ids) it.copy(parentId = null) else it },
+            shortcuts = shortcuts.filter { it.id in ids || it.parentId in keptFolders }.map { if (it.id in ids) it.copy(parentId = null) else it },
+        ).repaired()
+    }
+
     /** Removes every shortcut and folder in [ids]. A folder takes everything inside it with it. */
     fun withoutAll(ids: Set<String>): Library =
         ids.fold(this) { lib, id -> if (lib.folder(id) != null) lib.withoutFolder(id) else lib.withoutShortcut(id) }

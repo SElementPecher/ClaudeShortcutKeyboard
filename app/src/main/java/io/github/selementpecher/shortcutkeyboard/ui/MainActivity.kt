@@ -62,6 +62,9 @@ class MainActivity : Activity() {
     private var selecting = false
     private val selected = LinkedHashSet<String>()
 
+    /** What is being exported while the phone asks where to save the file. */
+    private var pendingExport: Set<String>? = null
+
     private val repositoryListener: () -> Unit = {
         // May be called from any thread, e.g. when the keyboard saves what it learned.
         mainHandler.post { if (!isDestroyed) render() }
@@ -78,6 +81,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         ui = Ui(this, LookStore.current(this))
         currentFolderId = if (savedInstanceState != null) savedInstanceState.getString(STATE_FOLDER) else intent?.getStringExtra(EXTRA_FOLDER_ID)
+        pendingExport = savedInstanceState?.getStringArray(STATE_EXPORT)?.toSet()
 
         val gear = ui.iconButton(Icons.Kind.GEAR, getString(R.string.settings_open)) {
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -185,6 +189,7 @@ class MainActivity : Activity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         currentFolderId?.let { outState.putString(STATE_FOLDER, it) }
+        pendingExport?.let { outState.putStringArray(STATE_EXPORT, it.toTypedArray()) }
     }
 
     override fun onDestroy() {
@@ -276,10 +281,15 @@ class MainActivity : Activity() {
                 delete.isEnabled = count > 0
                 delete.alpha = if (count > 0) 1f else 0.4f
                 val copy = secondaryButton(getString(R.string.select_duplicate)) { duplicateSelected() }
-                copy.isEnabled = count > 0
-                copy.alpha = if (count > 0) 1f else 0.4f
+                val move = secondaryButton(getString(R.string.select_move)) { showMoveSelected() }
+                val export = secondaryButton(getString(R.string.select_export)) { startExport() }
+                for (button in listOf(copy, move, export)) {
+                    button.isEnabled = count > 0
+                    button.alpha = if (count > 0) 1f else 0.4f
+                }
                 val cancel = secondaryButton(getString(R.string.dialog_cancel)) { stopSelecting() }
-                screen.bottomBar.addView(buttonRow(delete, copy))
+                screen.bottomBar.addView(buttonRow(move, export))
+                screen.bottomBar.add(buttonRow(copy, delete), top = 12)
                 screen.bottomBar.add(cancel, top = 12)
             }
         }
@@ -365,6 +375,84 @@ class MainActivity : Activity() {
         selected.clear()
         render()
         screen.snack(resources.getQuantityString(R.plurals.select_copied, count, count))
+    }
+
+    /** "Move to…" for everything chosen: Home and every folder (not the chosen folders or what is inside them). */
+    private fun showMoveSelected() {
+        if (selected.isEmpty()) return
+        val ids = selected.toSet()
+        val targets = FolderLogic.moveTargetsForMany(ShortcutRepository.library(this), ids, getString(R.string.home_name))
+        showMoveSheet(resources.getQuantityString(R.plurals.move_many_title, ids.size, ids.size), targets) { moveSelected(ids, it) }
+    }
+
+    private fun moveSelected(ids: Set<String>, folderId: String?) {
+        val moved = try {
+            ShortcutRepository.moveMany(this, ids, folderId)
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not move", e)
+            -1
+        }
+        if (moved < 0) {
+            screen.snack(getString(R.string.move_failed), error = true)
+            return
+        }
+        selecting = false
+        selected.clear()
+        render()
+        screen.snack(resources.getQuantityString(R.plurals.moved_many, moved, moved))
+    }
+
+    // ---------------------------------------------------------------- exporting what is chosen
+
+    /** Asks where to save a file holding only the chosen quiKies and folders (a backup of just those). */
+    private fun startExport() {
+        if (selected.isEmpty()) return
+        pendingExport = selected.toSet()
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+            .addCategory(Intent.CATEGORY_OPENABLE)
+            .setType("application/json")
+            .putExtra(Intent.EXTRA_TITLE, getString(R.string.export_file_name))
+        try {
+            startActivityForResult(intent, REQUEST_EXPORT)
+        } catch (e: ActivityNotFoundException) {
+            pendingExport = null
+            screen.snack(getString(R.string.no_file_app), error = true)
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != REQUEST_EXPORT) return
+        val ids = pendingExport
+        pendingExport = null
+        val uri = data?.data
+        if (resultCode != RESULT_OK || uri == null || ids.isNullOrEmpty()) return
+        val part = ShortcutRepository.library(this).only(ids)
+        val count = part.shortcuts.size
+        val resolver = applicationContext.contentResolver
+        val appContext = applicationContext
+        Thread {
+            val result = runCatching { Backup.write(resolver, uri, part) }
+            mainHandler.post {
+                val message = if (result.isSuccess) {
+                    appContext.resources.getQuantityString(R.plurals.exported_many, count, count)
+                } else {
+                    Log.w(TAG, "Export failed", result.exceptionOrNull())
+                    appContext.getString(R.string.export_failed)
+                }
+                if (isDestroyed) {
+                    Snackbars.later(message, error = result.isFailure)
+                } else {
+                    if (result.isSuccess) {
+                        selecting = false
+                        selected.clear()
+                        render()
+                    }
+                    screen.snack(message, error = result.isFailure)
+                }
+            }
+        }.start()
     }
 
     private fun confirmDeleteSelected() {
@@ -626,8 +714,14 @@ class MainActivity : Activity() {
     private fun showMove(node: Node) {
         val library = ShortcutRepository.library(this)
         val targets = FolderLogic.moveTargets(library, node.id, getString(R.string.home_name))
+        val title = getString(R.string.move_title, node.name.ifBlank { getString(R.string.shortcut_no_name) })
+        showMoveSheet(title, targets) { moveTo(node, it) }
+    }
+
+    /** A sheet listing [targets] (Home and folders, indented); tapping one calls [onPick] with its folder (null = Home). */
+    private fun showMoveSheet(title: String, targets: List<FolderLogic.MoveTarget>, onPick: (String?) -> Unit) {
         val noName = getString(R.string.shortcut_no_name)
-        val sheet = ui.sheet(this, getString(R.string.move_title, node.name.ifBlank { noName }))
+        val sheet = ui.sheet(this, title)
         with(ui) {
             targets.forEachIndexed { index, target ->
                 val base = target.name.ifBlank { noName }
@@ -642,7 +736,7 @@ class MainActivity : Activity() {
                     isFocusable = !target.isCurrent
                     alpha = if (target.isCurrent) 0.6f else 1f
                     contentDescription = label
-                    setOnClickListener { sheet.dismiss(); moveTo(node, target.folderId) }
+                    setOnClickListener { sheet.dismiss(); onPick(target.folderId) }
                 }
                 rowView.addView(text(glyph, look.type.bodySp + 3, 400, palette.ink).apply { layoutParams = lp(width = ViewGroup.LayoutParams.WRAP_CONTENT) })
                 rowView.addView(body(label).apply {
@@ -785,5 +879,7 @@ class MainActivity : Activity() {
         /** True once this app process has held the splash, so coming back to the app never waits again. */
         private var splashShown = false
         private const val STATE_FOLDER = "folder"
+        private const val STATE_EXPORT = "export"
+        private const val REQUEST_EXPORT = 7
     }
 }
