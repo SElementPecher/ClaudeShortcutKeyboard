@@ -12,6 +12,10 @@ on:
         description: "Also build the signed Play Store bundle (.aab)"
         type: boolean
         default: false
+      release_version:
+        description: "Publish this version as its own release, e.g. 1.1 (leave empty to skip)"
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -104,11 +108,14 @@ jobs:
             --target "$GITHUB_SHA"
 
   # A named version ("quiKey 1.1") with its own download, kept alongside "Latest build". Runs when a tag like v1.1
-  # is pushed; the notes come from docs/releases/<version>.md.
+  # is pushed, or by hand: Actions > Build > Run workflow > "Publish this version" = 1.1. The notes come from
+  # docs/releases/<version>.md.
   versioned-release:
     name: Publish the version
     needs: build
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: >-
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.release_version != '')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -127,6 +134,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ inputs.release_version }}
         run: |
           shopt -s nullglob
           files=(apk/*.apk)
@@ -135,17 +143,23 @@ jobs:
             exit 1
           fi
           mv "${files[0]}" quiKey.apk
-          version="${GITHUB_REF_NAME#v}"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            version="${RELEASE_VERSION#v}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          tag="v${version}"
           notes="docs/releases/${version}.md"
           if [ ! -f "$notes" ]; then
             echo "Missing $notes" >&2
             exit 1
           fi
-          gh release delete "$GITHUB_REF_NAME" -y || true
-          gh release create "$GITHUB_REF_NAME" quiKey.apk \
+          gh release delete "$tag" -y || true
+          # Makes the tag on this commit if it does not exist yet (a run by hand).
+          gh release create "$tag" quiKey.apk \
             --title "quiKey ${version}" \
             --notes-file "$notes" \
-            --verify-tag
+            --target "$GITHUB_SHA"
 
   # The file to upload to the Google Play Console. Needs the four QUIKEY_* secrets (see docs/play-store/STEPS.md).
   # Run it by hand: Actions > Build > Run workflow > tick "Also build the signed Play Store bundle".
