@@ -74,7 +74,6 @@
     <string name="chain_answer_remove_empty">Remove this answer</string>
 
     <!-- Changing something already there -->
-    <string name="chain_remove">Remove it</string>
     <string name="chain_name_hint">Name it, e.g. kid</string>
     <string name="chain_show_current"> · now chosen</string>
     <string name="chain_title_number">Name your number</string>

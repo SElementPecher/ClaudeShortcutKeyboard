@@ -56,7 +56,6 @@ internal class ChainPanel(
         /** (Changing a chip) turn it back into plain words. */
 
         /** (Changing a chip) take it out. */
-        fun onRemove()
     }
 
     /** The panel's views: put them under the message. */
@@ -132,12 +131,6 @@ internal class ChainPanel(
             FlowStep.QUESTION, FlowStep.LIST_QUESTION -> questionLevel(flow)
             FlowStep.LIST_ANSWERS -> answersLevel(flow)
         }
-        // Remove it: on the short screens it sits at the bottom, just above Done, so the empty
-        // space is not in the middle; on the long amounts screen they stay in the page so the bottom has room.
-        val extras = flow.isEditing && !flow.canGoBack
-        val quick = flow.kind() == BlankKind.TIME || flow.kind() == BlankKind.DATE
-        val pinned = extras && !quick && (flow.step == FlowStep.QUESTION || flow.step == FlowStep.LIST_ANSWERS)
-        if (extras) editExtras(pinned)
         val button = primaryLabel(flow)
         if (button != null) {
             val listScreen = flow.step == FlowStep.LIST_ANSWERS
@@ -157,7 +150,7 @@ internal class ChainPanel(
             if (listScreen) watchKeyboard { refreshControls() }
             refreshControls()
         } else {
-            screen.showBottomBar(pinned)
+            screen.showBottomBar(false)
         }
         val field = typed
         if (field != null) showKeyboardFor(field) else hideKeyboard()
@@ -635,10 +628,6 @@ internal class ChainPanel(
         typed = flow.answers.indexOfFirst { it.isBlank() }.let { i -> answerFields.getOrNull(max(i, 0)) } ?: firstField
     }
 
-    private fun editExtras(pinned: Boolean) = with(ui) {
-        val remove = dangerButton(str(R.string.chain_remove)) { listener.onRemove() }
-        if (pinned) screen.bottomBar.add(remove, bottom = 12) else view.add(remove, top = 12)
-    }
 
     // ---- big tiles ----
 

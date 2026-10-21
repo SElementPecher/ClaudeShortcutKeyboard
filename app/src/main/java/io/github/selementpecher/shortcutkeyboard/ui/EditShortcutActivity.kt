@@ -602,12 +602,6 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
         closeChain(open.selStart, open.selEnd)
     }
 
-    override fun onRemove() {
-        val open = chain ?: return
-        draft = open.original.removeChip(open.chipIndex)
-        closeChain(open.offset, open.offset)
-    }
-
     /** Closes the chain and goes back to the message, with the caret at [start] to [end]. */
     private fun closeChain(start: Int, end: Int, popChip: Int = -1) {
         val edit = messageEdit
@@ -636,14 +630,6 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             getString(text),
             listOf(
                 DialogButton(getString(R.string.editor_ok)),
-                DialogButton(getString(R.string.chain_remove), ButtonStyle.DANGER) {
-                    val at = draft.chipOffset(index)
-                    draft = draft.removeChip(index)
-                    caretStart = at
-                    caretEnd = at
-                    render()
-                    true
-                },
             ),
         ).show()
     }
