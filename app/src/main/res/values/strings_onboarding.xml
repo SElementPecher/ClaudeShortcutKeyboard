@@ -8,12 +8,13 @@
 
     <string name="tour_1_title">Type a whole message with one tap</string>
     <string name="tour_1_text">Make a quiKey once. Then tap it on your keyboard and the message is typed for you.</string>
-    <!-- Example messages that slide past. The words between | | are the parts that change. -->
-    <string-array name="tour_1_examples">
-        <item>Running late, back in |10 mins|.</item>
-        <item>|Sam|, |Calpol|, |5ml| at |18:13|. Next dose not before |22:13|.</item>
-        <item>I\'ll pick up |Alex| at |15:30|.</item>
-        <item>Off sick today, back on |Mon 27 Oct|.</item>
+    <string name="tour_1_fixed_start">Running late, back in</string>
+    <!-- The changing part of the example, turning like a drum. -->
+    <string-array name="tour_1_values">
+        <item>10 mins</item>
+        <item>5 mins</item>
+        <item>20 mins</item>
+        <item>1 hour</item>
     </string-array>
 
     <string name="tour_2_title">Some words change each time</string>
