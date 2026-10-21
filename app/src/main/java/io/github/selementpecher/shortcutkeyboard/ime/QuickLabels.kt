@@ -5,7 +5,7 @@ import io.github.selementpecher.shortcutkeyboard.R
 
 /** The words on the ready-made time and date answers. Shared by the keyboard and the editor. */
 object QuickLabels {
-    /** "Now\n18:13" for 0, otherwise e.g. "15 min ago", "1 hour ago", "in 30 min". [nowText] is the clock time. */
+    /** "Now  18:13" for 0, otherwise e.g. "15 min ago", "1 hour ago", "in 30 min". [nowText] is the clock time. */
     fun time(context: Context, minutes: Long, nowText: String): String {
         if (minutes == 0L) return context.getString(R.string.kb_time_now, nowText)
         val size = Math.abs(minutes).toInt()

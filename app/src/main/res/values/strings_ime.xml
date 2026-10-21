@@ -41,7 +41,7 @@
     <string name="kb_add_first_answer">Add your first answer</string>
 
     <!-- Time -->
-    <string name="kb_time_now">Now\n%1$s</string>
+    <string name="kb_time_now">Now  %1$s</string>
     <string name="kb_time_min_ago">%1$d min ago</string>
     <string name="kb_time_hour_ago">1 hour ago</string>
     <string name="kb_time_hours_ago">%1$d hours ago</string>
