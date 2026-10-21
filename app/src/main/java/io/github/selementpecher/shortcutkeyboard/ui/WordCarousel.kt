@@ -10,9 +10,9 @@ import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 
 /**
- * The changing word of an example message as the cylinder of a revolver: all [count] words are spokes round one
- * axis, the one in use at the left (in the sentence) and the others at the top, right and bottom. Every second the
- * cylinder turns a quarter, with a small bounce: the word in use swings down and the one at the top comes into place.
+ * The changing word of an example message on an arc: the word in use sits in the sentence, the next one waits just
+ * above it and the last one just below, a little to the right, like the edge of a wheel. Every second the wheel
+ * turns one step, with a small bounce: the word in use rolls down and away and the one above rolls into the sentence.
  * With the phone's animations off, only the first word is shown.
  */
 internal class WordCarousel(context: Context, private val count: Int, build: (Int) -> View) : FrameLayout(context) {
@@ -45,32 +45,32 @@ internal class WordCarousel(context: Context, private val count: Int, build: (In
     }
 
     /**
-     * Turns the cylinder [progress] (0 to 1) of the way to the next word. The words are spokes of one wheel: each
-     * points out from the axis and turns with it, so the one at the top stands on end and the one at the right is
-     * upside down. The axis is just to the right of the word in use, which sits in the sentence reading normally.
+     * Turns the wheel [progress] (0 to 1) of the way to the next word. The words ride on the left edge of a big wheel
+     * whose centre is to the right of the sentence, so the arc bows out to the left through the word in use.
      */
     private fun placeAll(progress: Float) {
         if (!animated) return
-        val hub = HUB_DP * resources.displayMetrics.density
-        val axisX = words[index].width + hub
+        val radius = RADIUS_DP * resources.displayMetrics.density
+        val activeHalf = words[index].width / 2f
         words.forEachIndexed { i, view ->
             val place = Math.floorMod(i - index, count)
-            // 180° is the left (in the sentence); each later word is a quarter turn further round: top, right, bottom.
-            val degrees = 180.0 + 90.0 * (place - progress)
-            val rad = Math.toRadians(degrees)
-            // The word in use is solid; the waiting ones are lighter (all the same size).
-            val inUse = 1f - Math.min(1.0, (1 + Math.cos(rad)) * 2).toFloat() // 1 at the left .. 0 a quarter turn away
-            val scale = WAITING_SCALE + (1f - WAITING_SCALE) * inUse
-            // Its inner end stays just clear of the axis.
-            val reach = hub + view.width * scale / 2f
+            // Steps from the sentence: the next word is one step up (-1), the last one a step down (+1), any others
+            // further up and out of sight. Every word moves one step down per turn.
+            val steps = when (place) {
+                0 -> 0
+                count - 1 -> 1
+                else -> -place
+            } + progress
+            val rad = Math.toRadians(STEP_DEGREES * steps.toDouble())
             view.pivotX = view.width / 2f
             view.pivotY = view.height / 2f
-            view.scaleX = scale
-            view.scaleY = scale
-            view.translationX = (axisX + reach * Math.cos(rad)).toFloat() - view.width / 2f
-            view.translationY = (reach * Math.sin(rad)).toFloat()
-            view.rotation = (degrees - 180.0).toFloat()
-            view.alpha = WAITING_ALPHA + (1f - WAITING_ALPHA) * inUse
+            // Each word is centred on its point of the arc; the word in use stays exactly where the sentence has it.
+            view.translationX = activeHalf + (radius * (1 - Math.cos(rad))).toFloat() - view.width / 2f
+            view.translationY = (radius * Math.sin(rad)).toFloat()
+            view.rotation = (STEP_DEGREES * steps * TILT).toFloat()
+            // Solid in the sentence, lighter one step away, gone two steps away.
+            val away = Math.abs(steps)
+            view.alpha = (if (away <= 1f) 1f - (1f - WAITING_ALPHA) * away else WAITING_ALPHA * (2f - away)).coerceIn(0f, 1f)
         }
     }
 
@@ -116,8 +116,9 @@ internal class WordCarousel(context: Context, private val count: Int, build: (In
         const val TURN_MS = 650L
         const val HOLD_MS = 1000L
         const val OVERSHOOT = 1.6f
-        const val HUB_DP = 40f
-        const val WAITING_SCALE = 1f
+        const val RADIUS_DP = 80f
+        const val STEP_DEGREES = 36.0
+        const val TILT = 0.3
         const val WAITING_ALPHA = 0.5f
     }
 }
