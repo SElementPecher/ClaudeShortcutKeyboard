@@ -227,7 +227,6 @@ class OnboardingActivity : Activity() {
             // Android trims the space at the end of a string, so it is added here.
             val wrap = { LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT) }
             addView(text(getString(R.string.tour_1_fixed_start).trimEnd() + " ", size, 500, palette.ink), wrap())
-            // A little room before the word, so the pen loop round it passes between the words and covers none.
             // The pen loop needs a little room before the word so it covers no other words; the arrow needs none.
             addView(word, wrap().apply { marginStart = if (POINTER == Pointer.LOOP) dp(LOOP_ROOM_DP) else 0 })
         }
@@ -265,7 +264,7 @@ class OnboardingActivity : Activity() {
                         // The tip sits just under the middle of the word; the arrow comes from below and to the left.
                         val tipX = area.centerX()
                         val tipY = area.bottom + dp(6)
-                        val arrow = ScribbleArrow(palette.accent, dpf(3.5f), dpf(16f))
+                        val arrow = ScribbleArrow(palette.accent, dpf(ARROW_STROKE_DP), dpf(ARROW_HEAD_DP))
                         arrow.bounds = android.graphics.Rect(tipX - dp(ARROW_WIDTH_DP), tipY, tipX, tipY + dp(ARROW_HEIGHT_DP))
                         mark = arrow
                         setProgress = { arrow.progress = it }
@@ -283,13 +282,22 @@ class OnboardingActivity : Activity() {
                 box.overlay.add(mark)
                 if (!draw || !Motion.enabled(this@OnboardingActivity)) return
                 setProgress(0f)
-                android.animation.ValueAnimator.ofFloat(0f, 1f).apply {
-                    startDelay = CIRCLE_DELAY_MS
-                    duration = CIRCLE_MS
-                    interpolator = android.view.animation.DecelerateInterpolator()
+                val drawing = android.animation.ValueAnimator.ofFloat(0f, 1f).apply {
+                    startDelay = MARK_DELAY_MS
+                    duration = MARK_MS
+                    // The arrow is drawn at an even pen speed; the loop slows as it closes.
+                    interpolator = if (POINTER == Pointer.ARROW) android.view.animation.LinearInterpolator() else android.view.animation.DecelerateInterpolator()
                     addUpdateListener { setProgress(it.animatedValue as Float) }
                     start()
                 }
+                // Leaving the page (Next, Skip, a swipe) stops the drawing, so nothing keeps the old page alive.
+                box.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+                    override fun onViewAttachedToWindow(v: View) = Unit
+                    override fun onViewDetachedFromWindow(v: View) {
+                        drawing.cancel()
+                        setProgress(1f)
+                    }
+                })
             }
         })
     }
@@ -528,11 +536,14 @@ class OnboardingActivity : Activity() {
         private const val SWIPE_MIN_DP = 80
         private const val SWIPE_MIN_SPEED = 600f
         private const val SLIDE_MS = 220L
-        private const val CIRCLE_DELAY_MS = 500L
-        private const val CIRCLE_MS = 700L
+        /** The pen mark waits a moment, so the page is seen first, then draws itself. */
+        private const val MARK_DELAY_MS = 1500L
+        private const val MARK_MS = 700L
         private const val LOOP_ROOM_DP = 12
         private const val ARROW_WIDTH_DP = 124
         private const val ARROW_HEIGHT_DP = 100
+        private const val ARROW_STROKE_DP = 5.5f
+        private const val ARROW_HEAD_DP = 20f
 
         /** The arrow for now; switch to [Pointer.LOOP] to bring the pen loop back. */
         private val POINTER = Pointer.ARROW

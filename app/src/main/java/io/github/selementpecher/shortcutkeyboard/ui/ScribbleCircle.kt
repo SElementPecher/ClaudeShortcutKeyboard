@@ -65,6 +65,7 @@ internal class ScribbleCircle(colour: Int, strokePx: Float) : Drawable() {
 
     override fun setAlpha(alpha: Int) {
         paint.alpha = alpha
+        invalidateSelf()
     }
 
     override fun setColorFilter(colorFilter: ColorFilter?) {

@@ -31,6 +31,9 @@ internal class ScribbleArrow(colour: Int, strokePx: Float, private val headPx: F
     private val shown = Path()
     private val measure = PathMeasure()
 
+    /** How much of [progress] draws the head (its share of the whole pen stroke, so the pen keeps one speed). */
+    private var headShare = 0.3f
+
     var progress: Float = 1f
         set(value) {
             field = value.coerceIn(0f, 1f)
@@ -61,12 +64,15 @@ internal class ScribbleArrow(colour: Int, strokePx: Float, private val headPx: F
         head.moveTo(barbs[0][0], barbs[0][1])
         head.lineTo(tipX, tipY)
         head.lineTo(barbs[1][0], barbs[1][1])
+        val headLength = PathMeasure(head, false).length
+        val lineLength = PathMeasure(line, false).length
+        headShare = if (headLength + lineLength > 0f) headLength / (headLength + lineLength) else 0.3f
     }
 
     override fun draw(canvas: Canvas) {
         if (progress <= 0f) return
-        stroke(canvas, head, (progress / HEAD_SHARE).coerceAtMost(1f))
-        if (progress > HEAD_SHARE) stroke(canvas, line, (progress - HEAD_SHARE) / (1f - HEAD_SHARE))
+        stroke(canvas, head, (progress / headShare).coerceAtMost(1f))
+        if (progress > headShare) stroke(canvas, line, (progress - headShare) / (1f - headShare))
     }
 
     /** Draws the first [part] (0 to 1) of [path]. */
@@ -79,6 +85,7 @@ internal class ScribbleArrow(colour: Int, strokePx: Float, private val headPx: F
 
     override fun setAlpha(alpha: Int) {
         paint.alpha = alpha
+        invalidateSelf()
     }
 
     override fun setColorFilter(colorFilter: ColorFilter?) {
@@ -89,8 +96,6 @@ internal class ScribbleArrow(colour: Int, strokePx: Float, private val headPx: F
     override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
 
     private companion object {
-        /** How much of [progress] draws the head; the rest draws the line. */
-        const val HEAD_SHARE = 0.3f
         const val HEAD_SPREAD = 0.55 // radians either side of the line, about 30°
     }
 }
