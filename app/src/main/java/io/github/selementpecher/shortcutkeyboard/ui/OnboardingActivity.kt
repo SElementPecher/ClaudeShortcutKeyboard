@@ -207,7 +207,9 @@ class OnboardingActivity : Activity() {
         // One message; only the part that changes turns, like a drum, through a few amounts.
         val size = look.type.bodySp + 1
         val values = resources.getStringArray(R.array.tour_1_values)
-        val word = WordCarousel(this@OnboardingActivity, values.size) { i ->
+        // The first time, the word waits for the arrow to be drawn before it starts to roll.
+        val firstTime = !circled
+        val word = WordCarousel(this@OnboardingActivity, values.size, started = !firstTime) { i ->
             // The full stop turns with the word.
             val shown = android.text.SpannableStringBuilder(
                 ExampleText.build(
@@ -237,7 +239,7 @@ class OnboardingActivity : Activity() {
         box.add(card, top = 24)
         // Room under the card for the arrow.
         if (POINTER == Pointer.ARROW) box.setPadding(box.paddingLeft, box.paddingTop, box.paddingRight, dp(ARROW_HEIGHT_DP + 12))
-        pointAt(box, word, draw = !circled)
+        pointAt(box, word, draw = firstTime) { word.start() }
         circled = true
         box
     }
@@ -248,9 +250,9 @@ class OnboardingActivity : Activity() {
     /**
      * Points at [target] with a pen mark in the Next button's colour, once its place on the page is known: an arrow
      * coming up from below, or (kept for later) a loop round it. With [draw] the mark draws itself stroke by stroke;
-     * otherwise (coming back to the page) it is simply there.
+     * otherwise (coming back to the page) it is simply there. [onDrawn] runs once the mark is complete.
      */
-    private fun pointAt(box: ViewGroup, target: View, draw: Boolean) = with(ui) {
+    private fun pointAt(box: ViewGroup, target: View, draw: Boolean, onDrawn: () -> Unit) = with(ui) {
         target.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
             override fun onGlobalLayout() {
                 if (target.width == 0) return
@@ -284,7 +286,10 @@ class OnboardingActivity : Activity() {
                 // Drawn by the page itself (a plain layout skips its own drawing, and the mark with it).
                 box.setWillNotDraw(false)
                 box.overlay.add(mark)
-                if (!draw || !Motion.enabled(this@OnboardingActivity)) return
+                if (!draw || !Motion.enabled(this@OnboardingActivity)) {
+                    onDrawn()
+                    return
+                }
                 mark.progress = 0f
                 val drawing = android.animation.ValueAnimator.ofFloat(0f, 1f).apply {
                     startDelay = MARK_DELAY_MS
@@ -292,6 +297,9 @@ class OnboardingActivity : Activity() {
                     // The arrow is drawn at an even pen speed; the loop slows as it closes.
                     interpolator = if (POINTER == Pointer.ARROW) android.view.animation.LinearInterpolator() else android.view.animation.DecelerateInterpolator()
                     addUpdateListener { mark.progress = it.animatedValue as Float }
+                    addListener(object : android.animation.AnimatorListenerAdapter() {
+                        override fun onAnimationEnd(animation: android.animation.Animator) = onDrawn()
+                    })
                     start()
                 }
                 // Leaving the page (Next, Skip, a swipe) stops the drawing, so nothing keeps the old page alive.

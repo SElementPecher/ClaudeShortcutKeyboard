@@ -18,7 +18,13 @@ import android.widget.FrameLayout
  * below, bounces a little as it lands, waits a second, then rolls away over the top and the next one comes round.
  * With the phone's animations off, it just shows the first one.
  */
-internal class WordCarousel(context: Context, private val count: Int, private val build: (Int) -> View) : FrameLayout(context) {
+internal class WordCarousel(
+    context: Context,
+    private val count: Int,
+    /** False to wait for [start] (for example until something pointing at the word has been drawn). */
+    private var started: Boolean = true,
+    private val build: (Int) -> View,
+) : FrameLayout(context) {
 
     private val handler = Handler(Looper.getMainLooper())
     private val goOut = Runnable { leave() }
@@ -87,7 +93,14 @@ internal class WordCarousel(context: Context, private val count: Int, private va
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         running = true
-        if (Motion.enabled(context)) handler.postDelayed(goOut, HOLD_MS)
+        if (started && Motion.enabled(context)) handler.postDelayed(goOut, HOLD_MS)
+    }
+
+    /** Starts the turning, if it was made to wait. */
+    fun start() {
+        if (started) return
+        started = true
+        if (running && Motion.enabled(context)) handler.postDelayed(goOut, HOLD_MS)
     }
 
     override fun onDetachedFromWindow() {
