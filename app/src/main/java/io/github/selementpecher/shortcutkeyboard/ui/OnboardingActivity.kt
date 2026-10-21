@@ -277,7 +277,7 @@ class OnboardingActivity : Activity() {
 
     /** Offers the example quiKies; a tick shows once they are added. */
     private fun pageExamples(): View = with(ui) {
-        val box = intro("✨", R.string.tour_5_title, R.string.tour_5_text)
+        val box = intro("🏃", R.string.tour_5_title, R.string.tour_5_text)
         val library = io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository.library(this@OnboardingActivity)
         val added = io.github.selementpecher.shortcutkeyboard.data.SampleShortcuts.all.any { library.shortcut(it.id) != null }
         if (added) {
