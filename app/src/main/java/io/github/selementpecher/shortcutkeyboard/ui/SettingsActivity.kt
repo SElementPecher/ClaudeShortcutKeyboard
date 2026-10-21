@@ -202,7 +202,10 @@ class SettingsActivity : Activity() {
             },
         )
         // The version stays hidden until the box is tapped three times.
-        val version = text(getString(R.string.settings_about_version, versionName()), look.type.smallSp, 400, palette.ink).apply { visibility = View.GONE }
+        val version = text(getString(R.string.settings_about_version, versionName()), look.type.smallSp, 400, palette.ink).apply {
+            visibility = View.GONE
+            gravity = Gravity.CENTER
+        }
         box.add(version, top = 6)
         var taps = 0
         box.setOnClickListener {
