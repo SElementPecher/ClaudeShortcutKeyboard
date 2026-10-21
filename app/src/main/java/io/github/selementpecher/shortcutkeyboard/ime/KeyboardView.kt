@@ -43,6 +43,12 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
     private var gridScreen: GridScreen? = null
     private var shownKey: String? = null
 
+    /** The page shown with [shownKey], so a page turn can move just the tiles. */
+    private var shownPage = 0
+
+    /** The answer tiles of the question on screen (null on other screens). */
+    private var stepTiles: View? = null
+
     // Swiping sideways turns the page on screens that have pages (the tiles, the answers).
     private var swipeToPrevious: (() -> Unit)? = null
     private var swipeToNext: (() -> Unit)? = null
@@ -97,11 +103,16 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         }
         screen.bind(model)
         setSwipe(model.page, model.pageCount, model.onPrevious, model.onNext)
-        reveal("grid:${model.pathText}:${model.page}:${model.isEmpty}")
+        val key = "grid:${model.pathText}:${model.isEmpty}"
+        // Turning the page moves only the tiles; the bars around them stay still.
+        if (key == shownKey && model.page != shownPage) slideIn(screen.grid, forward = model.page > shownPage)
+        shownPage = model.page
+        reveal(key)
     }
 
     fun showStep(model: StepModel) {
         content.removeAllViews()
+        stepTiles = null
         val column = column()
         val numberBody = model.body as? StepBody.Number
         val numberValue = numberBody?.relative?.result ?: numberBody?.value
@@ -122,8 +133,12 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         content.addView(column, LayoutParams(MATCH, MATCH))
         val tiles = model.body as? StepBody.Tiles
         if (tiles != null) setSwipe(tiles.page, tiles.pageCount, tiles.onPrevious, tiles.onNext) else setSwipe(0, 1, {}, {})
-        val page = (model.body as? StepBody.Tiles)?.page ?: 0
-        reveal("step:${model.step}:${model.body::class.simpleName}:$page")
+        val page = tiles?.page ?: 0
+        val key = "step:${model.step}:${model.body::class.simpleName}"
+        // Turning the page of answers moves only the answer tiles; the question and bars stay still.
+        if (key == shownKey && page != shownPage) stepTiles?.let { slideIn(it, forward = page > shownPage) }
+        shownPage = page
+        reveal(key)
     }
 
     /** The whole message with the defaults filled in; pressing it types it straight away. */
@@ -243,6 +258,19 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         content.alpha = 0f
         content.translationY = theme.dp(6).toFloat()
         content.animate().alpha(1f).translationY(0f).setDuration(Motion.POP_MS).setInterpolator(DecelerateInterpolator()).start()
+    }
+
+    /** The next page's tiles slide in from the side they come from (right when going on, left when going back). */
+    private fun slideIn(view: View, forward: Boolean) {
+        view.animate().cancel()
+        if (!theme.animations) {
+            view.translationX = 0f
+            view.alpha = 1f
+            return
+        }
+        view.translationX = theme.dp(PAGE_SLIDE_DP).toFloat() * if (forward) 1 else -1
+        view.alpha = 0f
+        view.animate().translationX(0f).alpha(1f).setDuration(Motion.POP_MS).setInterpolator(DecelerateInterpolator()).start()
     }
 
     // ---- Swiping between pages ----
@@ -517,6 +545,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
             )
         }
         val grid = TileGrid(context, theme)
+        stepTiles = grid
         val (columns, rows) = KeyboardMetrics.gridShape(look, compact)
         grid.setLayoutShape(columns, rows)
         grid.bind(body.tiles)
@@ -734,6 +763,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         /** How far a finger must move sideways to turn the page, and how much more sideways than up or down. */
         private const val SWIPE_MIN_DP = 48
         private const val SWIPE_SIDEWAYS = 1.5f
+        private const val PAGE_SLIDE_DP = 40
         private const val EMPTY_EMOJI_SP = 40f
         private const val READING_LINE_SPACING = 1.3f
         private const val MAX_BAR_EXTRA_DP = 12
