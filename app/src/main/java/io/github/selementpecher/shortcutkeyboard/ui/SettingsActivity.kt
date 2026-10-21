@@ -19,6 +19,8 @@ import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository
 import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.Look
+import io.github.selementpecher.shortcutkeyboard.look.handwritingFont
+import io.github.selementpecher.shortcutkeyboard.look.HANDWRITING_EXTRA_SP
 import io.github.selementpecher.shortcutkeyboard.look.LookStore
 import io.github.selementpecher.shortcutkeyboard.look.Looks
 import io.github.selementpecher.shortcutkeyboard.look.typefaceOf
@@ -163,6 +165,11 @@ class SettingsActivity : Activity() {
             text(getString(R.string.settings_about_privacy), look.type.bodySp, 600, palette.ink, 1.45f).apply {
                 background = shape(blend(palette.bg, palette.success, 0.14f), 14f)
                 setPadding(dp(14), dp(12), dp(14), dp(12))
+                // Exercise book: written by hand.
+                if (look.ruled) handwritingFont(this@SettingsActivity)?.let { font ->
+                    typeface = font
+                    setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, look.type.bodySp + HANDWRITING_EXTRA_SP)
+                }
             },
         )
         box.add(small(getString(R.string.settings_about_version, versionName())), top = 8)

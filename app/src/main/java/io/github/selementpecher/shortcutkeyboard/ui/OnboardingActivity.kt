@@ -11,6 +11,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import io.github.selementpecher.shortcutkeyboard.look.Icons
+import io.github.selementpecher.shortcutkeyboard.look.handwritingFont
+import io.github.selementpecher.shortcutkeyboard.look.HANDWRITING_EXTRA_SP
 import io.github.selementpecher.shortcutkeyboard.look.Looks
 import android.widget.TextView
 import io.github.selementpecher.shortcutkeyboard.R
@@ -286,6 +288,13 @@ class OnboardingActivity : Activity() {
     /** Privacy: nothing leaves the phone. Says it plainly and gives the three facts behind it. */
     private fun pagePrivacy(): View = with(ui) {
         val box = intro("🔒", R.string.tour_privacy_title, R.string.tour_privacy_text)
+        // Exercise book: the promise is written by hand (the third item: picture, title, sentence).
+        if (look.ruled) (box.getChildAt(2) as? TextView)?.let { sentence ->
+            handwritingFont(this@OnboardingActivity)?.let { font ->
+                sentence.typeface = font
+                sentence.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, look.type.bodySp + HANDWRITING_EXTRA_SP)
+            }
+        }
         val facts = listOf(R.string.tour_privacy_1, R.string.tour_privacy_2, R.string.tour_privacy_3)
         val card = column().apply {
             background = shape(palette.surface, look.shape.cardRadiusDp.toFloat().coerceAtMost(20f), palette.outline, look.shape.strokeDp)
