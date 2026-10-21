@@ -161,3 +161,39 @@ internal class RuledKeyboardSnap(private val root: ViewGroup, private val paper:
         return true
     }
 }
+
+/**
+ * Makes the header band of a ruled screen end exactly on a rule, so every screen's title block has the same
+ * spacing from the top and the first rule sits right under it. Adds a little padding under the band when needed.
+ */
+internal class RuledHeaderSnap(private val header: View, private val gapPx: Float) : ViewTreeObserver.OnPreDrawListener {
+
+    fun install() {
+        header.viewTreeObserver.addOnPreDrawListener(this)
+        header.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) {
+                header.viewTreeObserver.removeOnPreDrawListener(this@RuledHeaderSnap)
+                header.viewTreeObserver.addOnPreDrawListener(this@RuledHeaderSnap)
+            }
+
+            override fun onViewDetachedFromWindow(v: View) {
+                header.viewTreeObserver.removeOnPreDrawListener(this@RuledHeaderSnap)
+            }
+        })
+    }
+
+    override fun onPreDraw(): Boolean {
+        if (header.height <= 0) return true
+        val extra = header.paddingBottom
+        val natural = header.height - extra
+        // The page's rules are every gap from the top of the screen, so the band should end on one of them.
+        val bottom = header.top + natural
+        val rem = bottom % gapPx
+        val want = if (rem < 1f) 0 else (gapPx - rem).roundToInt()
+        if (kotlin.math.abs(want - extra) > 1) {
+            header.setPadding(header.paddingLeft, header.paddingTop, header.paddingRight, want)
+            return false
+        }
+        return true
+    }
+}

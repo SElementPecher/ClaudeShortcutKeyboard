@@ -41,6 +41,7 @@ import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.Look
 import io.github.selementpecher.shortcutkeyboard.look.marginLine
 import io.github.selementpecher.shortcutkeyboard.look.RuledSnap
+import io.github.selementpecher.shortcutkeyboard.look.RuledHeaderSnap
 import io.github.selementpecher.shortcutkeyboard.look.RuledPageSnap
 import io.github.selementpecher.shortcutkeyboard.look.RuledPaper
 import io.github.selementpecher.shortcutkeyboard.look.pageBackground
@@ -762,6 +763,7 @@ internal class Ui(val context: Context, baseLook: Look) {
         }
         root.addView(bottomWrap, lp())
         if (rootPaper != null && contentPaper != null) RuledPageSnap(root, rootPaper, contentPaper, scroll).install()
+        if (rootPaper != null) RuledHeaderSnap(topBar, rootPaper.gapPx).install()
         return UiScreen(this, root, topBar, titleView, scroll, content, bottom, bottomWrap)
     }
 
