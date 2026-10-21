@@ -178,6 +178,8 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
             sticky -> Highlighter.stickyAngle(spec.label)
             // A folder is turned a little, like one dropped on the desk.
             Highlighter.on && spec.look.kind == TileLook.Kind.FOLDER -> Highlighter.stickyAngle("folder:" + spec.label) * 0.8f
+            // A quiKey is an index card dropped on the desk, turned a touch.
+            Highlighter.on && spec.look.kind == TileLook.Kind.SHORTCUT -> Highlighter.stickyAngle("card:" + spec.label) * 0.5f
             else -> 0f
         }
         onTap = spec.onClick

@@ -530,6 +530,8 @@ internal class Ui(val context: Context, baseLook: Look) {
         val folderLike = kind == TileKind.FOLDER
         // Exercise book: a folder is turned a little, like one dropped on the desk.
         if (folderLike && Highlighter.on) tile.rotation = Highlighter.stickyAngle("folder:" + colorKey) * 0.8f
+        // Exercise book: a quiKey is an index card dropped on the desk, turned a touch.
+        if (kind == TileKind.SHORTCUT && Highlighter.on) tile.rotation = Highlighter.stickyAngle("card:" + colorKey) * 0.5f
         val tabDp = if (isWide) TileSpec.FOLDER_TAB_WIDE_DP else TileSpec.FOLDER_TAB_SQUARE_DP
         val base: Drawable = when {
             kind == TileKind.NEW -> shape(Color.TRANSPARENT, radius, if (look.shape.strokeDp > 0f) palette.outline else palette.inkSoft, max(1.5f, look.shape.strokeDp), dashed = true)
@@ -1172,10 +1174,10 @@ internal class FolderDrawable(
     private fun path(): Path {
         val b = bounds
         val inset = strokePx / 2f
-        val left = b.left + inset
-        val right = b.right - inset - stackPx
-        val top = b.top + inset
-        val bottom = b.bottom - inset - stackPx
+        val left = b.left + inset + slack()
+        val right = b.right - inset - stackPx - slack()
+        val top = b.top + inset + slack()
+        val bottom = b.bottom - inset - stackPx - slack()
         val bodyTop = top + tabPx
         val tabRight = left + (right - left) * 0.4f
         val r = min(radiusPx, (bottom - bodyTop) / 2f)
@@ -1188,11 +1190,13 @@ internal class FolderDrawable(
         }
     }
 
-    /** Two spare pages behind the folder, each turned a little more, so it looks like a stack of paper. */
+    /** Room kept free round the folder, when it has spare pages, so a turned page never goes past the edge of the tile. */
+    private fun slack(): Float = if (stackPx > 0f) stackPx * 0.4f else 0f
+
+    /** Two spare pages behind the folder, each turned a little the other way, so it looks like a stack of paper. */
     private fun drawSparePages(canvas: Canvas, body: Path) {
-        val b = bounds
-        val pivotX = b.left + stackPx
-        val pivotY = b.bottom - stackPx
+        val box = RectF()
+        body.computeBounds(box, true)
         val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             strokeWidth = max(1f, stackPx / 5f)
@@ -1200,8 +1204,8 @@ internal class FolderDrawable(
         }
         for (page in 2 downTo 1) {
             canvas.save()
-            canvas.translate(stackPx * page * 0.45f, stackPx * page * 0.45f)
-            canvas.rotate(page * 1.6f, pivotX, pivotY)
+            canvas.translate(stackPx * page * 0.4f, stackPx * page * 0.4f)
+            canvas.rotate(if (page == 1) 1.2f else -1.2f, box.centerX(), box.centerY())
             canvas.drawPath(body, fillPaint)
             canvas.drawPath(body, edge)
             canvas.restore()
@@ -1212,9 +1216,9 @@ internal class FolderDrawable(
     private fun tabPath(): Path {
         val b = bounds
         val inset = strokePx / 2f
-        val left = b.left + inset
-        val right = b.right - inset - stackPx
-        val top = b.top + inset
+        val left = b.left + inset + slack()
+        val right = b.right - inset - stackPx - slack()
+        val top = b.top + inset + slack()
         val tabRight = left + (right - left) * 0.4f
         val r = min(radiusPx, tabPx)
         return Path().apply {
