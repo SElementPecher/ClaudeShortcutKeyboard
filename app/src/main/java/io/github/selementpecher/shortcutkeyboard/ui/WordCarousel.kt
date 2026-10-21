@@ -10,9 +10,9 @@ import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 
 /**
- * The changing word of an example message as the cylinder of a revolver: all [count] words sit round a circle, the
- * one in use at the left (in the sentence) and the others at the top, right and bottom. Every second the cylinder
- * turns one place, with a small bounce: the word in use rolls away downwards and the one at the top drops in.
+ * The changing word of an example message as the cylinder of a revolver: all [count] words are spokes round one
+ * axis, the one in use at the left (in the sentence) and the others at the top, right and bottom. Every second the
+ * cylinder turns a quarter, with a small bounce: the word in use swings down and the one at the top comes into place.
  * With the phone's animations off, only the first word is shown.
  */
 internal class WordCarousel(context: Context, private val count: Int, build: (Int) -> View) : FrameLayout(context) {
@@ -45,32 +45,32 @@ internal class WordCarousel(context: Context, private val count: Int, build: (In
     }
 
     /**
-     * Puts every word on the circle, [progress] (0 to 1) of the way through a turn. The circle's centre is to the right
-     * of the word in use, so that word sits at its left; the next word waits at the top.
+     * Turns the cylinder [progress] (0 to 1) of the way to the next word. The words are spokes of one wheel: each
+     * points out from the axis and turns with it, so the one at the top stands on end and the one at the right is
+     * upside down. The axis is just to the right of the word in use, which sits in the sentence reading normally.
      */
     private fun placeAll(progress: Float) {
         if (!animated) return
-        val density = resources.displayMetrics.density
-        // A little taller than wide, so the cylinder fits beside the sentence on a phone.
-        val across = ACROSS_DP * density
-        val down = DOWN_DP * density
+        val hub = HUB_DP * resources.displayMetrics.density
+        val axisX = words[index].width + hub
         words.forEachIndexed { i, view ->
             val place = Math.floorMod(i - index, count)
             // 180° is the left (in the sentence); each later word is a quarter turn further round: top, right, bottom.
             val degrees = 180.0 + 90.0 * (place - progress)
             val rad = Math.toRadians(degrees)
-            // Each word is centred on its point of the circle; the word in use stays exactly where the sentence has it.
-            val activeHalf = words[index].width / 2f
-            view.pivotX = view.width / 2f
-            view.pivotY = view.height / 2f
-            view.translationX = (activeHalf + across + across * Math.cos(rad)).toFloat() - view.width / 2f
-            view.translationY = (down * Math.sin(rad)).toFloat()
             // The word in use is full size and solid; the waiting ones are smaller and lighter.
             val inUse = 1f - Math.min(1.0, (1 + Math.cos(rad)) * 2).toFloat() // 1 at the left .. 0 a quarter turn away
-            view.alpha = WAITING_ALPHA + (1f - WAITING_ALPHA) * inUse
             val scale = WAITING_SCALE + (1f - WAITING_SCALE) * inUse
+            // Its inner end stays just clear of the axis.
+            val reach = hub + view.width * scale / 2f
+            view.pivotX = view.width / 2f
+            view.pivotY = view.height / 2f
             view.scaleX = scale
             view.scaleY = scale
+            view.translationX = (axisX + reach * Math.cos(rad)).toFloat() - view.width / 2f
+            view.translationY = (reach * Math.sin(rad)).toFloat()
+            view.rotation = (degrees - 180.0).toFloat()
+            view.alpha = WAITING_ALPHA + (1f - WAITING_ALPHA) * inUse
         }
     }
 
@@ -116,9 +116,8 @@ internal class WordCarousel(context: Context, private val count: Int, build: (In
         const val TURN_MS = 650L
         const val HOLD_MS = 1000L
         const val OVERSHOOT = 1.6f
-        const val ACROSS_DP = 40f
-        const val DOWN_DP = 52f
-        const val WAITING_SCALE = 0.7f
+        const val HUB_DP = 6f
+        const val WAITING_SCALE = 0.55f
         const val WAITING_ALPHA = 0.5f
     }
 }
