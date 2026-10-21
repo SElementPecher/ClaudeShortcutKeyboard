@@ -223,6 +223,10 @@ internal class Ui(val context: Context, baseLook: Look) {
     private fun outlinePx(): Int = dpf(look.shape.strokeDp).toInt().coerceAtLeast(1)
 
     /** An outline that can be seen on any surface: the Look's line colour, a little stronger. */
+    /** The box of a text-only button: none, except in the Exercise book, where it is a solid white pill (no ruled lines show through). */
+    private fun plainFill(radiusDp: Float): GradientDrawable =
+        if (look.ruled) shape(palette.surface, radiusDp, buttonBorder(), 1.5f) else shape(Color.TRANSPARENT, radiusDp)
+
     private fun buttonBorder(): Int = blend(palette.outline, palette.inkSoft, 0.55f)
 
     /** A line icon from the shared family, [sizeDp] square, in [color]. */
@@ -365,13 +369,13 @@ internal class Ui(val context: Context, baseLook: Look) {
     /** A plain text button for small choices such as Cancel. */
     fun textButton(text: CharSequence, icon: Icons.Kind? = null, onClick: (() -> Unit)? = null): TextView {
         val r = look.shape.buttonRadiusDp.toFloat()
-        return buttonView(text, linkColor(), rippled(shape(Color.TRANSPARENT, r), r), icon, onClick)
+        return buttonView(text, linkColor(), rippled(plainFill(r), r), icon, onClick)
     }
 
     /** Red text for deleting things (always followed by a question). No box, so it is never the loudest thing. */
     fun dangerButton(text: CharSequence, icon: Icons.Kind? = null, onClick: (() -> Unit)? = null): TextView {
         val r = look.shape.buttonRadiusDp.toFloat()
-        return buttonView(text, palette.danger, rippled(shape(Color.TRANSPARENT, r), r), icon, onClick)
+        return buttonView(text, palette.danger, rippled(plainFill(r), r), icon, onClick)
     }
 
     /** The colour of a plain text button: the accent, or ink where the accent is black (Bold, light). */
@@ -384,7 +388,8 @@ internal class Ui(val context: Context, baseLook: Look) {
     fun iconButton(kind: Icons.Kind, description: String, tint: Int = palette.ink, onClick: () -> Unit): ImageView = ImageView(context).apply {
         setImageDrawable(icon(kind, 24, tint))
         scaleType = ImageView.ScaleType.CENTER
-        background = rippled(shape(Color.TRANSPARENT, 999f), 999f)
+        // Exercise book: a solid paper-coloured disc, so the ruled lines never show through the picture.
+        background = rippled(shape(if (look.ruled) palette.bg else Color.TRANSPARENT, 999f), 999f)
         contentDescription = description
         isClickable = true
         isFocusable = true

@@ -594,7 +594,7 @@ internal class ChainPanel(
 
     private fun editExtras(pinned: Boolean) = with(ui) {
         val remove = dangerButton(str(R.string.chain_remove)) { listener.onRemove() }
-        if (pinned) screen.bottomBar.addView(remove) else view.add(remove, top = 12)
+        if (pinned) screen.bottomBar.add(remove, bottom = 12) else view.add(remove, top = 12)
     }
 
     // ---- big tiles ----
