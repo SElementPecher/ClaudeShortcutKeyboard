@@ -19,6 +19,7 @@ import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.data.ShortcutRepository
 import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.Look
+import io.github.selementpecher.shortcutkeyboard.look.RuledSnap
 import io.github.selementpecher.shortcutkeyboard.look.handwritingFont
 import io.github.selementpecher.shortcutkeyboard.look.HANDWRITING_EXTRA_SP
 import io.github.selementpecher.shortcutkeyboard.look.LookStore
@@ -194,7 +195,7 @@ class SettingsActivity : Activity() {
                     screen.snack(getString(R.string.edit_save_failed), error = true)
                 }
             }.show()
-        }
+        }.also { if (look.ruled) RuledSnap.snapToo(it) }
     }
 
     private fun versionName(): String = try {

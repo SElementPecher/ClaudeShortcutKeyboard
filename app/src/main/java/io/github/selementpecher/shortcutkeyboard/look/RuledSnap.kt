@@ -20,6 +20,13 @@ internal object RuledSnap {
     /** Marks the view whose background is the ruled paper itself, which does not count as a background. */
     val PAPER = Any()
 
+    /** Buttons that should rest on a line like plain text, e.g. a bare red "Delete everything". */
+    private val alsoSnap: MutableSet<TextView> = Collections.newSetFromMap(WeakHashMap())
+
+    fun snapToo(view: TextView) {
+        alsoSnap += view
+    }
+
     fun isPlain(t: TextView, root: View): Boolean {
         if (t is EditText || t.visibility != View.VISIBLE || t.text.isNullOrEmpty() || t.isClickable) return false
         var v: View? = t
@@ -38,7 +45,7 @@ internal object RuledSnap {
             for (i in 0 until group.childCount) {
                 val child = group.getChildAt(i)
                 if (child is TextView) {
-                    if (isPlain(child, root)) found += child
+                    if (isPlain(child, root) || (child in alsoSnap && child.visibility == View.VISIBLE)) found += child
                 } else if (child is ViewGroup && child.visibility == View.VISIBLE) walk(child)
             }
         }
