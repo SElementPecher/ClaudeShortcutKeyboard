@@ -116,7 +116,7 @@ internal class WordCarousel(context: Context, private val count: Int, build: (In
         const val TURN_MS = 650L
         const val HOLD_MS = 1000L
         const val OVERSHOOT = 1.6f
-        const val HUB_DP = 6f
+        const val HUB_DP = 46f
         const val WAITING_SCALE = 0.55f
         const val WAITING_ALPHA = 0.5f
     }
