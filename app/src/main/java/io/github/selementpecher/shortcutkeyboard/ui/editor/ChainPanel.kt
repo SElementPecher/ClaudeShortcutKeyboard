@@ -15,6 +15,7 @@ import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.selementpecher.shortcutkeyboard.R
@@ -61,6 +62,9 @@ internal class ChainPanel(
     private var primary: TextView? = null
     private var addAnother: TextView? = null
     private var typed: EditText? = null
+
+    /** After a line of the list was moved: the line to type in next (the moved one), or -1 for none. */
+    private var focusAfterMove: Int? = null
 
     /** While the phone's keyboard is open on the list screen, the main button adds a line; hidden, it says Done. */
     private var keyboardOpen = false
@@ -582,12 +586,29 @@ internal class ChainPanel(
             },
             bottom = 16,
         )
-        view.add(small(str(R.string.chain_answers_help)), bottom = 10)
+        val movable = flow.answers.size > 1
+        view.add(small(str(if (movable) R.string.chain_answers_help_move else R.string.chain_answers_help)), bottom = 10)
         val rows = column()
+        val reorder = LineReorder(rows, dp(6).toFloat()) { from, to ->
+            flow.moveAnswer(from, to)
+            listener.onChanged()
+            // Keep typing in the moved line if the keyboard was up; leave it down if it wasn't.
+            focusAfterMove = if (keyboardOpen) to else -1
+            render()
+        }
         val answerFields = ArrayList<EditText>()
         var firstField: EditText? = null
         flow.answers.forEachIndexed { index, answer ->
             val line = row()
+            if (movable) {
+                val grip = ImageView(context).apply {
+                    setImageDrawable(icon(Icons.Kind.GRIP, 24, palette.inkSoft))
+                    scaleType = ImageView.ScaleType.CENTER
+                    contentDescription = if (answer.isBlank()) str(R.string.chain_answer_move_empty) else activity.getString(R.string.chain_answer_move, answer)
+                }
+                line.addView(grip, LinearLayout.LayoutParams(dp(36), dp(48)))
+                reorder.attach(grip, line)
+            }
             val f = field(str(R.string.chain_answer_hint)).apply {
                 // Lines of a list are typed as they are: no automatic capital letter.
                 inputType = InputType.TYPE_CLASS_TEXT
@@ -635,8 +656,14 @@ internal class ChainPanel(
             },
             top = 4,
         )
-        // Start in the first empty row (or the first row).
-        typed = flow.answers.indexOfFirst { it.isBlank() }.let { i -> answerFields.getOrNull(max(i, 0)) } ?: firstField
+        // Start in the first empty row (or the first row); after a move, in the moved line.
+        val moved = focusAfterMove
+        focusAfterMove = null
+        typed = when {
+            moved == null -> flow.answers.indexOfFirst { it.isBlank() }.let { i -> answerFields.getOrNull(max(i, 0)) } ?: firstField
+            moved >= 0 -> answerFields.getOrNull(moved)
+            else -> null
+        }
     }
 
 

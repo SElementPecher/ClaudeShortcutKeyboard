@@ -17,7 +17,7 @@ import kotlin.math.sin
  */
 object Icons {
 
-    enum class Kind { BACK, FORWARD, CLOSE, GEAR, KEYBOARD, PLUS, CHECK, SEND, TRASH, FOLDER, BACKSPACE, GLOBE }
+    enum class Kind { BACK, FORWARD, CLOSE, GEAR, KEYBOARD, PLUS, CHECK, SEND, TRASH, FOLDER, BACKSPACE, GLOBE, GRIP }
 
     /** An icon in [color], [sizePx] square. Resize with `setBounds` if needed. */
     fun drawable(kind: Kind, color: Int, sizePx: Int): Drawable = IconDrawable(kind, color, sizePx)
@@ -73,6 +73,15 @@ private class IconDrawable(private val kind: Icons.Kind, color: Int, private val
             Icons.Kind.TRASH -> trash(canvas, cx, cy, s)
             Icons.Kind.FOLDER -> folder(canvas, cx, cy, s)
             Icons.Kind.BACKSPACE -> backspace(canvas, cx, cy, s)
+            Icons.Kind.GRIP -> grip(canvas, cx, cy, s)
+        }
+    }
+
+    /** A handle to drag by: two columns of three dots. */
+    private fun grip(canvas: Canvas, cx: Float, cy: Float, s: Float) {
+        val dot = s * 0.065f
+        for (column in listOf(-1, 1)) {
+            for (row in -1..1) canvas.drawCircle(cx + column * s * 0.11f, cy + row * s * 0.22f, dot, fill)
         }
     }
 

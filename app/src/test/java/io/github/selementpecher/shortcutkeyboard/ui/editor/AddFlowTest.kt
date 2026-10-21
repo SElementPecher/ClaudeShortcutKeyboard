@@ -128,6 +128,24 @@ class AddFlowTest {
     }
 
     @Test
+    fun linesCanBeMoved() {
+        val f = flow()
+        f.chooseKind(BlankKind.LIST)
+        f.advance()
+        f.setAnswer(0, "a"); f.addAnswerRow(); f.setAnswer(1, "b"); f.addAnswerRow(); f.setAnswer(2, "c")
+        f.moveAnswer(2, 0)
+        assertEquals(listOf("c", "a", "b"), f.answers)
+        f.moveAnswer(0, 2)
+        assertEquals(listOf("a", "b", "c"), f.answers)
+        f.moveAnswer(1, 1)
+        f.moveAnswer(-1, 0)
+        f.moveAnswer(0, 9)
+        assertEquals(listOf("a", "b", "c"), f.answers)
+        f.advance()
+        assertEquals(listOf("a", "b", "c"), f.spec().answers)
+    }
+
+    @Test
     fun repeatedAnswersAreDropped() {
         val f = flow()
         f.chooseKind(BlankKind.LIST)

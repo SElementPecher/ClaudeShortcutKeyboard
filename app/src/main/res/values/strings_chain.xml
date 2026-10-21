@@ -68,10 +68,13 @@
     <string name="chain_title_answers">What’s in the list?</string>
     <string name="chain_title_values">What’s in the list?</string>
     <string name="chain_answers_help">The keyboard shows them as buttons.</string>
+    <string name="chain_answers_help_move">The keyboard shows them as buttons, in this order. Drag the dots to move a line.</string>
     <string name="chain_answer_hint">An answer</string>
     <string name="chain_answer_add">Add another line</string>
     <string name="chain_answer_remove">Remove %s</string>
     <string name="chain_answer_remove_empty">Remove this answer</string>
+    <string name="chain_answer_move">Move %s: drag up or down</string>
+    <string name="chain_answer_move_empty">Move this line: drag up or down</string>
 
     <!-- Changing something already there -->
     <string name="chain_name_hint">Name it, e.g. kid</string>

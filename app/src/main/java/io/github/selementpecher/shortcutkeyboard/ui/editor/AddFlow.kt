@@ -314,6 +314,12 @@ class AddFlow private constructor(
         typedAnswers.add("")
     }
 
+    /** Moves the line at [from] to [to] (the lines are offered in this order on the keyboard). */
+    fun moveAnswer(from: Int, to: Int) {
+        if (from !in typedAnswers.indices || to !in typedAnswers.indices || from == to) return
+        typedAnswers.add(to, typedAnswers.removeAt(from))
+    }
+
     /** Takes a row out; there is always at least one. */
     fun removeAnswerRow(index: Int) {
         if (index !in typedAnswers.indices) return
