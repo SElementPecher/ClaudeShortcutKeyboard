@@ -76,7 +76,7 @@
 
     <!-- Changing something already there -->
     <string name="chain_remove">Remove it</string>
-    <string name="chain_name_hint">Name (optional)</string>
+    <string name="chain_name_hint">Name it, e.g. kid</string>
     <string name="chain_show_current"> · now chosen</string>
     <string name="chain_title_number">Name your number</string>
     <string name="chain_number_name_hint">Name (optional), e.g. Temperature</string>
