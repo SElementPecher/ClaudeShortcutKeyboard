@@ -30,7 +30,6 @@
     <string name="tour_5_title">Start with some examples</string>
     <string name="tour_5_text">A few ready-made quiKies to try, like Kids and Running late. You can edit or delete them.</string>
     <string name="tour_5_added">Examples added</string>
-    <string name="tour_5_later">You can add them later in Settings.</string>
 
     <string name="tour_looks_title">Choose a look</string>
     <string name="tour_looks_text">Tap the one you want. It is saved. You can change it any time in Settings, under Preferences.</string>

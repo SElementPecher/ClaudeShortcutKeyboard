@@ -224,8 +224,13 @@ class OnboardingActivity : Activity() {
             addView(word, wrap())
             addView(text(".", size, 500, palette.ink), wrap())
         }
-        val card = card(20)
+        val card = card(20).apply {
+            // The travelling word may pass outside the card: nothing clips it.
+            clipChildren = false
+            clipToPadding = false
+        }
         card.addView(line)
+        box.clipChildren = false
         box.add(card, top = 24)
         box
     }
@@ -309,7 +314,6 @@ class OnboardingActivity : Activity() {
                 },
                 top = 24,
             )
-            box.add(small(getString(R.string.tour_5_later)), top = 12)
         }
         box
     }
