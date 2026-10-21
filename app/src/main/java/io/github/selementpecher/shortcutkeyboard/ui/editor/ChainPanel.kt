@@ -593,6 +593,8 @@ internal class ChainPanel(
         flow.answers.forEachIndexed { index, answer ->
             val line = row()
             val f = field(str(R.string.chain_answer_hint)).apply {
+                // Lines of a list are typed as they are: no automatic capital letter.
+                inputType = InputType.TYPE_CLASS_TEXT
                 setText(answer)
                 setSelection(text.length)
                 imeOptions = EditorInfo.IME_ACTION_NEXT
