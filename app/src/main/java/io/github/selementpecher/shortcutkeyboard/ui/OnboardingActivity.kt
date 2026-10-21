@@ -69,7 +69,7 @@ class OnboardingActivity : Activity() {
     private var page = 0
     private var slide = 0
 
-    /** The pen loop round the changing word is drawn once, the first time the first page shows. */
+    /** The pen loop round the changing word draws itself the first time the first page shows; after that it is just there. */
     private var circled = false
     private lateinit var swipes: android.view.GestureDetector
     private lateinit var chosenLookId: String
@@ -81,6 +81,7 @@ class OnboardingActivity : Activity() {
         Highlighter.on = false
         ui = Ui(this, Looks.CALM)
         page = savedInstanceState?.getInt(STATE_PAGE) ?: 0
+        circled = savedInstanceState?.getBoolean(STATE_CIRCLED) ?: false
         // Swipe left for the next page, right for the one before.
         swipes = android.view.GestureDetector(this, object : android.view.GestureDetector.SimpleOnGestureListener() {
             override fun onFling(e1: android.view.MotionEvent?, e2: android.view.MotionEvent, velocityX: Float, velocityY: Float): Boolean {
@@ -115,6 +116,7 @@ class OnboardingActivity : Activity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putInt(STATE_PAGE, page)
+        outState.putBoolean(STATE_CIRCLED, circled)
     }
 
     @Deprecated("Deprecated in Java")
@@ -233,15 +235,16 @@ class OnboardingActivity : Activity() {
         val card = card(20).apply { clipToPadding = false }
         card.addView(line)
         box.add(card, top = 24)
-        if (!circled) {
-            circled = true
-            circleOnce(box, word)
-        }
+        circle(box, word, draw = !circled)
+        circled = true
         box
     }
 
-    /** Draws a pen loop round [target] (in the Next button's colour), once its place on the page is known. */
-    private fun circleOnce(box: ViewGroup, target: View) = with(ui) {
+    /**
+     * Puts a pen loop round [target] (in the Next button's colour) once its place on the page is known. With [draw] it
+     * draws itself stroke by stroke; otherwise (coming back to the page) it is simply there.
+     */
+    private fun circle(box: ViewGroup, target: View, draw: Boolean) = with(ui) {
         val loop = ScribbleCircle(palette.accent, dpf(3f))
         target.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
             override fun onGlobalLayout() {
@@ -254,7 +257,7 @@ class OnboardingActivity : Activity() {
                 // Drawn by the page itself (a plain layout skips its own drawing, and the loop with it).
                 box.setWillNotDraw(false)
                 box.overlay.add(loop)
-                if (!Motion.enabled(this@OnboardingActivity)) return
+                if (!draw || !Motion.enabled(this@OnboardingActivity)) return
                 loop.progress = 0f
                 android.animation.ValueAnimator.ofFloat(0f, 1f).apply {
                     startDelay = CIRCLE_DELAY_MS
@@ -496,6 +499,7 @@ class OnboardingActivity : Activity() {
 
     companion object {
         private const val STATE_PAGE = "page"
+        private const val STATE_CIRCLED = "circled"
         private const val LAST = 7
         private const val SWIPE_MIN_DP = 80
         private const val SWIPE_MIN_SPEED = 600f
