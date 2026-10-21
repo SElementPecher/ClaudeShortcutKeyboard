@@ -431,6 +431,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             val error = errorLine(R.string.editor_message_error, messageError)
             messageErrorLine = error
             content.add(error)
+            if (draft.chips().isNotEmpty()) content.add(small(getString(R.string.editor_message_tap)), top = 12)
             content.add(
                 secondaryButton(getString(R.string.editor_add), Icons.Kind.PLUS) { openAdd() }.apply {
                     contentDescription = getString(R.string.editor_add)
@@ -438,9 +439,8 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
                     maxLines = 1
                     setAutoSizeTextTypeUniformWithConfiguration(14, look.type.bodySp.toInt().coerceAtLeast(14), 1, android.util.TypedValue.COMPLEX_UNIT_SP)
                 },
-                top = 14,
+                top = 8,
             )
-            if (draft.chips().isNotEmpty()) content.add(small(getString(R.string.editor_message_tap)), top = 12)
 
             addStepButtons {
                 if (draft.plainText().isBlank()) {

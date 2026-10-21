@@ -150,7 +150,8 @@ internal class ChainPanel(
         if (!flow.isEditing) {
             line.addView(iconButton(Icons.Kind.CLOSE, str(R.string.chain_cancel)) { listener.onCancelled() }, LinearLayout.LayoutParams(dp(48), dp(48)).apply { marginEnd = -dp(12) })
         }
-        box.addView(line, lp())
+        // No title, back or close (changing a time or date): nothing to draw, so no empty row.
+        if (line.childCount > 1 || titleFor(flow).isNotEmpty()) box.addView(line, lp())
         val crumbs = flow.crumbs().joinToString(str(R.string.chain_crumb_separator)) { crumbText(it) }
         if (crumbs.isNotEmpty()) {
             box.add(
@@ -179,7 +180,7 @@ internal class ChainPanel(
         FlowStep.UNIT -> str(if (flow.timeChoice == TimeChoice.AFTER_OTHER) R.string.chain_title_unit_short else R.string.chain_title_unit)
         FlowStep.AMOUNTS, FlowStep.AFTER_NUMBER -> str(R.string.chain_title_amount)
         FlowStep.SHOW -> str(R.string.chain_title_show)
-        FlowStep.QUESTION, FlowStep.LIST_QUESTION -> str(if (flow.kind() == BlankKind.TIME || flow.kind() == BlankKind.DATE) R.string.chain_title_quick else R.string.chain_title_question)
+        FlowStep.QUESTION, FlowStep.LIST_QUESTION -> if (flow.kind() == BlankKind.TIME || flow.kind() == BlankKind.DATE) "" else str(R.string.chain_title_question)
         FlowStep.LIST_ANSWERS -> str(if (flow.isEditing) R.string.chain_title_values else R.string.chain_title_answers)
     }
 
