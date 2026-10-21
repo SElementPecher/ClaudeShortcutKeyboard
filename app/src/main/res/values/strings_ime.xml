@@ -6,7 +6,7 @@
     <string name="kb_abc">ABC</string>
     <string name="kb_new_big">Add a quiKey</string>
     <string name="kb_empty_title">Nothing here yet</string>
-    <string name="kb_empty_emoji">✨</string>
+    <string name="kb_empty_emoji">🙁</string>
     <string name="kb_empty_hint">Make your first quiKey in the app.</string>
     <string name="kb_untitled">quiKey</string>
     <string name="kb_page_indicator">%1$d / %2$d</string>

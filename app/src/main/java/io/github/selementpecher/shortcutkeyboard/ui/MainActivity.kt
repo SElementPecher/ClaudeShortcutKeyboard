@@ -550,7 +550,7 @@ class MainActivity : Activity() {
     /** Nothing here yet: a big picture, one sentence, and one button. */
     private fun emptyState(inFolder: Boolean): View = with(ui) {
         val box = emptyState(
-            if (inFolder) "📂" else "✨",
+            if (inFolder) "📂" else "🙁",
             getString(R.string.home_empty_title),
             getString(if (inFolder) R.string.folder_empty else R.string.shortcuts_empty),
         )
