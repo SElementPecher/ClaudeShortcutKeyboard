@@ -28,11 +28,42 @@ class PreferencesActivity : Activity() {
         screen = ui.screen(getString(R.string.preferences_title), onBack = { finish() })
         build()
         screen.install(this)
+        restoreScroll(savedInstanceState?.getInt(STATE_SCROLL) ?: 0)
     }
 
     override fun onResume() {
         super.onResume()
         if (ui.isStale()) recreate()
+    }
+
+    /** Picking a Look or a size rebuilds the page; this keeps it where it was instead of jumping back to the top. */
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(STATE_SCROLL, screen.scroll.scrollY)
+    }
+
+    /** Scrolls back to [y] as soon as the rebuilt page is tall enough (the page can take a few passes to settle). */
+    private fun restoreScroll(y: Int) {
+        if (y <= 0) return
+        val scroll = screen.scroll
+        var passes = 0
+        scroll.viewTreeObserver.addOnPreDrawListener(object : android.view.ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                val room = (scroll.getChildAt(0)?.height ?: 0) - scroll.height
+                passes++
+                if (room >= y || passes > MAX_RESTORE_PASSES) {
+                    scroll.viewTreeObserver.removeOnPreDrawListener(this)
+                    scroll.scrollTo(0, minOf(y, maxOf(room, 0)))
+                    return room < y && false
+                }
+                return true
+            }
+        })
+    }
+
+    private companion object {
+        const val STATE_SCROLL = "scroll"
+        const val MAX_RESTORE_PASSES = 30
     }
 
     private fun build() = with(ui) {

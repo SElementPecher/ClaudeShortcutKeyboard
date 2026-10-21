@@ -19,6 +19,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.look.Icons
+import io.github.selementpecher.shortcutkeyboard.look.TileColors
 import io.github.selementpecher.shortcutkeyboard.look.TileLayout
 import io.github.selementpecher.shortcutkeyboard.look.typefaceOf
 import io.github.selementpecher.shortcutkeyboard.ime.QuickLabels
@@ -443,11 +444,16 @@ internal class ChainPanel(
 
         // A pill with a small sign at its end: − (tap to take out) or + (tap to add).
         // Now / Today (and whatever is picked first) get a soft tint of the accent colour, a little different from the rest.
-        fun pill(text: String, sign: String, tinted: Boolean, onClick: (() -> Unit)?): TextView {
+        fun pill(text: String, sign: String, tinted: Boolean, fill: TileColors? = null, onClick: (() -> Unit)?): TextView {
             val shown = android.text.SpannableString("$text  $sign").apply {
                 setSpan(android.text.style.RelativeSizeSpan(1.3f), length - 1, length, 0)
             }
             return chip(shown, onClick = onClick).apply {
+                // Exercise book: a chosen pill is a solid highlighter colour (the one picked first, dark navy).
+                if (fill != null) {
+                    background = rippled(shape(fill.bg, 999f), 999f)
+                    setTextColor(fill.fg)
+                } else
                 // A solid tint, not see-through, so the ruled lines of the page never show through a pill.
                 if (tinted) background = rippled(shape(blend(palette.surface, palette.accent, 0.28f), 999f), 999f)
             }
@@ -459,14 +465,18 @@ internal class ChainPanel(
         val odd = QuickChoices.firstIsWide(chosen.size)
         var rowView: LinearLayout? = null
         chosen.forEachIndexed { i, value ->
-            val pill = pill(name(value), "−", value == 0L || value == QuickChoices.default(chosen)) {
+            val first = value == QuickChoices.default(chosen)
+            val fill = if (look.ruled) {
+                if (first) TileColors(palette.accent, palette.onAccent) else palette.tiles[i % palette.tiles.size]
+            } else null
+            val pill = pill(name(value), "−", value == 0L || first, onClick = {
                 if (chosen.size > 1) {
                     flow.toggleQuick(value)
                     render()
                 } else {
                     screen.snack(str(R.string.chain_quick_min))
                 }
-            }.apply { contentDescription = name(value) + ", " + str(R.string.chain_quick_tap_remove) }
+            }, fill = fill).apply { contentDescription = name(value) + ", " + str(R.string.chain_quick_tap_remove) }
             val wide = odd && i == 0
             if (wide || rowView == null || rowView!!.childCount == 2) {
                 rowView = row().also { grid.add(it, top = if (i == 0) 0 else 8) }
@@ -487,7 +497,7 @@ internal class ChainPanel(
             val line = row()
             pair.forEachIndexed { c, value ->
                 val used = value in chosen
-                val pill = if (used) pill(name(value), "✓", value == 0L, null) else pill(name(value), "+", value == 0L) {
+                val pill = if (used) pill(name(value), "✓", value == 0L, onClick = null) else pill(name(value), "+", value == 0L) {
                     flow.toggleQuick(value)
                     render()
                 }

@@ -438,6 +438,8 @@ internal class Ui(val context: Context, baseLook: Look) {
         val bg = when {
             selected -> shape(palette.accent, r)
             look.shape.strokeDp > 0f -> shape(Color.TRANSPARENT, r, palette.outline, look.shape.strokeDp)
+            // Exercise book: a white pill with a clear outline, never one that melts into the paper.
+            look.ruled -> shape(palette.surface, r, palette.inkSoft, 1.5f)
             else -> shape(palette.surfaceAlt, r)
         }
         background = rippled(bg, r)
