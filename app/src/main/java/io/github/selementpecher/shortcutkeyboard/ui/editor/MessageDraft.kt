@@ -221,15 +221,6 @@ data class MessageDraft(
         return copy(segments = merge(kept)).dropUnused()
     }
 
-    /** Turns the chip number [index] back into plain words: its example text. */
-    fun makePlain(index: Int): MessageDraft {
-        var seen = 0
-        val replaced = segments.map { s ->
-            if (s is Segment.Text) s else if (seen++ == index) Segment.Text(s.shownText) else s
-        }
-        return copy(segments = merge(replaced)).dropUnused()
-    }
-
     /**
      * Puts a time counted from another time at [offset]: the time of blank [blankId] moved by [offsetMinutes]
      * (minutes later, or a number below zero for earlier). Does nothing if that is not a clock-time blank.

@@ -621,13 +621,6 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
         closeChain(open.selStart, open.selEnd)
     }
 
-    override fun onMakePlain() {
-        val open = chain ?: return
-        draft = open.original.makePlain(open.chipIndex)
-        val caret = open.offset + open.original.chips()[open.chipIndex].shownText.length
-        closeChain(caret, caret)
-    }
-
     override fun onRemove() {
         val open = chain ?: return
         draft = open.original.removeChip(open.chipIndex)
@@ -662,14 +655,6 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
             getString(text),
             listOf(
                 DialogButton(getString(R.string.editor_ok)),
-                DialogButton(getString(R.string.chain_make_plain), ButtonStyle.SECONDARY) {
-                    val at = draft.chipOffset(index)
-                    draft = draft.makePlain(index)
-                    caretStart = at + fixed.shownText.length
-                    caretEnd = caretStart
-                    render()
-                    true
-                },
                 DialogButton(getString(R.string.chain_remove), ButtonStyle.DANGER) {
                     val at = draft.chipOffset(index)
                     draft = draft.removeChip(index)

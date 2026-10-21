@@ -75,7 +75,6 @@
     <string name="chain_answer_remove_empty">Remove this answer</string>
 
     <!-- Changing something already there -->
-    <string name="chain_make_plain">Make it plain words</string>
     <string name="chain_remove">Remove it</string>
     <string name="chain_name_hint">Name (optional)</string>
     <string name="chain_show_current"> · now chosen</string>

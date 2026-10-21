@@ -54,7 +54,6 @@ internal class ChainPanel(
         fun onCancelled()
 
         /** (Changing a chip) turn it back into plain words. */
-        fun onMakePlain()
 
         /** (Changing a chip) take it out. */
         fun onRemove()
@@ -104,7 +103,7 @@ internal class ChainPanel(
             FlowStep.QUESTION, FlowStep.LIST_QUESTION -> questionLevel(flow)
             FlowStep.LIST_ANSWERS -> answersLevel(flow)
         }
-        // Make it plain words / Remove it: on the short screens they sit at the bottom, just above Done, so the empty
+        // Remove it: on the short screens it sits at the bottom, just above Done, so the empty
         // space is not in the middle; on the long amounts screen they stay in the page so the bottom has room.
         val extras = flow.isEditing && !flow.canGoBack
         val quick = flow.kind() == BlankKind.TIME || flow.kind() == BlankKind.DATE
@@ -575,17 +574,8 @@ internal class ChainPanel(
     }
 
     private fun editExtras(pinned: Boolean) = with(ui) {
-        // Times and dates are not turned into plain words: they only have the quick choices to change.
-        val keepPlain = flow?.kind().let { it != BlankKind.TIME && it != BlankKind.DATE }
-        val plain = textButton(str(R.string.chain_make_plain)) { listener.onMakePlain() }
         val remove = dangerButton(str(R.string.chain_remove)) { listener.onRemove() }
-        if (pinned) {
-            if (keepPlain) screen.bottomBar.addView(plain)
-            screen.bottomBar.addView(remove)
-        } else {
-            if (keepPlain) view.add(plain, top = 12)
-            view.add(remove, top = if (keepPlain) 0 else 12)
-        }
+        if (pinned) screen.bottomBar.addView(remove) else view.add(remove, top = 12)
     }
 
     // ---- big tiles ----

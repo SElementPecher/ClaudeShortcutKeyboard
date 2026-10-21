@@ -188,27 +188,6 @@ class MessageDraftTest {
         assertEquals(3, removed.removeChip(3).blanks.size)
     }
 
-    @Test
-    fun makePlainTurnsAChipIntoItsExample() {
-        val d = medicine()
-        val plain = d.makePlain(0)
-        assertEquals(message, plain.plainText())
-        assertEquals(3, plain.blanks.size)
-        assertTrue(plain.placeholderText().startsWith("Sam, "))
-        // The first chip is gone, so the next chip is now number 0.
-        assertEquals("What", plain.blank((plain.chips()[0] as Segment.Ref).blankId)!!.question)
-    }
-
-    @Test
-    fun makePlainKeepsABlankThatIsUsedAgain() {
-        val d = medicine()
-        val timeChips = d.chips().withIndex().filter { (it.value as? Segment.Ref)?.let { r -> d.blank(r.blankId)!!.question == "When" } == true }
-        assertEquals(2, timeChips.size)
-        val plain = d.makePlain(timeChips.last().index)
-        assertEquals(4, plain.blanks.size)
-        assertEquals(message, plain.plainText())
-    }
-
     // ---- a reference to another time ----
 
     @Test
@@ -372,8 +351,6 @@ class MessageDraftTest {
         assertEquals(3, d.chips().size)
         assertTrue(d.chips()[0] is Segment.Fixed)
         assertEquals(old.template, d.toShortcut("t", "T").template)
-        // A built-in chip can be made plain words too.
-        assertEquals(2, d.makePlain(0).chips().size)
     }
 
     // ---- round trips ----
@@ -516,13 +493,6 @@ class MessageDraftTest {
         val spec = d.blanks.single()
         val edited = d.updateBlank(spec.id, spec.copy(amounts = listOf(tenMins, twoDays)), now, uk)
         assertEquals("10 mins", edited.toShortcut("i", "n").variables.single().lastValue)
-    }
-
-    @Test
-    fun makingAHowLongChipPlainUsesWhatItShows() {
-        val d = MessageDraft.fromMessage("In ").insertBlank(3, ahead(RelativeShow.BOTH, tenMins), now, uk)
-        assertEquals("In 10 mins (20:30)", d.makePlain(0).plainText())
-        assertTrue(d.makePlain(0).blanks.isEmpty())
     }
 
     @Test
