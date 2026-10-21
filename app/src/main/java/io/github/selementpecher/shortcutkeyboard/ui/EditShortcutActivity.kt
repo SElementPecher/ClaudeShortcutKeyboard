@@ -816,7 +816,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
     private fun pictureCircle(sizeDp: Int, sizeSp: Float): TextView = with(ui) {
         text(glyphFor(icon, name), sizeSp, 400, palette.ink).apply {
             gravity = Gravity.CENTER
-            background = rippled(shape(withAlpha(palette.accent, 0x30), 999f, palette.accent, 1.5f), 999f)
+            background = rippled(shape(if (look.ruled) blend(palette.surface, palette.accent, 0.19f) else withAlpha(palette.accent, 0x30), 999f, palette.accent, 1.5f), 999f)
             isClickable = true
             isFocusable = true
             layoutParams = LinearLayout.LayoutParams(dp(sizeDp), dp(sizeDp))

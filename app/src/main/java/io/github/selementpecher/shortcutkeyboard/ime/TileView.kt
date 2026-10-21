@@ -307,7 +307,7 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
                 if (look.shape.strokeDp > 0f) p.surface else p.surfaceAlt,
                 p.ink,
             )
-            TileLook.Kind.NEW -> TileColors(Color.TRANSPARENT, p.inkSoft)
+            TileLook.Kind.NEW -> TileColors(if (look.ruled) p.surface else Color.TRANSPARENT, p.inkSoft)
             TileLook.Kind.EMPTY -> TileColors(Color.TRANSPARENT, Color.TRANSPARENT)
         }
     }

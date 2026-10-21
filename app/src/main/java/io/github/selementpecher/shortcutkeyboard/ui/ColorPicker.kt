@@ -61,7 +61,7 @@ internal object ColorPicker {
             header.addView(
                 View(ui.context).apply {
                     background = if (dotColors != null) ui.shape(dotColors.bg, 999f, ui.palette.outline, 1.5f)
-                    else ui.shape(android.graphics.Color.TRANSPARENT, 999f, ui.palette.inkSoft, 2f, dashed = true)
+                    else ui.shape(if (ui.look.ruled) ui.palette.surface else android.graphics.Color.TRANSPARENT, 999f, ui.palette.inkSoft, 2f, dashed = true)
                 },
                 LinearLayout.LayoutParams(ui.dp(28), ui.dp(28)),
             )

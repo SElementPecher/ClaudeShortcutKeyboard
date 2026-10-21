@@ -459,7 +459,7 @@ class MainActivity : Activity() {
                 background = shape(palette.accent, 999f)
                 setImageDrawable(icon(Icons.Kind.CHECK, 18, palette.onAccent))
             } else {
-                background = shape(withAlpha(palette.surface, 0xCC), 999f, palette.inkSoft, 2f)
+                background = shape(if (look.ruled) palette.surface else withAlpha(palette.surface, 0xCC), 999f, palette.inkSoft, 2f)
             }
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             layoutParams = FrameLayout.LayoutParams(dp(28), dp(28), Gravity.TOP or Gravity.END).apply { setMargins(0, dp(8), dp(8), 0) }

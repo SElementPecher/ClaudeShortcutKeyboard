@@ -47,7 +47,7 @@ internal object IconPicker {
             gravity = Gravity.CENTER
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f)
             minimumHeight = ui.dp(52)
-            val bg = if (selected) ui.shape(ui.withAlpha(ui.palette.accent, 0x30), 14f, ui.palette.accent, 2f)
+            val bg = if (selected) ui.shape(if (ui.look.ruled) ui.blend(ui.palette.surfaceAlt, ui.palette.accent, 0.19f) else ui.withAlpha(ui.palette.accent, 0x30), 14f, ui.palette.accent, 2f)
             else ui.shape(ui.palette.surfaceAlt, 14f)
             background = ui.rippled(bg, 14f)
             isClickable = true

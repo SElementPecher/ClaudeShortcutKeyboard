@@ -538,7 +538,8 @@ internal class Ui(val context: Context, baseLook: Look) {
         val colors = when (kind) {
             TileKind.SHORTCUT -> palette.tileColorsFor(colorKey, color)
             TileKind.FOLDER -> palette.folderColors(color)
-            TileKind.NEW -> TileColors(Color.TRANSPARENT, palette.inkSoft)
+            // Exercise book: solid paper-white, so the ruled lines never show through.
+            TileKind.NEW -> TileColors(if (look.ruled) palette.surface else Color.TRANSPARENT, palette.inkSoft)
         }
         val radius = look.shape.tileRadiusDp.toFloat()
         val tile = if (isWide) AspectFrame(context, 0f, dp(TileSpec.WIDE_MIN_HEIGHT_DP)) else AspectFrame(context, 1f, 0)
@@ -550,7 +551,7 @@ internal class Ui(val context: Context, baseLook: Look) {
         if (kind == TileKind.SHORTCUT && Highlighter.on) tile.rotation = Highlighter.stickyAngle("card:" + colorKey) * 0.5f
         val tabDp = if (isWide) TileSpec.FOLDER_TAB_WIDE_DP else TileSpec.FOLDER_TAB_SQUARE_DP
         val base: Drawable = when {
-            kind == TileKind.NEW -> shape(Color.TRANSPARENT, radius, if (look.shape.strokeDp > 0f) palette.outline else palette.inkSoft, max(1.5f, look.shape.strokeDp), dashed = true)
+            kind == TileKind.NEW -> shape(if (look.ruled) palette.surface else Color.TRANSPARENT, radius, if (look.shape.strokeDp > 0f) palette.outline else palette.inkSoft, max(1.5f, look.shape.strokeDp), dashed = true)
             folderLike -> FolderDrawable(
                 fill = colors.bg,
                 strokeColor = if (look.id == "bold") palette.accent else palette.outline,
