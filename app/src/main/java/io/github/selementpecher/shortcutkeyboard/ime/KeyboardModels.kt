@@ -32,6 +32,8 @@ internal class StepModel(
     val preview: List<ResultPiece> = emptyList(),
     /** Pressing the preview tile types the message now. */
     val onAddNow: () -> Unit = {},
+    /** Adding will press the app's Send button too, so the preview shows a send arrow instead of a tick. */
+    val sends: Boolean = false,
 )
 
 internal sealed interface StepBody {
@@ -82,9 +84,10 @@ internal class CheckModel(
     val pieces: List<ResultPiece>,
     val onBack: () -> Unit,
     val onCancel: () -> Unit,
+    /** Pressing the message card adds it. */
     val onAdd: () -> Unit,
-    /** The words on the Add button: "Add", or "Add and send" when it will send too. */
-    val addLabel: String = "",
-    /** A short line above the Add button, e.g. how to let quiKey send in this app. Null for none. */
+    /** Adding will press the app's Send button too, so the card shows a send arrow instead of a tick. */
+    val sends: Boolean = false,
+    /** A short line under the message, e.g. how to let quiKey send in this app. Null for none. */
     val hint: String? = null,
 )

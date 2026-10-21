@@ -75,9 +75,8 @@
 
     <!-- OK and check -->
     <string name="kb_ok">OK</string>
-    <string name="kb_add">Add</string>
-    <string name="kb_add_send">Add and send</string>
     <!-- %1$s is the app (WhatsApp), %2$s its setting (Enter is send), %3$s where it is (Settings › Chats). -->
     <string name="kb_send_hint">To send too, turn on “%2$s” in %1$s (%3$s)</string>
     <string name="kb_desc_add_now">Type this now: %1$s</string>
+    <string name="kb_desc_add_send_now">Type and send this now: %1$s</string>
 </resources>

@@ -152,7 +152,6 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
 
     /** The whole message with the defaults filled in; pressing it types it straight away. */
     private fun previewTile(model: StepModel): View {
-        val plain = model.preview.joinToString("") { it.text }
         val message = TextView(context).apply {
             text = ResultSpans.build(model.preview, palette.tiles, theme.dp(6).toFloat(), theme.dp(3).toFloat(), theme.dp(1).toFloat(), look.ruled)
             gravity = Gravity.START or Gravity.CENTER_VERTICAL
@@ -160,32 +159,50 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
             setTextColor(palette.ink)
             typeface = theme.bodyTypeface
             letterSpacing = KeyboardTheme.LETTER_SPACING
+            // A little room between lines, so the highlights on one line don't touch those on the next.
+            setLineSpacing(theme.dp(PREVIEW_LINE_GAP_DP).toFloat(), 1f)
             maxLines = if (compact) 2 else 3
             ellipsize = TextUtils.TruncateAt.END
             setPadding(theme.dp(16), theme.dp(10), theme.dp(8), theme.dp(10))
         }
-        val check = ImageView(context).apply {
-            setImageDrawable(Icons.drawable(Icons.Kind.CHECK, palette.onAccent, theme.dp(22)))
+        return messageCard(message, model.preview.joinToString("") { it.text }, model.sends, PREVIEW_MARK_DP, model.onAddNow)
+    }
+
+    /**
+     * The message on a card with a round tick (or send arrow) at its end. The whole card is the button: pressing
+     * anywhere on it adds the message.
+     */
+    private fun messageCard(message: TextView, plain: String, sends: Boolean, markDp: Int, onAdd: () -> Unit): View {
+        val mark = ImageView(context).apply {
+            setImageDrawable(Icons.drawable(if (sends) Icons.Kind.SEND else Icons.Kind.CHECK, palette.onAccent, theme.dp(markDp * 3 / 5)))
             scaleType = ImageView.ScaleType.CENTER
             background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(palette.accent) }
+            importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
         }
-        val row = LinearLayout(context).apply {
+        fun card(fill: Int) = GradientDrawable().apply {
+            cornerRadius = theme.cardRadius
+            setColor(fill)
+            if (theme.strokePx > 0) setStroke(theme.strokePx, palette.outline)
+        }
+        return LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = GradientDrawable().apply {
-                cornerRadius = theme.cardRadius
-                setColor(palette.surface)
-                if (theme.strokePx > 0) setStroke(theme.strokePx, palette.outline)
+            background = android.graphics.drawable.StateListDrawable().apply {
+                addState(intArrayOf(android.R.attr.state_pressed), card(TileStyle.pressed(palette.surface)))
+                addState(intArrayOf(), card(palette.surface))
             }
             if (theme.elevationPx > 0f) elevation = theme.elevationPx
             isClickable = true
             isFocusable = true
-            contentDescription = getString(R.string.kb_desc_add_now, plain)
-            setOnClickListener { model.onAddNow() }
+            isSoundEffectsEnabled = false
+            contentDescription = getString(if (sends) R.string.kb_desc_add_send_now else R.string.kb_desc_add_now, plain)
+            setOnClickListener {
+                it.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+                onAdd()
+            }
             addView(message, LinearLayout.LayoutParams(0, WRAP, 1f))
-            addView(check, LinearLayout.LayoutParams(theme.dp(36), theme.dp(36)).apply { marginEnd = theme.dp(10) })
+            addView(mark, LinearLayout.LayoutParams(theme.dp(markDp), theme.dp(markDp)).apply { marginEnd = theme.dp(markDp / 4 + 1) })
         }
-        return row
     }
 
     fun showCheck(model: CheckModel) {
@@ -201,7 +218,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         column.addView(bar, LinearLayout.LayoutParams(MATCH, topBarHeight))
 
         // The message sits in a card as tall as the message itself; what changes is highlighted.
-        val plain = model.pieces.joinToString("") { it.text }
+        // The card is the Add button: pressing it (or its tick) adds the message.
         val message = TextView(context).apply {
             text = ResultSpans.build(model.pieces, palette.tiles, theme.dp(7).toFloat(), theme.dp(4).toFloat(), theme.dp(2).toFloat(), look.ruled)
             gravity = Gravity.START
@@ -210,18 +227,9 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
             typeface = theme.bodyTypeface
             letterSpacing = KeyboardTheme.LETTER_SPACING
             setLineSpacing(0f, READING_LINE_SPACING)
-            setPadding(theme.dp(20), theme.dp(if (compact) 12 else 18), theme.dp(20), theme.dp(if (compact) 12 else 18))
-            contentDescription = plain
+            setPadding(theme.dp(20), theme.dp(if (compact) 12 else 18), theme.dp(12), theme.dp(if (compact) 12 else 18))
         }
-        val card = FrameLayout(context).apply {
-            background = GradientDrawable().apply {
-                cornerRadius = theme.cardRadius
-                setColor(palette.surface)
-                if (theme.strokePx > 0) setStroke(theme.strokePx, palette.outline)
-            }
-            if (theme.elevationPx > 0f) elevation = theme.elevationPx
-            addView(message, LayoutParams(MATCH, WRAP))
-        }
+        val card = messageCard(message, model.pieces.joinToString("") { it.text }, model.sends, if (compact) PREVIEW_MARK_DP else CHECK_MARK_DP, model.onAdd)
         val scroll = ScrollView(context).apply {
             isVerticalScrollBarEnabled = false
             clipToPadding = false
@@ -239,17 +247,9 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
                     setTextColor(palette.inkSoft)
                     maxLines = 2
                 },
-                LinearLayout.LayoutParams(MATCH, WRAP).apply { bottomMargin = gap / 2 },
+                LinearLayout.LayoutParams(MATCH, WRAP).apply { bottomMargin = gap },
             )
         }
-        val add = TileView(context, theme)
-        add.bind(
-            TileSpec(
-                model.addLabel.ifEmpty { getString(R.string.kb_add) }, TileLook(TileLook.Kind.OK, pill = true),
-                icon = Icons.Kind.CHECK, onClick = model.onAdd, textSp = look.type.headingSp + 3f,
-            ),
-        )
-        column.addView(add, LinearLayout.LayoutParams(MATCH, px(if (compact) R.dimen.kb_check_tile_height_compact else R.dimen.kb_check_tile_height)).apply { topMargin = gap / 2 })
         content.addView(column, LayoutParams(MATCH, MATCH))
         reveal("check")
     }
@@ -782,6 +782,10 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         private const val PAGE_SLIDE_DP = 40
         private const val EMPTY_EMOJI_SP = 40f
         private const val READING_LINE_SPACING = 1.3f
+        private const val PREVIEW_LINE_GAP_DP = 5
+        /** The round tick (or send arrow) on the message card: on a question, and on the check screen. */
+        private const val PREVIEW_MARK_DP = 36
+        private const val CHECK_MARK_DP = 52
         private const val MAX_BAR_EXTRA_DP = 12
         private const val LIFT_DP = 18
         private const val SHADOW_COLOUR = 0xFF000000.toInt()

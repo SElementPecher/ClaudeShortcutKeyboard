@@ -17,7 +17,7 @@ import kotlin.math.sin
  */
 object Icons {
 
-    enum class Kind { BACK, FORWARD, CLOSE, GEAR, KEYBOARD, PLUS, CHECK, TRASH, FOLDER, BACKSPACE, GLOBE }
+    enum class Kind { BACK, FORWARD, CLOSE, GEAR, KEYBOARD, PLUS, CHECK, SEND, TRASH, FOLDER, BACKSPACE, GLOBE }
 
     /** An icon in [color], [sizePx] square. Resize with `setBounds` if needed. */
     fun drawable(kind: Kind, color: Int, sizePx: Int): Drawable = IconDrawable(kind, color, sizePx)
@@ -66,6 +66,7 @@ private class IconDrawable(private val kind: Icons.Kind, color: Int, private val
                 },
                 stroke,
             )
+            Icons.Kind.SEND -> send(canvas, cx, cy, s)
             Icons.Kind.GEAR -> gear(canvas, cx, cy, s)
             Icons.Kind.KEYBOARD -> keyboard(canvas, cx, cy, s)
             Icons.Kind.GLOBE -> globe(canvas, cx, cy, s)
@@ -73,6 +74,22 @@ private class IconDrawable(private val kind: Icons.Kind, color: Int, private val
             Icons.Kind.FOLDER -> folder(canvas, cx, cy, s)
             Icons.Kind.BACKSPACE -> backspace(canvas, cx, cy, s)
         }
+    }
+
+    /** A paper plane pointing right, as on a chat app's Send button. */
+    private fun send(canvas: Canvas, cx: Float, cy: Float, s: Float) {
+        val notch = cx - s * 0.2f
+        canvas.drawPath(
+            Path().apply {
+                moveTo(cx - s * 0.34f, cy - s * 0.32f)
+                lineTo(cx + s * 0.38f, cy)
+                lineTo(cx - s * 0.34f, cy + s * 0.32f)
+                lineTo(notch, cy)
+                close()
+            },
+            stroke,
+        )
+        canvas.drawLine(notch, cy, cx + s * 0.06f, cy, stroke)
     }
 
     /** A delete key: a tag pointing left with a cross inside. */

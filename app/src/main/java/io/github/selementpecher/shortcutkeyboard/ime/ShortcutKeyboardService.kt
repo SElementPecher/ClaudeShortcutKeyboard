@@ -219,7 +219,7 @@ class ShortcutKeyboardService : InputMethodService() {
         page = GridPaging.clampPage(page, entries.size)
         val tiles = GridPaging.pageItems(entries, page).map { node ->
             when {
-                node == null -> newTile(getString(R.string.kb_new), getString(R.string.kb_desc_new_shortcut), ::openApp)
+                node == null -> newTile(getString(R.string.kb_new), getString(R.string.kb_desc_new_shortcut), onClick = ::openApp)
                 planner != null && node.id == planner.draggedId ->
                     TileSpec("", TileLook(TileLook.Kind.EMPTY), getString(R.string.kb_desc_empty_slot))
                 else -> nodeTile(node, library, highlighted = planner?.dropFolderId == node.id)
@@ -265,8 +265,8 @@ class ShortcutKeyboardService : InputMethodService() {
         )
     }
 
-    private fun newTile(label: String, description: String, onClick: () -> Unit) =
-        TileSpec(label, TileLook(TileLook.Kind.NEW), description, icon = Icons.Kind.PLUS, onClick = onClick)
+    private fun newTile(label: String, description: String, centred: Boolean = false, onClick: () -> Unit) =
+        TileSpec(label, TileLook(TileLook.Kind.NEW), description, icon = Icons.Kind.PLUS, onClick = onClick, centred = centred)
 
     private fun enterFolder(id: String) {
         folderId = id
@@ -414,6 +414,7 @@ class ShortcutKeyboardService : InputMethodService() {
                 body = body,
                 preview = ResultPieces.of(current, locale = locale()),
                 onAddNow = ::addToApp,
+                sends = sendPlan() == SendAfterAdd.Plan.Send,
             ),
         )
     }
@@ -438,7 +439,7 @@ class ShortcutKeyboardService : InputMethodService() {
         val firstOnPage = GridPaging.globalIndex(answerPage, 0)
         val tiles = GridPaging.pageItems(entries, answerPage).mapIndexed { slot, answer ->
             if (answer == null) {
-                newTile(getString(R.string.kb_new), getString(R.string.kb_desc_new_answer), ::addNewAnswer)
+                newTile(getString(R.string.kb_new), getString(R.string.kb_desc_new_answer), centred = true, onClick = ::addNewAnswer)
             } else {
                 TileSpec(
                     label = answer.text,
@@ -723,7 +724,7 @@ class ShortcutKeyboardService : InputMethodService() {
                 },
                 onCancel = ::leaveFill,
                 onAdd = ::addToApp,
-                addLabel = getString(if (sendPlan() == SendAfterAdd.Plan.Send) R.string.kb_add_send else R.string.kb_add),
+                sends = sendPlan() == SendAfterAdd.Plan.Send,
                 hint = (sendPlan() as? SendAfterAdd.Plan.TurnOnInApp)?.let { getString(R.string.kb_send_hint, it.setting.appName, it.setting.setting, it.setting.where) },
             ),
         )
@@ -738,6 +739,19 @@ class ShortcutKeyboardService : InputMethodService() {
 
     private fun addToApp() {
         val current = session ?: return
+        // Adding early, from a question: one not reached yet with no answer would leave a gap, so go to it instead.
+        // (A question already passed may be left empty on purpose.)
+        if (screen == Screen.QUESTION) {
+            val unanswered = (current.index until current.variables.size).firstOrNull { current.valueOf(current.variables[it]).isNullOrEmpty() }
+            if (unanswered != null) {
+                if (unanswered != current.index) {
+                    current.goTo(unanswered)
+                    resetQuestionState()
+                    showQuestion()
+                }
+                return
+            }
+        }
         val ic = currentInputConnection
         if (ic != null) {
             ic.commitText(current.result(), 1)

@@ -90,6 +90,8 @@ internal class TileSpec(
     val onClick: (() -> Unit)? = null,
     /** Twice as wide, so a page with an odd number of tiles has full rows. Only the first tile of a page. */
     val wide: Boolean = false,
+    /** The picture and name sit together in the middle (like the answers' centred names), not from the start. */
+    val centred: Boolean = false,
 )
 
 /**
@@ -117,6 +119,10 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
     private var isFolder = false
     private var subtitleWanted = false
     private var appliedSp = 0f
+    private var centredRow = false
+
+    /** The size of the round picture beside the name; made smaller in [onMeasure] if the tile is too short for it. */
+    private var discPx = 0
     private val fitPaint = TextPaint(android.graphics.Paint.ANTI_ALIAS_FLAG)
 
     init {
@@ -190,6 +196,7 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
         isClickable = spec.onClick != null
 
         isFolder = spec.look.kind == TileLook.Kind.FOLDER
+        centredRow = spec.centred
         val colours = coloursFor(spec.look)
 
         val hasGlyph = !spec.glyph.isNullOrEmpty()
@@ -267,10 +274,14 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
         when (mode) {
             Mode.BESIDE -> {
                 inner.orientation = LinearLayout.HORIZONTAL
-                inner.gravity = Gravity.CENTER_VERTICAL
-                val size = theme.dp((if (theme.compact) 30 else AppTile.WIDE_PICTURE_DP) * minOf(theme.textScale, 1.15f))
-                inner.updateChild(glyphBox, LinearLayout.LayoutParams(size, size).apply { marginEnd = theme.dp(AppTile.WIDE_GAP_DP) })
-                inner.updateChild(textBox, LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
+                inner.gravity = if (centredRow) Gravity.CENTER else Gravity.CENTER_VERTICAL
+                discPx = theme.dp((if (theme.compact) 30 else AppTile.WIDE_PICTURE_DP) * minOf(theme.textScale, 1.15f))
+                inner.updateChild(glyphBox, LinearLayout.LayoutParams(discPx, discPx).apply { marginEnd = theme.dp(AppTile.WIDE_GAP_DP) })
+                inner.updateChild(
+                    textBox,
+                    if (centredRow) LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
+                    else LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f),
+                )
                 textBox.gravity = Gravity.START
             }
             Mode.STACKED -> {
@@ -367,6 +378,11 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.EXACTLY && MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.EXACTLY) {
+            // A short tile (an answer) has less room than the round picture wants: shrink it to fit, never cut it.
+            if (mode == Mode.BESIDE) {
+                val room = MeasureSpec.getSize(heightMeasureSpec) - inner.paddingTop - inner.paddingBottom
+                (glyphBox.layoutParams as? LinearLayout.LayoutParams)?.let { it.width = minOf(discPx, room); it.height = it.width }
+            }
             fitName(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec))
         }
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
