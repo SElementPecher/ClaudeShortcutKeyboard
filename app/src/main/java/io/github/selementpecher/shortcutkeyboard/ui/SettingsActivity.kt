@@ -49,7 +49,7 @@ class SettingsActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ui = Ui(this, LookStore.current(this))
-        screen = ui.screen(getString(R.string.settings_title), onBack = { finish() }, withBottomBar = true)
+        screen = ui.screen(getString(R.string.settings_title), onBack = { finish() }, withBottomBar = true, logo = true)
         build()
         screen.install(this)
         savedInstanceState?.getString(STATE_PENDING_RESTORE)?.let { readBackup(Uri.parse(it)) }
