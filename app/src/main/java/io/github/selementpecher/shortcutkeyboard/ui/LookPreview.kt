@@ -6,6 +6,9 @@ import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextPaint
 import android.view.View
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.look.Highlighter
@@ -48,7 +51,7 @@ internal class LookPreview(
 
     private fun headerHeight() = u(22f)
 
-    private fun tileHeight() = u(46f)
+    private fun tileHeight() = u(52f)
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = resolveSize(suggestedMinimumWidth, widthMeasureSpec)
@@ -175,40 +178,71 @@ internal class LookPreview(
         paint.textAlign = Paint.Align.LEFT
     }
 
-    /** Name and picture inside a tile: wide Looks have a round picture and the name; Squares has a big letter. */
+    /**
+     * Name and picture inside a tile, fitted like the real tiles: wide Looks have a round picture with the name beside it
+     * (two lines if it is long); Squares has a big letter with the name under it. The text shrinks before it is ever cut.
+     */
     private fun drawTileText(canvas: Canvas, left: Float, top: Float, w: Float, h: Float, fg: Int, label: String, folder: Boolean) {
         paint.style = Paint.Style.FILL
         paint.typeface = typefaceOf(look.type.tileWeight)
-        paint.textSize = textSize()
         val initial = (label.firstOrNull() ?: '?').uppercaseChar().toString()
         if (look.tileLayout == TileLayout.WIDE) {
-            val circle = u(16f)
-            val cx = left + u(8f) + circle / 2f
-            val cy = top + u(7f) + circle / 2f
-            paint.color = (fg and 0x00FFFFFF) or (0x26 shl 24)
-            canvas.drawCircle(cx, cy, circle / 2f, paint)
-            paint.color = fg
-            paint.textAlign = Paint.Align.CENTER
-            canvas.drawText(if (folder) "▤" else initial, cx, cy + u(3.5f), paint)
-            paint.textAlign = Paint.Align.LEFT
-            canvas.drawText(shortName(label, w), left + u(8f), top + h - u(7f), paint)
+            val textLeft = drawPicture(canvas, left, top, h, fg, if (folder) "▤" else initial)
+            drawFitted(canvas, label, textLeft, top, h, left + w - u(6f) - textLeft, fg, centre = false)
         } else {
             paint.color = fg
             paint.textAlign = Paint.Align.CENTER
             paint.textSize = u(18f)
             canvas.drawText(if (folder) "▤" else initial, left + w / 2f, top + h * 0.5f, paint)
-            paint.textSize = textSize()
-            canvas.drawText(shortName(label, w), left + w / 2f, top + h - u(6f), paint)
             paint.textAlign = Paint.Align.LEFT
+            drawFitted(canvas, label, left + u(4f), top + h * 0.56f, h * 0.4f, w - u(8f), fg, centre = true)
         }
     }
 
-    /** The label, shortened with a dot dot dot until it fits [w]. */
-    private fun shortName(label: String, w: Float): String {
+    /** The round picture at the left of a wide tile. Returns where the name starts. */
+    private fun drawPicture(canvas: Canvas, left: Float, top: Float, h: Float, fg: Int, glyph: String): Float {
+        val circle = u(16f)
+        val cx = left + u(8f) + circle / 2f
+        val cy = top + h / 2f
+        paint.style = Paint.Style.FILL
+        paint.color = (fg and 0x00FFFFFF) or (0x26 shl 24)
+        canvas.drawCircle(cx, cy, circle / 2f, paint)
+        paint.color = fg
+        paint.textAlign = Paint.Align.CENTER
         paint.textSize = textSize()
-        var name = label
-        while (name.length > 2 && paint.measureText(name) > w - u(14f)) name = name.dropLast(1).trimEnd()
-        return if (name.length < label.length) "$name…" else name
+        canvas.drawText(glyph, cx, cy + textSize() / 3f, paint)
+        paint.textAlign = Paint.Align.LEFT
+        return left + u(8f) + circle + u(6f)
+    }
+
+    /**
+     * Draws [label] in the area ([x], [areaTop], [maxWidth] wide, [areaHeight] tall): at most two lines, the biggest size
+     * (down to a small floor) at which no word is cut. Centred in the area up and down.
+     */
+    private fun drawFitted(canvas: Canvas, label: String, x: Float, areaTop: Float, areaHeight: Float, maxWidth: Float, colour: Int, centre: Boolean) {
+        val tp = TextPaint(paint)
+        tp.typeface = typefaceOf(look.type.tileWeight)
+        tp.color = colour
+        var size = textSize()
+        val floor = 7.5f * density
+        var layout: StaticLayout
+        while (true) {
+            tp.textSize = size
+            layout = StaticLayout.Builder.obtain(label, 0, label.length, tp, max(1, maxWidth.toInt()))
+                .setMaxLines(2)
+                .setAlignment(if (centre) Layout.Alignment.ALIGN_CENTER else Layout.Alignment.ALIGN_NORMAL)
+                .setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE)
+                .setHyphenationFrequency(Layout.HYPHENATION_FREQUENCY_NONE)
+                .build()
+            val wordsFit = label.split(' ').none { it.isNotEmpty() && tp.measureText(it) > maxWidth }
+            val linesFit = layout.lineCount <= 2 && layout.height <= areaHeight
+            if ((wordsFit && linesFit) || size <= floor) break
+            size -= 0.5f * density
+        }
+        canvas.save()
+        canvas.translate(x, areaTop + (areaHeight - layout.height) / 2f)
+        layout.draw(canvas)
+        canvas.restore()
     }
 
     // ---- the Exercise book ----
@@ -245,22 +279,23 @@ internal class LookPreview(
         rect.offset(0f, -u(1.6f))
         paint.color = palette.surface
         canvas.drawRoundRect(rect, radius, radius, paint)
+        paint.typeface = typefaceOf(look.type.tileWeight)
+        val initial = (label.firstOrNull() ?: '?').uppercaseChar().toString()
+        val textLeft = drawPicture(canvas, left, bodyTop, top + h - bodyTop, palette.ink, if (folder) "▤" else initial)
         if (folder) {
             paint.color = swipe
             rect.set(left + u(6f), top, left + w * 0.5f, bodyTop + u(3f))
             canvas.drawRoundRect(rect, u(3.5f), u(3.5f), paint)
+            drawFitted(canvas, label, textLeft, bodyTop, top + h - bodyTop, left + w - u(6f) - textLeft, palette.ink, centre = false)
         } else {
-            rect.set(left + u(9f), top + h - u(12f), left + w * 0.7f, top + h - u(5f))
+            // The name, and a highlighter swipe under it.
+            drawFitted(canvas, label, textLeft, top, h - u(11f), left + w - u(6f) - textLeft, palette.ink, centre = false)
+            rect.set(textLeft, top + h - u(10f), left + w - u(10f), top + h - u(4f))
             path.reset()
             Highlighter.addShape(path, rect, u(3f), uneven = true)
             paint.color = swipe
             canvas.drawPath(path, paint)
         }
-        paint.typeface = typefaceOf(look.type.tileWeight)
-        paint.textSize = textSize()
-        paint.color = palette.ink
-        paint.textAlign = Paint.Align.LEFT
-        canvas.drawText(shortName(label, w), left + u(9f), bodyTop + u(17f), paint)
     }
 
     private companion object {
