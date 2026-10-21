@@ -120,16 +120,23 @@ class ShortcutKeyboardService : InputMethodService() {
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         inputInfo = info
+        // A fill-in left waiting for "+ New" is only picked up again for a short while.
+        if (pending?.isFresh(SystemClock.elapsedRealtime()) == false) pending = null
         val saved = pending
         if (saved != null) {
-            if (info?.packageName == packageName) {
+            if (info?.privateImeOptions == io.github.selementpecher.shortcutkeyboard.ui.AddOptionActivity.FIELD_TAG) {
                 // Our own "add an answer" box has no letters here: hand over to the normal keyboard.
                 handler.post { switchBack(fromAbc = false) }
                 renderCurrent()
                 return
             }
+            if (info?.packageName == packageName) {
+                // Another box in the quiKey app: just the keyboard; the fill-in waits for the chat app.
+                renderCurrent()
+                return
+            }
             pending = null
-            if (saved.isFresh(SystemClock.elapsedRealtime()) && restorePending(saved)) return
+            if (restorePending(saved)) return
         } else if (!restarting) {
             session = null
             screen = Screen.GRID

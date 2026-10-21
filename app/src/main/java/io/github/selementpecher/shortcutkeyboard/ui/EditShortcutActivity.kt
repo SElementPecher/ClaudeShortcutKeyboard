@@ -262,24 +262,7 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
 
     /** Saves. From the Name or Message step of an existing quiKey ([thenCheck]) it goes on to the Check screen instead of closing. */
     private fun save(thenCheck: Boolean = false) {
-        if (name.isBlank()) {
-            nameError = true
-            goTo(Step.NAME)
-            return
-        }
-        if (draft.plainText().isBlank()) {
-            messageError = true
-            goTo(Step.MESSAGE)
-            return
-        }
-        val shortcut = currentShortcut()
-        try {
-            ShortcutRepository.save(this, shortcut)
-        } catch (e: Exception) {
-            Log.w(TAG, "Could not save the shortcut", e)
-            screen.snack(getString(R.string.editor_save_failed), error = true)
-            return
-        }
+        val shortcut = write() ?: return
         if (thenCheck) {
             stored = shortcut
             baseline = ShortcutDraft.normalise(shortcut)
@@ -292,8 +275,36 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
         finish()
     }
 
-    /** Makes a copy of this quiKey as it is saved, then goes back to the home screen. */
+    /**
+     * Saves what is on screen: checks it is complete (showing what is missing if not), keeps changes made meanwhile
+     * outside the editor (answers the keyboard added, a move), and stores it. Returns what was saved, or null.
+     */
+    private fun write(): Shortcut? {
+        if (name.isBlank()) {
+            nameError = true
+            goTo(Step.NAME)
+            return null
+        }
+        if (draft.plainText().isBlank()) {
+            messageError = true
+            goTo(Step.MESSAGE)
+            return null
+        }
+        val latest = if (isNew) null else runCatching { ShortcutRepository.find(this, shortcutId) }.getOrNull()
+        val shortcut = ShortcutDraft.keepOutsideChanges(currentShortcut(), stored, latest)
+        return try {
+            ShortcutRepository.save(this, shortcut)
+            shortcut
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not save the shortcut", e)
+            screen.snack(getString(R.string.editor_save_failed), error = true)
+            null
+        }
+    }
+
+    /** Makes a copy of this quiKey (saving any changes on screen first, so none are lost), then goes back to the home screen. */
     private fun duplicate() {
+        if (hasChanges() && write() == null) return
         try {
             ShortcutRepository.duplicateMany(this, setOf(shortcutId), getString(R.string.copy_suffix))
         } catch (e: Exception) {

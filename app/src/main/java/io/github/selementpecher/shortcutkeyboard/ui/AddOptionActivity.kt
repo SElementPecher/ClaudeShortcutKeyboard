@@ -38,6 +38,8 @@ class AddOptionActivity : Activity() {
         with(ui) {
             field = field(getString(R.string.add_option_hint)).apply {
                 imeOptions = EditorInfo.IME_ACTION_DONE
+                // Lets quiKey's keyboard know this is the add-an-answer box, which needs letters.
+                privateImeOptions = FIELD_TAG
                 contentDescription = getString(R.string.add_option_title, blankName)
                 setOnEditorActionListener { _, actionId, _ ->
                     if (actionId == EditorInfo.IME_ACTION_DONE) { save(); true } else false
@@ -87,6 +89,9 @@ class AddOptionActivity : Activity() {
     }
 
     companion object {
+        /** Marks the add-an-answer box (see the keyboard's onStartInputView). */
+        const val FIELD_TAG = "io.github.selementpecher.shortcutkeyboard.addOption"
+
         const val EXTRA_SHORTCUT_ID = "shortcut_id"
         const val EXTRA_BLANK_NAME = "blank_name"
 

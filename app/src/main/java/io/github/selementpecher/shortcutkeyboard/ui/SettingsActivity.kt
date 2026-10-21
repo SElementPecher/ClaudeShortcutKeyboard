@@ -68,8 +68,7 @@ class SettingsActivity : Activity() {
     override fun onDestroy() {
         panel?.dismiss()
         panel = null
-        mainHandler.removeCallbacksAndMessages(null)
-        // Work already queued (e.g. writing a backup) still finishes.
+        // Work already queued (e.g. writing a backup) still finishes, and its result is still shown (see writeBackup).
         io.shutdown()
         super.onDestroy()
     }

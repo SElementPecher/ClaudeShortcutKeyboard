@@ -31,6 +31,36 @@ class ShortcutDraftTest {
     }
 
     @Test
+    fun normaliseKeepsTheColourSoAnUnchangedQuiKeyHasNoChanges() {
+        val stored = Shortcut("id", "Call back", "Call you back", parentId = null, order = 0, icon = "📞", color = 3)
+        assertEquals(3, ShortcutDraft.normalise(stored).color)
+    }
+
+    @Test
+    fun answersTheKeyboardAddedWhileEditingAreKept() {
+        val child = VariableDef("child", options = listOf("Sam", "Alex"), lastValue = "Sam")
+        val original = Shortcut("id", "Meds", "{child}", listOf(child), parentId = "kids", order = 1)
+        // Meanwhile the keyboard added Max (and learned it) and the tile was moved.
+        val latest = original.copy(variables = listOf(child.copy(options = listOf("Sam", "Alex", "Max"), lastValue = "Max")), parentId = null, order = 4)
+        // The editor renamed it and added Jo.
+        val edited = original.copy(name = "Medicine", variables = listOf(child.copy(options = listOf("Sam", "Alex", "Jo"))))
+        val saved = ShortcutDraft.keepOutsideChanges(edited, original, latest)
+        assertEquals("Medicine", saved.name)
+        assertEquals(listOf("Sam", "Alex", "Jo", "Max"), saved.variables.single().options)
+        assertEquals("Max", saved.variables.single().lastValue)
+        assertNull(saved.parentId)
+        assertEquals(4, saved.order)
+    }
+
+    @Test
+    fun withNoOutsideChangesTheEditWinsAsIs() {
+        val original = Shortcut("id", "A", "{x}", listOf(VariableDef("x", options = listOf("1"))))
+        val edited = original.copy(variables = listOf(VariableDef("x", options = listOf("2"))))
+        assertEquals(edited, ShortcutDraft.keepOutsideChanges(edited, original, original))
+        assertEquals(edited, ShortcutDraft.keepOutsideChanges(edited, null, null))
+    }
+
+    @Test
     fun normaliseKeepsTheSampleShortcutsAsTheyAre() {
         for (sample in SampleShortcuts.all) {
             val normal = ShortcutDraft.normalise(sample)

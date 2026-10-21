@@ -145,6 +145,9 @@ class MainActivity : Activity() {
         // Single top: the keyboard opens us again, maybe for another folder.
         if (intent.hasExtra(EXTRA_FOLDER_ID)) {
             currentFolderId = intent.getStringExtra(EXTRA_FOLDER_ID)
+            // A choice made in another folder is dropped, so Delete can never act on tiles that are not on screen.
+            selecting = false
+            selected.clear()
             if (!isDestroyed) render()
         }
     }

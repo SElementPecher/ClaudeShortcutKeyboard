@@ -27,7 +27,38 @@ object ShortcutDraft {
      */
     fun normalise(shortcut: Shortcut): Shortcut =
         MessageDraft.fromShortcut(shortcut)
-            .toShortcut(shortcut.id, shortcut.name, shortcut.parentId, shortcut.order, shortcut.icon)
+            .toShortcut(shortcut.id, shortcut.name, shortcut.parentId, shortcut.order, shortcut.icon, shortcut.color)
+
+    /**
+     * [edited] (what the editor is about to save) with the changes made elsewhere while the editor was open kept:
+     * answers the keyboard added, the value it learned, and a move to another folder or place. [original] is the quiKey
+     * as the editor opened it; [latest] is how it is saved now.
+     */
+    fun keepOutsideChanges(edited: Shortcut, original: Shortcut?, latest: Shortcut?): Shortcut {
+        if (original == null || latest == null || latest == original) return edited
+        val variables = edited.variables.map { mine ->
+            val before = original.variables.firstOrNull { it.key == mine.key }
+            val now = latest.variables.firstOrNull { it.key == mine.key }
+            if (before == null || now == null || now.type != mine.type) {
+                mine
+            } else {
+                // Answers added outside the editor (and not already here) are kept, after the editor's own.
+                val added = now.options.filter { o ->
+                    before.options.none { it.equals(o, ignoreCase = true) } && mine.options.none { it.equals(o, ignoreCase = true) }
+                }
+                mine.copy(
+                    options = mine.options + added,
+                    lastValue = if (mine.lastValue == before.lastValue) now.lastValue else mine.lastValue,
+                )
+            }
+        }
+        val moved = latest.parentId != original.parentId || latest.order != original.order
+        return edited.copy(
+            variables = variables,
+            parentId = if (moved) latest.parentId else edited.parentId,
+            order = if (moved) latest.order else edited.order,
+        )
+    }
 
     /** Checks a name for a changing word. Returns null when it is fine. */
     fun checkBlankName(name: String): NameProblem? {
