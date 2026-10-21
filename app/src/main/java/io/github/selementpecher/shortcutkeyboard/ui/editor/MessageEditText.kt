@@ -117,8 +117,22 @@ internal class MessageEditText(context: Context, private val ui: Ui) : EditText(
 
     /** Gives the chips new colours and words (after a change that moves colours around) without touching the text. */
     fun restyle(styleOf: (Int, Segment) -> ChipStyle) {
-        spans().forEachIndexed { i, span -> span.style = styleOf(i, span.segment) }
-        invalidate()
+        spans().forEachIndexed { i, span ->
+            span.style = styleOf(i, span.segment)
+            redraw(span)
+        }
+    }
+
+    /**
+     * Puts [span] back where it is, so the box measures and draws it again. On a real phone the text is kept as a
+     * finished drawing that invalidate() alone does not redo: a chip changed without this keeps its old look (a
+     * chip that grew in stayed small and faded).
+     */
+    private fun redraw(span: ChipSpan) {
+        val text = text ?: return
+        val start = text.getSpanStart(span)
+        if (start < 0) return
+        text.setSpan(span, start, text.getSpanEnd(span), text.getSpanFlags(span))
     }
 
     /** Grows chip number [index] in. Skipped when animations are off. */
@@ -126,17 +140,18 @@ internal class MessageEditText(context: Context, private val ui: Ui) : EditText(
         val span = spans().getOrNull(index) ?: return
         if (!Motion.enabled(context)) return
         span.pop = 0f
+        redraw(span)
         ValueAnimator.ofFloat(0f, 1f).apply {
             duration = Motion.POP_MS
             addUpdateListener {
                 span.pop = it.animatedValue as Float
-                invalidate()
+                redraw(span)
             }
             // However it ends, the chip must be left fully drawn.
             addListener(object : android.animation.AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: android.animation.Animator) {
                     span.pop = 1f
-                    invalidate()
+                    redraw(span)
                 }
             })
             start()
