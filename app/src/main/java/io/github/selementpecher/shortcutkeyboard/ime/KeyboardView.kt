@@ -18,6 +18,9 @@ import android.widget.TextView
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.Look
+import io.github.selementpecher.shortcutkeyboard.look.marginLine
+import io.github.selementpecher.shortcutkeyboard.look.RuledKeyboardSnap
+import io.github.selementpecher.shortcutkeyboard.look.RuledPaper
 import io.github.selementpecher.shortcutkeyboard.look.pageBackground
 
 /**
@@ -54,7 +57,13 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
 
     init {
         // The panel colour also fills the padding under the tiles, so the safety gap just looks like space.
-        background = look.pageBackground(context, palette)
+        val paper = look.pageBackground(context, palette)
+        background = paper
+        if (paper is RuledPaper) {
+            // The margin is drawn over everything; the rules line up with the question text.
+            foreground = look.marginLine(context, palette)
+            RuledKeyboardSnap(this, paper).install()
+        }
         clipChildren = false
         content.clipChildren = false
         val base = px(if (compact) R.dimen.kb_panel_height_compact else R.dimen.kb_panel_height)

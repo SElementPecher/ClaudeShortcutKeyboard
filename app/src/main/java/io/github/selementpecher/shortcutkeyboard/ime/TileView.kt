@@ -174,7 +174,12 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
 
     fun bind(spec: TileSpec) {
         sticky = Highlighter.on && spec.look.kind == TileLook.Kind.ANSWER
-        rotation = if (sticky) Highlighter.stickyAngle(spec.label) else 0f
+        rotation = when {
+            sticky -> Highlighter.stickyAngle(spec.label)
+            // A folder is turned a little, like one dropped on the desk.
+            Highlighter.on && spec.look.kind == TileLook.Kind.FOLDER -> Highlighter.stickyAngle("folder:" + spec.label) * 0.8f
+            else -> 0f
+        }
         onTap = spec.onClick
         contentDescription = spec.description
         isEnabled = spec.enabled
@@ -343,7 +348,10 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
                 swipeHeightPx = theme.dp(8).toFloat(),
                 insetPx = theme.dp(10).toFloat(),
             )
-            l.kind == TileLook.Kind.FOLDER -> FolderDrawable(fill, strokeColour, strokeWidth.toFloat(), radius, theme.dp(tabDp()).toFloat(), tabFill)
+            l.kind == TileLook.Kind.FOLDER -> FolderDrawable(
+                fill, strokeColour, strokeWidth.toFloat(), radius, theme.dp(tabDp()).toFloat(), tabFill,
+                stackPx = if (Highlighter.on) theme.dp(6).toFloat() else 0f, pageEdge = p.outline,
+            )
             else -> shape(fill)
         }
         background = StateListDrawable().apply {

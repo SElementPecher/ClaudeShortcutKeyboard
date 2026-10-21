@@ -131,7 +131,7 @@ class SettingsActivity : Activity() {
         fun settingsTile(name: String, icon: String, subtitle: String? = null, onClick: () -> Unit) =
             tile(name = name, icon = icon, kind = TileKind.SHORTCUT, subtitle = subtitle, onClick = onClick)
         listOf(
-            settingsTile(getString(R.string.settings_tile_prefs), "🎨", look.displayName) {
+            settingsTile(getString(R.string.settings_tile_prefs), "🎨") {
                 startActivity(Intent(this@SettingsActivity, PreferencesActivity::class.java))
             },
             settingsTile(getString(R.string.tour_again_button), "▶️") { OnboardingActivity.open(this@SettingsActivity) },

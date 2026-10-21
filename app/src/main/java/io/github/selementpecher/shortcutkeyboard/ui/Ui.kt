@@ -37,6 +37,10 @@ import io.github.selementpecher.shortcutkeyboard.look.Highlighter
 import io.github.selementpecher.shortcutkeyboard.look.IndexCardDrawable
 import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.Look
+import io.github.selementpecher.shortcutkeyboard.look.marginLine
+import io.github.selementpecher.shortcutkeyboard.look.RuledSnap
+import io.github.selementpecher.shortcutkeyboard.look.RuledPageSnap
+import io.github.selementpecher.shortcutkeyboard.look.RuledPaper
 import io.github.selementpecher.shortcutkeyboard.look.pageBackground
 import io.github.selementpecher.shortcutkeyboard.look.LookStore
 import io.github.selementpecher.shortcutkeyboard.look.Palette
@@ -524,6 +528,8 @@ internal class Ui(val context: Context, baseLook: Look) {
         val tile = if (isWide) AspectFrame(context, 0f, dp(TileSpec.WIDE_MIN_HEIGHT_DP)) else AspectFrame(context, 1f, 0)
         tile.clipChildren = false
         val folderLike = kind == TileKind.FOLDER
+        // Exercise book: a folder is turned a little, like one dropped on the desk.
+        if (folderLike && Highlighter.on) tile.rotation = Highlighter.stickyAngle("folder:" + colorKey) * 0.8f
         val tabDp = if (isWide) TileSpec.FOLDER_TAB_WIDE_DP else TileSpec.FOLDER_TAB_SQUARE_DP
         val base: Drawable = when {
             kind == TileKind.NEW -> shape(Color.TRANSPARENT, radius, if (look.shape.strokeDp > 0f) palette.outline else palette.inkSoft, max(1.5f, look.shape.strokeDp), dashed = true)
@@ -538,6 +544,8 @@ internal class Ui(val context: Context, baseLook: Look) {
                 radiusPx = dpf(radius),
                 tabPx = dpf(tabDp),
                 tabFill = if (Highlighter.on) palette.tileColorsFor(colorKey, color).bg else 0,
+                stackPx = if (Highlighter.on) dpf(6f) else 0f,
+                pageEdge = palette.outline,
             )
             // Exercise book: an index card with a highlighter swipe in the tile's colour, instead of a filled tile.
             kind == TileKind.SHORTCUT && Highlighter.on -> IndexCardDrawable(
@@ -647,8 +655,11 @@ internal class Ui(val context: Context, baseLook: Look) {
         large: Boolean = false,
         withBottomBar: Boolean = false,
     ): UiScreen {
+        val rootPaper = if (look.ruled) RuledPaper(context, palette.bg, palette.outline) else null
         val root = column().apply {
-            background = look.pageBackground(context, palette)
+            background = rootPaper ?: look.pageBackground(context, palette)
+            // The red margin is drawn over everything, so no bar, card or button can cover it.
+            foreground = look.marginLine(context, palette)
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         }
         val topBar = column()
@@ -673,23 +684,31 @@ internal class Ui(val context: Context, baseLook: Look) {
             clipToPadding = false
             isVerticalScrollBarEnabled = false
         }
+        val contentPaper = if (look.ruled) RuledPaper(context, palette.bg, palette.outline) else null
         val content = column().apply {
             setPadding(dp(TileSpec.SCREEN_MARGIN_DP), dp(8), dp(TileSpec.SCREEN_MARGIN_DP), dp(24))
             clipChildren = false
             clipToPadding = false
+            if (contentPaper != null) {
+                // The page's rules scroll with the content, and are lined up with the fixed ones (see RuledPageSnap).
+                background = contentPaper
+                tag = RuledSnap.PAPER
+            }
         }
         scroll.addView(content, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         root.addView(scroll, lp(height = 0, weight = 1f))
 
         val bottom = column().apply { setPadding(dp(TileSpec.SCREEN_MARGIN_DP), dp(12), dp(TileSpec.SCREEN_MARGIN_DP), dp(12)) }
         val bottomWrap = column().apply {
-            setBackgroundColor(palette.bg)
+            // Ruled paper shows through, so the margin and rules carry on behind the buttons.
+            if (!look.ruled) setBackgroundColor(palette.bg)
             // Quiet: only the hairline Look keeps a rule above the buttons.
             if (look.shape.strokeDp > 0f) addView(divider())
             addView(bottom)
             visibility = if (withBottomBar) View.VISIBLE else View.GONE
         }
         root.addView(bottomWrap, lp())
+        if (rootPaper != null && contentPaper != null) RuledPageSnap(root, rootPaper, contentPaper, scroll).install()
         return UiScreen(this, root, topBar, titleView, scroll, content, bottom, bottomWrap)
     }
 
@@ -1136,6 +1155,9 @@ internal class FolderDrawable(
     private val tabPx: Float,
     /** A colour for the tab, like a binder divider's (0 = same as the folder). */
     private val tabFill: Int = 0,
+    /** Exercise book: how far two spare pages peek out behind the folder (0 = none), and the colour of their edges. */
+    private val stackPx: Float = 0f,
+    private val pageEdge: Int = 0,
 ) : Drawable() {
 
     private val tabPaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -1151,9 +1173,9 @@ internal class FolderDrawable(
         val b = bounds
         val inset = strokePx / 2f
         val left = b.left + inset
-        val right = b.right - inset
+        val right = b.right - inset - stackPx
         val top = b.top + inset
-        val bottom = b.bottom - inset
+        val bottom = b.bottom - inset - stackPx
         val bodyTop = top + tabPx
         val tabRight = left + (right - left) * 0.4f
         val r = min(radiusPx, (bottom - bodyTop) / 2f)
@@ -1166,12 +1188,32 @@ internal class FolderDrawable(
         }
     }
 
+    /** Two spare pages behind the folder, each turned a little more, so it looks like a stack of paper. */
+    private fun drawSparePages(canvas: Canvas, body: Path) {
+        val b = bounds
+        val pivotX = b.left + stackPx
+        val pivotY = b.bottom - stackPx
+        val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = max(1f, stackPx / 5f)
+            color = pageEdge
+        }
+        for (page in 2 downTo 1) {
+            canvas.save()
+            canvas.translate(stackPx * page * 0.45f, stackPx * page * 0.45f)
+            canvas.rotate(page * 1.6f, pivotX, pivotY)
+            canvas.drawPath(body, fillPaint)
+            canvas.drawPath(body, edge)
+            canvas.restore()
+        }
+    }
+
     /** Just the tab, for a binder-divider colour. */
     private fun tabPath(): Path {
         val b = bounds
         val inset = strokePx / 2f
         val left = b.left + inset
-        val right = b.right - inset
+        val right = b.right - inset - stackPx
         val top = b.top + inset
         val tabRight = left + (right - left) * 0.4f
         val r = min(radiusPx, tabPx)
@@ -1182,6 +1224,7 @@ internal class FolderDrawable(
 
     override fun draw(canvas: Canvas) {
         val path = path()
+        if (stackPx > 0f) drawSparePages(canvas, path)
         canvas.drawPath(path, fillPaint)
         if (tabFill != 0) {
             tabPaint.color = tabFill
