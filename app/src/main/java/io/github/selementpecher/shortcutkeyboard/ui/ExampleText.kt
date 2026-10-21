@@ -1,5 +1,6 @@
 package io.github.selementpecher.shortcutkeyboard.ui
 
+import io.github.selementpecher.shortcutkeyboard.look.Highlighter
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
@@ -163,10 +164,8 @@ internal class RoundedHighlightSpan(
         val width = paint.measureText(text, start, end)
         val metrics = paint.fontMetrics
         rect.set(x, y + metrics.ascent - verticalPx, x + startPad() + width + endPad(), y + metrics.descent + verticalPx)
-        val left = if (roundStart) radiusPx else 0f
-        val right = if (roundEnd) radiusPx else 0f
         path.reset()
-        path.addRoundRect(rect, floatArrayOf(left, left, right, right, right, right, left, left), Path.Direction.CW)
+        Highlighter.addShape(path, rect, radiusPx, roundStart, roundEnd)
         fill.color = background
         canvas.drawPath(path, fill)
 

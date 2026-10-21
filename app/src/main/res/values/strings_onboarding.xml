@@ -26,7 +26,7 @@
     <string name="tour_5_later">You can add them later in Settings.</string>
 
     <string name="tour_looks_title">Choose a look</string>
-    <string name="tour_looks_text">Tap one to try it. You can change it any time in Settings, under Preferences.</string>
+    <string name="tour_looks_text">Tap the one you want. It is saved. You can change it any time in Settings, under Preferences.</string>
     <string name="tour_privacy_title">Your words.\nYour device.\nWe don\'t snoop.</string>
     <string name="tour_privacy_text">quiKey doesn\'t need or ask for internet access.</string>
     <string name="tour_privacy_1">No accounts, no sign-in.</string>

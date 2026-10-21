@@ -7,6 +7,7 @@ import android.graphics.RectF
 import android.text.TextPaint
 import android.text.TextUtils
 import android.text.style.ReplacementSpan
+import io.github.selementpecher.shortcutkeyboard.look.Highlighter
 import io.github.selementpecher.shortcutkeyboard.look.typefaceOf
 
 /** How one chip looks: its picture, its words and its colours. */
@@ -47,6 +48,7 @@ internal class ChipSpan(val segment: Segment, style: ChipStyle, private val metr
     private val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG)
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.style = Paint.Style.STROKE }
+    private val chipPath = android.graphics.Path()
 
     private fun dp(value: Float) = value * metrics.density
 
@@ -105,7 +107,9 @@ internal class ChipSpan(val segment: Segment, style: ChipStyle, private val metr
         } else {
             fillPaint.color = style.background
             fillPaint.alpha = alpha
-            canvas.drawRoundRect(rect, radius, radius, fillPaint)
+            chipPath.reset()
+            Highlighter.addShape(chipPath, rect, radius)
+            canvas.drawPath(chipPath, fillPaint)
         }
         style.ring?.let { ring ->
             linePaint.color = ring

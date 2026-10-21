@@ -20,12 +20,13 @@ object LookStore {
 
     fun current(context: Context): Look {
         val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        return Looks.byId(prefs.getString(KEY, null))
+        return Looks.byId(prefs.getString(KEY, null)).also { Highlighter.on = it.ruled }
     }
 
     fun set(context: Context, look: Look) {
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putString(KEY, look.id).apply()
+        Highlighter.on = look.ruled
         listeners.forEach { it() }
     }
 

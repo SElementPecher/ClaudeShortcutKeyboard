@@ -8,6 +8,7 @@ import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.ReplacementSpan
 import io.github.selementpecher.shortcutkeyboard.fill.ResultPiece
+import io.github.selementpecher.shortcutkeyboard.look.Highlighter
 import io.github.selementpecher.shortcutkeyboard.look.TileColors
 
 /**
@@ -43,10 +44,8 @@ internal class PillSpan(
         val width = paint.measureText(text, start, end)
         val metrics = paint.fontMetrics
         rect.set(x, y + metrics.ascent - padY, x + width + startPad() + endPad(), y + metrics.descent + padY)
-        val left = if (roundStart) radius else 0f
-        val right = if (roundEnd) radius else 0f
         path.reset()
-        path.addRoundRect(rect, floatArrayOf(left, left, right, right, right, right, left, left), Path.Direction.CW)
+        Highlighter.addShape(path, rect, radius, roundStart, roundEnd)
         val oldColor = paint.color
         paint.color = colors.bg
         canvas.drawPath(path, paint)

@@ -33,6 +33,8 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import io.github.selementpecher.shortcutkeyboard.look.Highlighter
+import io.github.selementpecher.shortcutkeyboard.look.IndexCardDrawable
 import io.github.selementpecher.shortcutkeyboard.look.Icons
 import io.github.selementpecher.shortcutkeyboard.look.Look
 import io.github.selementpecher.shortcutkeyboard.look.pageBackground
@@ -535,6 +537,16 @@ internal class Ui(val context: Context, baseLook: Look) {
                 },
                 radiusPx = dpf(radius),
                 tabPx = dpf(tabDp),
+                tabFill = if (Highlighter.on) palette.tileColorsFor(colorKey, color).bg else 0,
+            )
+            // Exercise book: an index card with a highlighter swipe in the tile's colour, instead of a filled tile.
+            kind == TileKind.SHORTCUT && Highlighter.on -> IndexCardDrawable(
+                fill = palette.surface,
+                swipe = if (Look.isNight(context)) blend(colors.bg, colors.fg, 0.55f) else colors.bg,
+                radiusPx = dpf(radius),
+                swipeLeftPx = dpf((TileSpec.WIDE_PADDING_H_DP + TileSpec.WIDE_PICTURE_DP + TileSpec.WIDE_GAP_DP).toFloat()),
+                swipeHeightPx = dpf(9f),
+                insetPx = dpf(12f),
             )
             else -> shape(colors.bg, radius, palette.outline, if (look.shape.strokeDp > 0f) look.shape.strokeDp else 0f)
         }
@@ -1122,8 +1134,11 @@ internal class FolderDrawable(
     private val strokePx: Float,
     private val radiusPx: Float,
     private val tabPx: Float,
+    /** A colour for the tab, like a binder divider's (0 = same as the folder). */
+    private val tabFill: Int = 0,
 ) : Drawable() {
 
+    private val tabPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = fill; style = Paint.Style.FILL }
     private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = strokeColor
@@ -1151,9 +1166,27 @@ internal class FolderDrawable(
         }
     }
 
+    /** Just the tab, for a binder-divider colour. */
+    private fun tabPath(): Path {
+        val b = bounds
+        val inset = strokePx / 2f
+        val left = b.left + inset
+        val right = b.right - inset
+        val top = b.top + inset
+        val tabRight = left + (right - left) * 0.4f
+        val r = min(radiusPx, tabPx)
+        return Path().apply {
+            addRoundRect(RectF(left, top, tabRight, top + tabPx + 1f), floatArrayOf(r, r, r, r, 0f, 0f, 0f, 0f), Path.Direction.CW)
+        }
+    }
+
     override fun draw(canvas: Canvas) {
         val path = path()
         canvas.drawPath(path, fillPaint)
+        if (tabFill != 0) {
+            tabPaint.color = tabFill
+            canvas.drawPath(tabPath(), tabPaint)
+        }
         if (strokePx > 0f) canvas.drawPath(path, strokePaint)
     }
 

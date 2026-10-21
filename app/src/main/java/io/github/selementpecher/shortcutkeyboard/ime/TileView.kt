@@ -1,5 +1,10 @@
 package io.github.selementpecher.shortcutkeyboard.ime
 
+import android.graphics.Paint
+import android.graphics.Canvas
+import io.github.selementpecher.shortcutkeyboard.look.Look
+import io.github.selementpecher.shortcutkeyboard.look.IndexCardDrawable
+import io.github.selementpecher.shortcutkeyboard.look.Highlighter
 import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.Drawable
@@ -152,7 +157,24 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
         }
     }
 
+    /** Exercise book: an answer is a sticky note, tilted a little, with a strip of tape on top. */
+    private var sticky = false
+    private val tapePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xB8FFFFFF.toInt() }
+
+    override fun dispatchDraw(canvas: Canvas) {
+        super.dispatchDraw(canvas)
+        if (!sticky) return
+        val w = theme.dp(40).toFloat()
+        val h = theme.dp(14).toFloat()
+        canvas.save()
+        canvas.rotate(-3f, width / 2f, 0f)
+        canvas.drawRect(width / 2f - w / 2f, -h / 2f, width / 2f + w / 2f, h / 2f, tapePaint)
+        canvas.restore()
+    }
+
     fun bind(spec: TileSpec) {
+        sticky = Highlighter.on && spec.look.kind == TileLook.Kind.ANSWER
+        rotation = if (sticky) Highlighter.stickyAngle(spec.label) else 0f
         onTap = spec.onClick
         contentDescription = spec.description
         isEnabled = spec.enabled
@@ -172,7 +194,7 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
             else -> Mode.STACKED
         }
         layoutFor(mode, picture || inlineIcon, spec.look.kind == TileLook.Kind.SPECIAL || spec.look.kind == TileLook.Kind.OK)
-        applyBackground(spec.look, colours)
+        applyBackground(spec.look, colours, spec.look.colourKey.ifEmpty { spec.label })
 
         // The picture: an emoji or letter, or a line icon; on a soft round disc beside the name.
         glyphView.visibility = if (hasGlyph) VISIBLE else GONE
@@ -283,7 +305,7 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
         }
     }
 
-    private fun applyBackground(l: TileLook, colours: TileColors) {
+    private fun applyBackground(l: TileLook, colours: TileColors, key: String) {
         val p = theme.palette
         val dashed = l.kind == TileLook.Kind.NEW || l.kind == TileLook.Kind.EMPTY
         // The plain outline colour is very faint on some Looks; a dashed line needs to be seen.
@@ -308,11 +330,24 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
         }
         val pressedFill = if (dashed) withAlpha(p.inkSoft, 0x22) else TileStyle.pressed(colours.bg)
         // Folders have a little tab, as in the app.
-        fun body(fill: Int): Drawable =
-            if (l.kind == TileLook.Kind.FOLDER) FolderDrawable(fill, strokeColour, strokeWidth.toFloat(), radius, theme.dp(tabDp()).toFloat())
-            else shape(fill)
+        // Exercise book: shortcuts are index cards with a highlighter swipe; folders get a coloured binder tab.
+        val card = Highlighter.on && l.kind == TileLook.Kind.SHORTCUT
+        val tabFill = if (Highlighter.on && l.kind == TileLook.Kind.FOLDER) p.tileColorsFor(key, l.custom).bg else 0
+        val swipe = if (Look.isNight(context)) TileStyle.mix(colours.bg, colours.fg, 0.55f) else colours.bg
+        fun body(fill: Int, pressed: Boolean = false): Drawable = when {
+            card -> IndexCardDrawable(
+                fill = if (pressed) TileStyle.pressed(p.surface) else p.surface,
+                swipe = swipe,
+                radiusPx = radius,
+                swipeLeftPx = theme.dp(AppTile.WIDE_PADDING_H_DP + AppTile.WIDE_PICTURE_DP + AppTile.WIDE_GAP_DP).toFloat(),
+                swipeHeightPx = theme.dp(8).toFloat(),
+                insetPx = theme.dp(10).toFloat(),
+            )
+            l.kind == TileLook.Kind.FOLDER -> FolderDrawable(fill, strokeColour, strokeWidth.toFloat(), radius, theme.dp(tabDp()).toFloat(), tabFill)
+            else -> shape(fill)
+        }
         background = StateListDrawable().apply {
-            addState(intArrayOf(android.R.attr.state_pressed), body(pressedFill))
+            addState(intArrayOf(android.R.attr.state_pressed), body(pressedFill, pressed = true))
             addState(intArrayOf(), body(colours.bg))
         }
     }
