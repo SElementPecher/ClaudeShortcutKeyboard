@@ -45,9 +45,11 @@ internal class ScribbleCircle(colour: Int, strokePx: Float) : Drawable() {
         for (i in 0..steps) {
             val t = i / steps.toFloat()
             val angle = Math.toRadians(START_DEGREES + SWEEP_DEGREES * t)
+            // The wobble and the overshoot at the end go up and down only, so the loop never reaches wider than its
+            // bounds (and so never over the words beside it).
             val wobble = 1f + WOBBLE * sin(t * 9.0).toFloat()
             val grow = 1f + GROW * t
-            val x = cx + rx * grow * wobble * cos(angle).toFloat()
+            val x = cx + rx * cos(angle).toFloat()
             val y = cy + ry * grow * wobble * sin(angle).toFloat()
             if (i == 0) loop.moveTo(x, y) else loop.lineTo(x, y)
         }

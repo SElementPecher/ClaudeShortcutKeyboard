@@ -225,7 +225,8 @@ class OnboardingActivity : Activity() {
             // Android trims the space at the end of a string, so it is added here.
             val wrap = { LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT) }
             addView(text(getString(R.string.tour_1_fixed_start).trimEnd() + " ", size, 500, palette.ink), wrap())
-            addView(word, wrap())
+            // A little room before the word, so the pen loop round it passes between the words and covers none.
+            addView(word, wrap().apply { marginStart = dp(LOOP_ROOM_DP) })
         }
         val card = card(20)
         card.addView(line)
@@ -246,7 +247,7 @@ class OnboardingActivity : Activity() {
                 target.viewTreeObserver.removeOnGlobalLayoutListener(this)
                 val area = android.graphics.Rect(0, 0, target.width, target.height)
                 box.offsetDescendantRectToMyCoords(target, area)
-                area.inset(-dp(8), -dp(12))
+                area.inset(-dp(LOOP_ROOM_DP - 2), -dp(12))
                 loop.bounds = area
                 // Drawn by the page itself (a plain layout skips its own drawing, and the loop with it).
                 box.setWillNotDraw(false)
@@ -499,6 +500,7 @@ class OnboardingActivity : Activity() {
         private const val SLIDE_MS = 220L
         private const val CIRCLE_DELAY_MS = 500L
         private const val CIRCLE_MS = 700L
+        private const val LOOP_ROOM_DP = 12
 
         fun open(context: Context) {
             context.startActivity(Intent(context, OnboardingActivity::class.java))
