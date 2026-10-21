@@ -109,20 +109,6 @@ internal object ExampleText {
 
     private const val NO_BREAK_SPACE = '\u00A0'
 
-    /** "Sam Jones" becomes "Sam " and "Jones", so a long answer can wrap onto the next line. */
-    internal fun splitAtSpaces(text: String): List<String> {
-        if (text.isEmpty()) return emptyList()
-        val pieces = ArrayList<String>()
-        var from = 0
-        for (i in text.indices) {
-            if (text[i] == ' ' && i + 1 < text.length) {
-                pieces += text.substring(from, i + 1)
-                from = i + 1
-            }
-        }
-        pieces += text.substring(from)
-        return pieces
-    }
 }
 
 /**

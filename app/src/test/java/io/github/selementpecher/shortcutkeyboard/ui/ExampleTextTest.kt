@@ -37,10 +37,4 @@ class ExampleTextTest {
         val blanks = ExampleParts.of(draft).filter { it.changes }.map { it.blank }.distinct()
         assertEquals(listOf(0, 1, 2, 3), blanks)
     }
-
-    @Test fun longAnswersCanWrap() {
-        assertEquals(listOf("Sam ", "Jones"), ExampleText.splitAtSpaces("Sam Jones"))
-        assertEquals(listOf("Sam"), ExampleText.splitAtSpaces("Sam"))
-        assertEquals(emptyList<String>(), ExampleText.splitAtSpaces(""))
-    }
 }

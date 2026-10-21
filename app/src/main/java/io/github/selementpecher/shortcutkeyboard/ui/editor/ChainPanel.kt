@@ -52,10 +52,6 @@ internal class ChainPanel(
 
         /** ✕, or ◀ on the first level. */
         fun onCancelled()
-
-        /** (Changing a chip) turn it back into plain words. */
-
-        /** (Changing a chip) take it out. */
     }
 
     /** The panel's views: put them under the message. */
@@ -736,16 +732,6 @@ internal class ChainPanel(
         override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
         override fun afterTextChanged(s: Editable?) = onText(s?.toString().orEmpty())
-    }
-
-    private fun fieldsIn(root: View): List<EditText> {
-        val out = ArrayList<EditText>()
-        fun walk(v: View) {
-            if (v is EditText) out += v
-            if (v is ViewGroup) for (i in 0 until v.childCount) walk(v.getChildAt(i))
-        }
-        walk(root)
-        return out
     }
 
     private companion object {

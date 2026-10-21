@@ -755,13 +755,6 @@ class EditShortcutActivity : Activity(), ChainPanel.Listener {
         goTo(Step.MESSAGE)
     }
 
-    private fun editAnswers(blankIds: List<Int>) {
-        if (blankIds.size == 1) editQuestion(blankIds.first()) else {
-            hintAfterDraw = true
-            goTo(Step.MESSAGE)
-        }
-    }
-
     /** The example message, with the changing parts shown as soft highlights in their question's colour. */
     private fun exampleCard(): View = with(ui) {
         val card = card(20)

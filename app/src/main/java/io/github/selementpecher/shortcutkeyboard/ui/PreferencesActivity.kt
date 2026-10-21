@@ -55,7 +55,7 @@ class PreferencesActivity : Activity() {
                 if (room >= y || passes > MAX_RESTORE_PASSES) {
                     scroll.viewTreeObserver.removeOnPreDrawListener(this)
                     scroll.scrollTo(0, minOf(y, maxOf(room, 0)))
-                    return room < y && false
+                    return false
                 }
                 return true
             }

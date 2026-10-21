@@ -16,7 +16,6 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -61,6 +60,9 @@ class MainActivity : Activity() {
     /** Choosing several tiles to delete. */
     private var selecting = false
     private val selected = LinkedHashSet<String>()
+
+    /** Whether the keyboard was turned on when the screen was last built (see onWindowFocusChanged). */
+    private var shownEnabled: Boolean? = null
 
     /** What is being exported while the phone asks where to save the file. */
     private var pendingExport: Set<String>? = null
@@ -179,8 +181,9 @@ class MainActivity : Activity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        // The keyboard picker is a dialog over this screen, so there is no onResume after it.
-        if (hasFocus && ::screen.isInitialized) render()
+        // The keyboard picker is a dialog over this screen, so there is no onResume after it. Only what it can change
+        // (whether quiKey is turned on) is checked; the screen is built again only if that changed.
+        if (hasFocus && ::screen.isInitialized && KeyboardSetup.isEnabled(this) != shownEnabled) render()
     }
 
     override fun onStop() {
@@ -215,6 +218,7 @@ class MainActivity : Activity() {
         content.removeAllViews()
         with(ui) {
             val enabled = KeyboardSetup.isEnabled(this@MainActivity)
+            shownEnabled = enabled
             // One step only: once the keyboard is turned on, the whole box goes away.
             if (selecting) content.add(selectionHeader(library)) else if (!enabled) content.add(setupCard())
             if (!selecting && currentFolderId == null && shouldOfferExamples(library)) content.add(examplesOffer(), top = if (enabled) 0 else 16)
@@ -598,31 +602,6 @@ class MainActivity : Activity() {
         box
     }
 
-    /** "✓ Keyboard is ready": small and calm, with the one tip below it. */
-    private fun readyLine(): View = with(ui) {
-        val box = column().apply {
-            val r = look.shape.cardRadiusDp.coerceAtMost(20).toFloat()
-            background = shape(blend(palette.bg, palette.success, 0.12f), r)
-            setPadding(dp(16), dp(14), dp(16), dp(14))
-        }
-        val line = row()
-        line.addView(
-            ImageView(this@MainActivity).apply {
-                setImageDrawable(icon(Icons.Kind.CHECK, 18, readableOn(palette.success)))
-                scaleType = ImageView.ScaleType.CENTER
-                background = shape(palette.success, 999f)
-            },
-            LinearLayout.LayoutParams(dp(28), dp(28)),
-        )
-        line.addView(text(getString(R.string.setup_ready_text), look.type.bodySp, 700, palette.ink).apply {
-            layoutParams = lp(width = 0, weight = 1f, start = 12)
-        })
-        box.addView(line)
-        box.add(small(getString(R.string.setup_how_to)).apply { setTextColor(palette.ink); alpha = 0.78f }, top = 8)
-        box.contentDescription = getString(R.string.setup_ready_text) + ". " + getString(R.string.setup_how_to)
-        box
-    }
-
     private fun folderHeader(library: Library, folder: Folder): View = with(ui) {
         val home = getString(R.string.home_name)
         val noName = getString(R.string.shortcut_no_name)
@@ -658,10 +637,6 @@ class MainActivity : Activity() {
         } catch (e: ActivityNotFoundException) {
             screen.snack(getString(R.string.setup_no_settings), error = true)
         }
-    }
-
-    private fun showKeyboardPicker() {
-        getSystemService(InputMethodManager::class.java)?.showInputMethodPicker()
     }
 
     // ---------------------------------------------------------------- folders

@@ -102,9 +102,6 @@ data class MessageDraft(
     /** True when nothing in the message has been marked as changing. */
     val hasNoBlanks: Boolean get() = segments.none { it is Segment.Ref }
 
-    /** The message with examples filled in, as the keyboard would first show it. */
-    fun exampleMessage(): String = plainText()
-
     /** The questions the keyboard will ask (and the fixed parts), in the order the parts appear. */
     fun questions(): List<AskedQuestion> = orderedBlanks().map {
         AskedQuestion(

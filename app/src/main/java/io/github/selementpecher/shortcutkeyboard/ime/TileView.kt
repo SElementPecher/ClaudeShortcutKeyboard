@@ -1,5 +1,6 @@
 package io.github.selementpecher.shortcutkeyboard.ime
 
+import io.github.selementpecher.shortcutkeyboard.ui.Motion
 import android.graphics.Paint
 import android.graphics.Canvas
 import io.github.selementpecher.shortcutkeyboard.look.Look
@@ -218,7 +219,7 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
         glyphBox.background = if (mode == Mode.BESIDE) {
             GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(withAlpha(colours.fg, CIRCLE_ALPHA))
+                setColor(TileStyle.withAlpha(colours.fg, CIRCLE_ALPHA))
             }
         } else {
             null
@@ -335,7 +336,7 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
                 else setStroke(strokeWidth, strokeColour)
             }
         }
-        val pressedFill = if (dashed) withAlpha(p.inkSoft, 0x22) else TileStyle.pressed(colours.bg)
+        val pressedFill = if (dashed) TileStyle.withAlpha(p.inkSoft, 0x22) else TileStyle.pressed(colours.bg)
         // Folders have a little tab, as in the app.
         // Exercise book: shortcuts are index cards with a highlighter swipe; folders get a coloured binder tab.
         val card = theme.look.ruled && l.kind == TileLook.Kind.SHORTCUT
@@ -480,7 +481,6 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
 
     private fun tabDp(): Float = if (mode == Mode.STACKED) AppTile.FOLDER_TAB_SQUARE_DP else AppTile.FOLDER_TAB_WIDE_DP
 
-    private fun withAlpha(argb: Int, alpha: Int): Int = (argb and 0x00FFFFFF) or (alpha shl 24)
 
     private fun dash(outline: Int, soft: Int): Int = TileStyle.mix(outline, soft, 0.65f)
 

@@ -33,6 +33,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import io.github.selementpecher.shortcutkeyboard.ime.TileStyle
 import io.github.selementpecher.shortcutkeyboard.look.Highlighter
 import io.github.selementpecher.shortcutkeyboard.look.handwritingFont
 import io.github.selementpecher.shortcutkeyboard.look.HANDWRITING_EXTRA_SP
@@ -202,17 +203,10 @@ internal class Ui(val context: Context, baseLook: Look) {
         } else base
 
     /** [color] with its opacity set to [alpha] (0 to 255). */
-    fun withAlpha(color: Int, alpha: Int): Int = (color and 0x00FFFFFF) or (alpha shl 24)
+    fun withAlpha(color: Int, alpha: Int): Int = TileStyle.withAlpha(color, alpha)
 
-    /** [front] drawn over [back] by [amount] (0 to 1). */
-    fun blend(back: Int, front: Int, amount: Float): Int {
-        fun mix(shift: Int): Int {
-            val b = (back shr shift) and 0xFF
-            val f = (front shr shift) and 0xFF
-            return (b + (f - b) * amount).toInt().coerceIn(0, 255)
-        }
-        return Color.rgb(mix(16), mix(8), mix(0))
-    }
+    /** [front] drawn over [back] by [amount] (0 to 1), fully opaque. The same mixing as the keyboard's tiles. */
+    fun blend(back: Int, front: Int, amount: Float): Int = TileStyle.mix(back, front, amount) or 0xFF000000.toInt()
 
     /** Black or white, whichever is easier to read on [background]. */
     fun readableOn(background: Int): Int =

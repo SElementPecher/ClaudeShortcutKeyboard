@@ -2,7 +2,6 @@ package io.github.selementpecher.shortcutkeyboard.ui
 
 import android.content.ComponentName
 import android.content.Context
-import android.provider.Settings
 import android.util.Log
 import android.view.inputmethod.InputMethodManager
 import io.github.selementpecher.shortcutkeyboard.ime.ShortcutKeyboardService
@@ -25,15 +24,4 @@ internal object KeyboardSetup {
         }
     }
 
-    /** Step 2: picked as the keyboard in use. */
-    fun isSelected(context: Context): Boolean {
-        val current = try {
-            Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
-        } catch (e: RuntimeException) {
-            Log.w(TAG, "Could not read the current keyboard", e)
-            null
-        }
-        if (current.isNullOrEmpty()) return false
-        return ComponentName.unflattenFromString(current) == component(context)
-    }
 }

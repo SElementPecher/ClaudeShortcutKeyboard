@@ -1,13 +1,9 @@
 package io.github.selementpecher.shortcutkeyboard.ui
 
 import android.graphics.Canvas
-import android.graphics.ColorFilter
-import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PathMeasure
-import android.graphics.PixelFormat
 import android.graphics.Rect
-import android.graphics.drawable.Drawable
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -23,31 +19,16 @@ internal class ScribbleArrow(
     private val headPx: Float,
     /** For right-to-left reading: the arrow comes from the bottom right instead. */
     private val mirrored: Boolean = false,
-) : Drawable() {
+) : PenStroke(colour, strokePx) {
 
     /** Room kept inside the bounds, at the tip's side and above it, so the head and the pen's width stay inside them. */
     val edgePx: Int = Math.ceil((headPx * 0.6f + strokePx).toDouble()).toInt()
 
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = colour
-        style = Paint.Style.STROKE
-        strokeWidth = strokePx
-        strokeCap = Paint.Cap.ROUND
-        strokeJoin = Paint.Join.ROUND
-    }
     private val head = Path()
     private val line = Path()
-    private val shown = Path()
-    private val measure = PathMeasure()
 
     /** How much of [progress] draws the head (its share of the whole pen stroke, so the pen keeps one speed). */
     private var headShare = 0.3f
-
-    var progress: Float = 1f
-        set(value) {
-            field = value.coerceIn(0f, 1f)
-            invalidateSelf()
-        }
 
     override fun onBoundsChange(bounds: Rect) {
         super.onBoundsChange(bounds)
@@ -88,29 +69,7 @@ internal class ScribbleArrow(
         canvas.restoreToCount(saved)
     }
 
-    /** Draws the first [part] (0 to 1) of [path]; once drawn in full, simply the path. */
-    private fun stroke(canvas: Canvas, path: Path, part: Float) {
-        if (part >= 1f) {
-            canvas.drawPath(path, paint)
-            return
-        }
-        measure.setPath(path, false)
-        shown.reset()
-        measure.getSegment(0f, measure.length * part, shown, true)
-        canvas.drawPath(shown, paint)
-    }
 
-    override fun setAlpha(alpha: Int) {
-        paint.alpha = alpha
-        invalidateSelf()
-    }
-
-    override fun setColorFilter(colorFilter: ColorFilter?) {
-        paint.colorFilter = colorFilter
-    }
-
-    @Deprecated("Part of the Drawable contract")
-    override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
 
     private companion object {
         const val HEAD_SPREAD = 0.55 // radians either side of the line, about 30°

@@ -87,18 +87,4 @@ internal object ResultSpans {
         return text
     }
 
-    /** "Sam Smith" as "Sam " and "Smith", so a long value can wrap onto the next line. */
-    fun chunksOf(value: String): List<String> {
-        val chunks = ArrayList<String>()
-        val current = StringBuilder()
-        for (c in value) {
-            current.append(c)
-            if (c == ' ' || c == '\n') {
-                chunks += current.toString()
-                current.setLength(0)
-            }
-        }
-        if (current.isNotEmpty()) chunks += current.toString()
-        return chunks
-    }
 }

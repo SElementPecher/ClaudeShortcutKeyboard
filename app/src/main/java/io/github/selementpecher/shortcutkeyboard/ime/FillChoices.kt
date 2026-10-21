@@ -35,8 +35,6 @@ object AnswerList {
 
 /** The ready-made times offered on a time question. */
 object TimeChoices {
-    /** "Now", "15 min ago", "30 min ago", "1 hour ago". */
-    val MINUTES_AGO = listOf(0L, 15L, 30L, 60L)
 
     fun pick(session: FillSession, variable: VariableDef, minutesAgo: Long) {
         session.setTimeToNow(variable)

@@ -88,30 +88,57 @@ internal class RuledPageSnap(
     private val styled: MutableSet<TextView> = Collections.newSetFromMap(WeakHashMap())
     private val tries = WeakHashMap<TextView, Int>()
 
+    /** Set when the page was laid out again; only then can a text have moved off its line. */
+    private var dirty = true
+    private val laidOut = ViewTreeObserver.OnGlobalLayoutListener { dirty = true }
+
     fun install() {
-        root.viewTreeObserver.addOnPreDrawListener(this)
+        listen(true)
         root.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(v: View) {
-                root.viewTreeObserver.removeOnPreDrawListener(this@RuledPageSnap)
-                root.viewTreeObserver.addOnPreDrawListener(this@RuledPageSnap)
+                listen(false)
+                listen(true)
             }
 
             override fun onViewDetachedFromWindow(v: View) {
-                root.viewTreeObserver.removeOnPreDrawListener(this@RuledPageSnap)
+                listen(false)
             }
         })
     }
 
+    private fun listen(on: Boolean) {
+        val observer = root.viewTreeObserver
+        if (on) {
+            observer.addOnPreDrawListener(this)
+            observer.addOnGlobalLayoutListener(laidOut)
+            dirty = true
+        } else {
+            observer.removeOnPreDrawListener(this)
+            observer.removeOnGlobalLayoutListener(laidOut)
+        }
+    }
+
+    /**
+     * Styles every new text in one pass. Then nudges texts onto their lines one at a time (a nudge moves everything
+     * under it, so the next one is measured again first). Nothing is done while the page has not been laid out again
+     * (scrolling, for example), so a settled page costs nothing per frame.
+     */
     override fun onPreDraw(): Boolean {
+        if (!dirty) return true
         val gap = rootPaper.gapPx
         // The scrolling paper's first rule is where the page's rules are.
         contentPaper.phasePx = ((gap - scroll.top % gap) % gap)
-        for (t in RuledSnap.plainTexts(root)) {
+        val texts = RuledSnap.plainTexts(root)
+        var changed = false
+        for (t in texts) {
             if (styled.add(t)) {
                 val fm = t.paint.fontMetrics
                 t.setLineSpacing(max(0f, gap - (fm.descent - fm.ascent)), 1f)
-                return false
+                changed = true
             }
+        }
+        if (changed) return false
+        for (t in texts) {
             val base = RuledSnap.baselineIn(root, t)
             // The baseline that puts the middle of the letters halfway between two rules (not sitting on one).
             val offset = RuledSnap.middleAboveBaseline(t) - gap / 2f
@@ -124,6 +151,7 @@ internal class RuledPageSnap(
                 return false
             }
         }
+        dirty = false
         return true
     }
 

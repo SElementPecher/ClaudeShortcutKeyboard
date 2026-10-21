@@ -39,6 +39,9 @@ object TileStyle {
         return ((argb ushr 24) shl 24) or (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
     }
 
+    /** [argb] with its opacity set to [alpha] (0 to 255). */
+    fun withAlpha(argb: Int, alpha: Int): Int = (argb and 0x00FFFFFF) or (alpha shl 24)
+
     /** Rough brightness 0..1 of an opaque colour. */
     fun luminance(argb: Int): Float {
         val r = (argb shr 16) and 0xFF

@@ -1,5 +1,6 @@
 package io.github.selementpecher.shortcutkeyboard.ime
 
+import io.github.selementpecher.shortcutkeyboard.ui.Motion
 import android.content.Context
 import android.graphics.Typeface
 import io.github.selementpecher.shortcutkeyboard.look.Look

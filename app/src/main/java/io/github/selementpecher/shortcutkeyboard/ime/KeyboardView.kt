@@ -1,5 +1,6 @@
 package io.github.selementpecher.shortcutkeyboard.ime
 
+import io.github.selementpecher.shortcutkeyboard.ui.Motion
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
@@ -48,6 +49,9 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
 
     /** The answer tiles of the question on screen (null on other screens). */
     private var stepTiles: View? = null
+
+    /** The plain number pad on screen, kept while the same question is being typed (see [showStep]). */
+    private var numberPad: View? = null
 
     // Swiping sideways turns the page on screens that have pages (the tiles, the answers).
     private var swipeToPrevious: (() -> Unit)? = null
@@ -111,6 +115,11 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
     }
 
     fun showStep(model: StepModel) {
+        // Typing a number only changes the value shown, so the number pad (a dozen tiles) is kept, not built again.
+        val stepKey = "step:${model.step}:${model.body::class.simpleName}"
+        val keepPad = numberPad.takeIf { stepKey == shownKey && (model.body as? StepBody.Number)?.relative == null }
+        (keepPad?.parent as? ViewGroup)?.removeView(keepPad)
+        numberPad = null
         content.removeAllViews()
         stepTiles = null
         val column = column()
@@ -127,14 +136,14 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         }
         when (val body = model.body) {
             is StepBody.Tiles -> addTilesBody(column, body)
-            is StepBody.Number -> addNumberBody(column, body)
+            is StepBody.Number -> addNumberBody(column, body, keepPad)
             is StepBody.Adjust -> addAdjustBody(column, body)
         }
         content.addView(column, LayoutParams(MATCH, MATCH))
         val tiles = model.body as? StepBody.Tiles
         if (tiles != null) setSwipe(tiles.page, tiles.pageCount, tiles.onPrevious, tiles.onNext) else setSwipe(0, 1, {}, {})
         val page = tiles?.page ?: 0
-        val key = "step:${model.step}:${model.body::class.simpleName}"
+        val key = stepKey
         // Turning the page of answers moves only the answer tiles; the question and bars stay still.
         if (key == shownKey && page != shownPage) stepTiles?.let { slideIn(it, forward = page > shownPage) }
         shownPage = page
@@ -569,8 +578,14 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         }
     }
 
-    private fun addNumberBody(column: LinearLayout, body: StepBody.Number) {
+    /** The number pad and OK; [kept] is the pad from the same question a moment ago, used again as it is. */
+    private fun addNumberBody(column: LinearLayout, body: StepBody.Number, kept: View?) {
         body.relative?.let { return addAmountBody(column, body, it) }
+        if (kept != null) {
+            numberPad = kept
+            column.addView(kept, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { setMargins(0, gap / 4, 0, gap / 4) })
+            return
+        }
         val keys = listOf("1", "2", "3", "⌫", "4", "5", "6", ".", "7", "8", "9", "0")
         val pad = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; clipChildren = false }
         for (r in 0 until 3) {
@@ -611,6 +626,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
                 addView(ok, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { topMargin = gap })
             }
         }
+        numberPad = holder
         column.addView(holder, LinearLayout.LayoutParams(MATCH, 0, 1f).apply { setMargins(0, gap / 4, 0, gap / 4) })
     }
 

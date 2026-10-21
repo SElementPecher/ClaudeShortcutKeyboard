@@ -257,9 +257,7 @@ class OnboardingActivity : Activity() {
                 target.viewTreeObserver.removeOnGlobalLayoutListener(this)
                 val area = android.graphics.Rect(0, 0, target.width, target.height)
                 box.offsetDescendantRectToMyCoords(target, area)
-                val mark: android.graphics.drawable.Drawable
-                val setProgress: (Float) -> Unit
-                when (POINTER) {
+                val mark: PenStroke = when (POINTER) {
                     Pointer.ARROW -> {
                         // The tip sits just under the start of the word (every word starts there, whatever its
                         // length); the arrow comes from below and from the side the line starts on.
@@ -274,28 +272,26 @@ class OnboardingActivity : Activity() {
                         } else {
                             android.graphics.Rect(tipX - dp(ARROW_WIDTH_DP), tipY - edge, tipX + edge, tipY + dp(ARROW_HEIGHT_DP))
                         }
-                        mark = arrow
-                        setProgress = { arrow.progress = it }
+                        arrow
                     }
                     Pointer.LOOP -> {
                         val loop = ScribbleCircle(palette.accent, dpf(3f))
                         area.inset(-dp(LOOP_ROOM_DP - 2), -dp(12))
                         loop.bounds = area
-                        mark = loop
-                        setProgress = { loop.progress = it }
+                        loop
                     }
                 }
                 // Drawn by the page itself (a plain layout skips its own drawing, and the mark with it).
                 box.setWillNotDraw(false)
                 box.overlay.add(mark)
                 if (!draw || !Motion.enabled(this@OnboardingActivity)) return
-                setProgress(0f)
+                mark.progress = 0f
                 val drawing = android.animation.ValueAnimator.ofFloat(0f, 1f).apply {
                     startDelay = MARK_DELAY_MS
                     duration = MARK_MS
                     // The arrow is drawn at an even pen speed; the loop slows as it closes.
                     interpolator = if (POINTER == Pointer.ARROW) android.view.animation.LinearInterpolator() else android.view.animation.DecelerateInterpolator()
-                    addUpdateListener { setProgress(it.animatedValue as Float) }
+                    addUpdateListener { mark.progress = it.animatedValue as Float }
                     start()
                 }
                 // Leaving the page (Next, Skip, a swipe) stops the drawing, so nothing keeps the old page alive.
@@ -303,7 +299,7 @@ class OnboardingActivity : Activity() {
                     override fun onViewAttachedToWindow(v: View) = Unit
                     override fun onViewDetachedFromWindow(v: View) {
                         drawing.cancel()
-                        setProgress(1f)
+                        mark.progress = 1f
                     }
                 })
             }
