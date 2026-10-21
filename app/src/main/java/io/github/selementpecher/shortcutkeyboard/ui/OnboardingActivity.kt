@@ -68,6 +68,9 @@ class OnboardingActivity : Activity() {
     private lateinit var skip: View
     private var page = 0
     private var slide = 0
+
+    /** The pen loop round the changing word is drawn once, the first time the first page shows. */
+    private var circled = false
     private lateinit var swipes: android.view.GestureDetector
     private lateinit var chosenLookId: String
 
@@ -203,7 +206,8 @@ class OnboardingActivity : Activity() {
         val size = look.type.bodySp + 1
         val values = resources.getStringArray(R.array.tour_1_values)
         val word = WordCarousel(this@OnboardingActivity, values.size) { i ->
-            text(
+            // The full stop turns with the word.
+            val shown = android.text.SpannableStringBuilder(
                 ExampleText.build(
                     parts = listOf(ExampleParts.Part(values[i], 0)),
                     colors = palette.tiles,
@@ -212,8 +216,8 @@ class OnboardingActivity : Activity() {
                     radiusPx = dpf(8f),
                     verticalPx = dpf(2f),
                 ),
-                size, 500, palette.ink,
-            )
+            ).append(".")
+            text(shown, size, 500, palette.ink)
         }
         val line = row().apply {
             gravity = Gravity.CENTER_VERTICAL
@@ -222,12 +226,42 @@ class OnboardingActivity : Activity() {
             val wrap = { LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT) }
             addView(text(getString(R.string.tour_1_fixed_start).trimEnd() + " ", size, 500, palette.ink), wrap())
             addView(word, wrap())
-            addView(text(".", size, 500, palette.ink), wrap())
         }
         val card = card(20)
         card.addView(line)
         box.add(card, top = 24)
+        if (!circled) {
+            circled = true
+            circleOnce(box, word)
+        }
         box
+    }
+
+    /** Draws a pen loop round [target] (in the Next button's colour), once its place on the page is known. */
+    private fun circleOnce(box: ViewGroup, target: View) = with(ui) {
+        val loop = ScribbleCircle(palette.accent, dpf(3f))
+        target.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                if (target.width == 0) return
+                target.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                val area = android.graphics.Rect(0, 0, target.width, target.height)
+                box.offsetDescendantRectToMyCoords(target, area)
+                area.inset(-dp(8), -dp(12))
+                loop.bounds = area
+                // Drawn by the page itself (a plain layout skips its own drawing, and the loop with it).
+                box.setWillNotDraw(false)
+                box.overlay.add(loop)
+                if (!Motion.enabled(this@OnboardingActivity)) return
+                loop.progress = 0f
+                android.animation.ValueAnimator.ofFloat(0f, 1f).apply {
+                    startDelay = CIRCLE_DELAY_MS
+                    duration = CIRCLE_MS
+                    interpolator = android.view.animation.DecelerateInterpolator()
+                    addUpdateListener { loop.progress = it.animatedValue as Float }
+                    start()
+                }
+            }
+        })
     }
 
     /** One plain quiKey and one with many changing parts: both are fine. */
@@ -463,6 +497,8 @@ class OnboardingActivity : Activity() {
         private const val SWIPE_MIN_DP = 80
         private const val SWIPE_MIN_SPEED = 600f
         private const val SLIDE_MS = 220L
+        private const val CIRCLE_DELAY_MS = 500L
+        private const val CIRCLE_MS = 700L
 
         fun open(context: Context) {
             context.startActivity(Intent(context, OnboardingActivity::class.java))
