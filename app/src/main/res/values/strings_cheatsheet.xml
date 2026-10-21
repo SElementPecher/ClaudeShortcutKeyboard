@@ -2,10 +2,8 @@
 <resources>
     <string name="cheat_title">Cheat sheet</string>
     <string name="cheat_intro">Type your message like you would send it. Where a word should change, tap “Add something that changes” and pick a kind. This is what each kind does.</string>
-    <string name="cheat_open_button">What each kind does</string>
     <string name="cheat_open_link">What can each kind do?</string>
     <string name="cheat_settings_title">Cheat sheet</string>
-    <string name="cheat_settings_help">What each kind of changing part can do.</string>
 
     <string name="cheat_label_keyboard">On the keyboard</string>
     <string name="cheat_label_good_for">Good for</string>

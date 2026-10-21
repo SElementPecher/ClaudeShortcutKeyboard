@@ -7,9 +7,11 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.util.Log
 import android.view.Gravity
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.ImageView
@@ -53,7 +55,7 @@ class SettingsActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        if (ui.isStale()) recreate()
+        if (ui.isStale()) recreate() else refreshKeyboardStatus()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -72,21 +74,104 @@ class SettingsActivity : Activity() {
 
     // ---------------------------------------------------------------- screen
 
+    private lateinit var keyboardStatus: LinearLayout
+
     private fun build() = with(ui) {
         val content = screen.content
-        content.add(preferencesCard(), top = 8)
-        content.add(cheatAndExamplesCard(), top = 16)
-        content.add(backupCard(), top = 16)
-        content.add(startAgainCard(), top = 16)
-        content.add(aboutCard(), top = 16)
+        keyboardStatus = column()
+        content.add(keyboardStatus, top = 8)
+        refreshKeyboardStatus()
+        content.add(grid(2, tiles()), top = 16)
+        content.add(aboutBox(), top = 20)
+        content.add(deleteLink(), top = 8)
     }
 
-    /** Wipes every quiKey and folder, after asking. */
-    private fun startAgainCard(): View = with(ui) {
-        val card = card()
-        card.add(heading(getString(R.string.again_title)))
-        card.add(small(getString(R.string.again_help)), top = 4)
-        card.add(dangerButton(getString(R.string.again_button), Icons.Kind.TRASH) {
+    /** First thing on the screen: is the keyboard on? Tap to turn it on, or to switch to it. */
+    private fun refreshKeyboardStatus() = with(ui) {
+        keyboardStatus.removeAllViews()
+        val on = KeyboardSetup.isEnabled(this@SettingsActivity)
+        val bar = row().apply {
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = dp(64)
+            setPadding(dp(16), dp(8), dp(8), dp(8))
+            background = shape(blend(palette.bg, if (on) palette.success else palette.danger, if (on) 0.14f else 0.10f), 16f)
+        }
+        bar.addView(
+            ImageView(this@SettingsActivity).apply {
+                setImageDrawable(Icons.drawable(Icons.Kind.KEYBOARD, palette.ink, dp(28)))
+            },
+            LinearLayout.LayoutParams(dp(32), dp(32)),
+        )
+        bar.addView(
+            text(getString(if (on) R.string.settings_keyboard_on else R.string.settings_keyboard_off), look.type.headingSp, 700, palette.ink)
+                .apply { layoutParams = lp(width = 0, weight = 1f, start = 12) },
+        )
+        bar.addView(
+            textButton(getString(if (on) R.string.settings_keyboard_switch else R.string.settings_keyboard_turn_on)) {
+                if (on) showKeyboardPicker() else openKeyboardSettings()
+            }.apply { layoutParams = lp(width = android.view.ViewGroup.LayoutParams.WRAP_CONTENT) },
+        )
+        keyboardStatus.addView(bar, lp())
+    }
+
+    private fun showKeyboardPicker() {
+        getSystemService(InputMethodManager::class.java)?.showInputMethodPicker()
+    }
+
+    private fun openKeyboardSettings() {
+        try {
+            startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
+        } catch (e: ActivityNotFoundException) {
+            Log.w(TAG, "No keyboard settings screen", e)
+        }
+    }
+
+    /** Six big tiles, the same kind as the rest of the app: a picture and a short name each. */
+    private fun tiles(): List<View> = with(ui) {
+        fun settingsTile(name: String, icon: String, subtitle: String? = null, onClick: () -> Unit) =
+            tile(name = name, icon = icon, kind = TileKind.SHORTCUT, subtitle = subtitle, onClick = onClick)
+        listOf(
+            settingsTile(getString(R.string.settings_tile_prefs), "🎨", look.displayName) {
+                startActivity(Intent(this@SettingsActivity, PreferencesActivity::class.java))
+            },
+            settingsTile(getString(R.string.tour_again_button), "▶️") { OnboardingActivity.open(this@SettingsActivity) },
+            settingsTile(getString(R.string.cheat_settings_title), "📋") {
+                startActivity(Intent(this@SettingsActivity, CheatSheetActivity::class.java))
+            },
+            settingsTile(getString(R.string.examples_title), "✨") { addExamples() },
+            settingsTile(getString(R.string.settings_tile_backup), "💾") { startBackup() },
+            settingsTile(getString(R.string.settings_tile_restore), "📂") { startRestore() },
+        )
+    }
+
+    /** Adds the starter quiKeys and folders that are missing, and says how many were added. */
+    private fun addExamples() {
+        val before = ShortcutRepository.library(this).shortcuts.size
+        try {
+            ShortcutRepository.addExamples(this)
+            val added = ShortcutRepository.library(this).shortcuts.size - before
+            screen.snack(if (added > 0) resources.getQuantityString(R.plurals.examples_added, added, added) else getString(R.string.examples_none))
+        } catch (e: Exception) {
+            screen.snack(getString(R.string.edit_save_failed), error = true)
+        }
+    }
+
+    /** The privacy promise, set off in a tinted box so it is easy to find, with the version under it. */
+    private fun aboutBox(): View = with(ui) {
+        val box = column()
+        box.add(
+            text(getString(R.string.settings_about_privacy), look.type.bodySp, 600, palette.ink, 1.45f).apply {
+                background = shape(blend(palette.bg, palette.success, 0.14f), 14f)
+                setPadding(dp(14), dp(12), dp(14), dp(12))
+            },
+        )
+        box.add(small(getString(R.string.settings_about_version, versionName())), top = 8)
+        box
+    }
+
+    /** The one thing that deletes, last and on its own. Asks first. */
+    private fun deleteLink(): View = with(ui) {
+        dangerButton(getString(R.string.again_button), Icons.Kind.TRASH) {
             ui.confirm(
                 this@SettingsActivity,
                 title = getString(R.string.again_confirm_title),
@@ -102,69 +187,7 @@ class SettingsActivity : Activity() {
                     screen.snack(getString(R.string.edit_save_failed), error = true)
                 }
             }.show()
-        }, top = 14)
-        card
-    }
-
-    /** Preferences (Look and text size, on their own page), with Take the tour under it. */
-    private fun preferencesCard(): View = with(ui) {
-        val card = card()
-        card.add(secondaryButton(getString(R.string.settings_preferences_button)) {
-            startActivity(Intent(this@SettingsActivity, PreferencesActivity::class.java))
-        })
-        card.add(secondaryButton(getString(R.string.tour_again_button)) { OnboardingActivity.open(this@SettingsActivity) }, top = 12)
-        card
-    }
-
-    /** The cheat sheet and the example quiKeys, grouped together in one card. */
-    private fun cheatAndExamplesCard(): View = with(ui) {
-        val card = card()
-        card.add(heading(getString(R.string.cheat_settings_title)))
-        card.add(small(getString(R.string.cheat_settings_help)), top = 4)
-        card.add(secondaryButton(getString(R.string.cheat_open_button)) {
-            startActivity(Intent(this@SettingsActivity, CheatSheetActivity::class.java))
-        }, top = 14)
-        card.add(heading(getString(R.string.examples_title)), top = 24)
-        card.add(small(getString(R.string.examples_help)), top = 4)
-        card.add(secondaryButton(getString(R.string.examples_button)) { addExamples() }, top = 14)
-        card
-    }
-
-    /** Adds the starter quiKeys and folders that are missing, and says how many were added. */
-    private fun addExamples() {
-        val before = ShortcutRepository.library(this).shortcuts.size
-        try {
-            ShortcutRepository.addExamples(this)
-            val added = ShortcutRepository.library(this).shortcuts.size - before
-            screen.snack(if (added > 0) resources.getQuantityString(R.plurals.examples_added, added, added) else getString(R.string.examples_none))
-        } catch (e: Exception) {
-            screen.snack(getString(R.string.edit_save_failed), error = true)
         }
-    }
-
-    private fun backupCard(): View = with(ui) {
-        val card = card()
-        card.add(heading(getString(R.string.settings_backup_title)))
-        card.add(small(getString(R.string.settings_backup_help)), top = 4)
-        card.add(secondaryButton(getString(R.string.settings_backup_button)) { startBackup() }, top = 16)
-        card.add(secondaryButton(getString(R.string.settings_restore_button)) { startRestore() }, top = 10)
-        card
-    }
-
-    private fun aboutCard(): View = with(ui) {
-        val card = card()
-        card.add(heading(getString(R.string.settings_about_title)))
-        card.add(body(getString(R.string.app_name)), top = 8)
-        card.add(small(getString(R.string.settings_about_version, versionName())), top = 2)
-        // The privacy promise, set off in a tinted box so it is easy to find.
-        card.add(
-            text(getString(R.string.settings_about_privacy), look.type.bodySp, 600, palette.ink, 1.45f).apply {
-                background = shape(blend(palette.surface, palette.success, 0.14f), 14f)
-                setPadding(dp(14), dp(12), dp(14), dp(12))
-            },
-            top = 14,
-        )
-        card
     }
 
     private fun versionName(): String = try {

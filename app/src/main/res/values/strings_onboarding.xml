@@ -41,7 +41,6 @@
     <string name="tour_again_button">Take the tour</string>
 
     <string name="examples_title">Example quiKies</string>
-    <string name="examples_help">Add the starter folders and quiKies again. Yours stay as they are.</string>
     <string name="examples_button">Add the examples</string>
     <plurals name="examples_added">
         <item quantity="one">Added %d example quiKey.</item>
@@ -53,8 +52,6 @@
     <string name="examples_offer_help">A few ready-made ones to try: Kids, Running late and more. You can edit or delete them.</string>
     <string name="examples_no">No thanks</string>
 
-    <string name="again_title">Start again</string>
-    <string name="again_help">Delete every quiKey and folder on this phone.</string>
     <string name="again_button">Delete everything</string>
     <string name="again_confirm_title">Delete all your quiKies?</string>
     <string name="again_confirm_message">Every quiKey and folder is deleted. This cannot be undone. Back up first if you want a copy.</string>

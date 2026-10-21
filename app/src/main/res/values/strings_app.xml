@@ -111,6 +111,13 @@
     <string name="action_up_description">Back to %1$s</string>
 
     <!-- Settings -->
+    <string name="settings_keyboard_on">Keyboard is on</string>
+    <string name="settings_keyboard_off">Keyboard is off</string>
+    <string name="settings_keyboard_switch">Switch</string>
+    <string name="settings_keyboard_turn_on">Turn on</string>
+    <string name="settings_tile_prefs">Preferences</string>
+    <string name="settings_tile_backup">Back up</string>
+    <string name="settings_tile_restore">Restore</string>
     <string name="settings_title">Settings</string>
     <string name="preferences_title">Preferences</string>
     <string name="settings_preferences_button">Preferences</string>
@@ -121,11 +128,6 @@
     <string name="look_preview_shortcut_1">Medicine</string>
     <string name="look_preview_shortcut_2">Running late</string>
     <string name="look_preview_folder">Kids</string>
-    <string name="settings_backup_title">Back up and restore</string>
-    <string name="settings_backup_help">Save your quiKies in a file. You can get them back from it later.</string>
-    <string name="settings_backup_button">Back up my quiKies</string>
-    <string name="settings_restore_button">Restore from a backup</string>
-    <string name="settings_about_title">About</string>
     <string name="settings_about_version">Version %1$s</string>
     <string name="settings_about_privacy">quiKey doesn\'t need or ask for internet access.</string>
 
