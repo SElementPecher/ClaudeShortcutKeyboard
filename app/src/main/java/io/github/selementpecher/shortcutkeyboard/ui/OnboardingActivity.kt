@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import io.github.selementpecher.shortcutkeyboard.look.Icons
+import io.github.selementpecher.shortcutkeyboard.look.Looks
 import android.widget.TextView
 import io.github.selementpecher.shortcutkeyboard.R
 import io.github.selementpecher.shortcutkeyboard.look.LookStore
@@ -116,7 +117,8 @@ class OnboardingActivity : Activity() {
                 2 -> pageSimpleOrComplex()
                 3 -> pageThree()
                 4 -> pageExamples()
-                5 -> pagePrivacy()
+                5 -> pageLooks()
+                6 -> pagePrivacy()
                 else -> pageFour()
             }
             content.addView(view, lp())
@@ -248,6 +250,39 @@ class OnboardingActivity : Activity() {
         box
     }
 
+    /** The different Looks, as previews to tap. The screen redraws in the Look you pick. */
+    private fun pageLooks(): View = with(ui) {
+        val box = intro("🎨", R.string.tour_looks_title, R.string.tour_looks_text)
+        val labels = listOf(
+            getString(R.string.look_preview_shortcut_1),
+            getString(R.string.look_preview_shortcut_2),
+            getString(R.string.look_preview_folder),
+        )
+        val choices = Looks.all.map { option ->
+            val chosen = option.id == look.id
+            column().apply {
+                background = rippled(
+                    shape(palette.surface, 16f, if (chosen) palette.accent else palette.outline, if (chosen) 3f else 1.5f),
+                    16f,
+                )
+                setPadding(dp(12), dp(12), dp(12), dp(12))
+                isClickable = true
+                isFocusable = true
+                contentDescription = getString(if (chosen) R.string.look_chosen else R.string.look_choose, option.displayName)
+                setOnClickListener {
+                    if (!chosen) {
+                        LookStore.set(this@OnboardingActivity, option)
+                        recreate()
+                    }
+                }
+                addView(LookPreview(this@OnboardingActivity, option, labels).apply { layoutParams = lp() })
+                add(text(option.displayName, look.type.bodySp, 700, palette.ink).apply { gravity = Gravity.CENTER }, top = 8)
+            }
+        }
+        choices.forEachIndexed { index, choice -> box.add(choice, top = if (index == 0) 24 else 12) }
+        box
+    }
+
     /** Privacy: nothing leaves the phone. Says it plainly and gives the three facts behind it. */
     private fun pagePrivacy(): View = with(ui) {
         val box = intro("🔒", R.string.tour_privacy_title, R.string.tour_privacy_text)
@@ -345,7 +380,7 @@ class OnboardingActivity : Activity() {
 
     companion object {
         private const val STATE_PAGE = "page"
-        private const val LAST = 6
+        private const val LAST = 7
 
         fun open(context: Context) {
             context.startActivity(Intent(context, OnboardingActivity::class.java))
