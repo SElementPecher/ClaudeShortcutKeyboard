@@ -199,40 +199,17 @@ class OnboardingActivity : Activity() {
 
     private fun pageOne(): View = with(ui) {
         val box = intro("👋", R.string.tour_1_title, R.string.tour_1_text)
-        // One message; only the part that changes turns, like a drum, through a few amounts.
-        val size = look.type.bodySp + 1
-        val values = resources.getStringArray(R.array.tour_1_values)
-        val word = WordCarousel(this@OnboardingActivity, values.size) { i ->
-            text(
-                ExampleText.build(
-                    parts = listOf(ExampleParts.Part(values[i], 0)),
-                    colors = palette.tiles,
-                    neutral = TileColors(palette.surfaceAlt, palette.ink),
-                    paddingPx = dpf(6f),
-                    radiusPx = dpf(8f),
-                    verticalPx = dpf(2f),
-                ),
-                size, 500, palette.ink,
+        // Example messages slide in, bounce a little, wait, and slide out. The words between | | are the changing parts.
+        val examples = resources.getStringArray(R.array.tour_1_examples)
+        val carousel = MessageCarousel(this@OnboardingActivity, examples.size) { i ->
+            var colour = 0
+            exampleCard(
+                examples[i].split('|').mapIndexed { n, piece ->
+                    if (n % 2 == 1) ExampleParts.Part(piece, colour++) else ExampleParts.Part(piece, ExampleParts.FIXED)
+                }.filter { it.text.isNotEmpty() },
             )
-        }
-        val line = row().apply {
-            gravity = Gravity.CENTER_VERTICAL
-            clipChildren = false
-            // Android trims the space at the end of a string, so it is added here.
-            val wrap = { LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT) }
-            addView(text(getString(R.string.tour_1_fixed_start).trimEnd() + " ", size, 500, palette.ink), wrap())
-            addView(word, wrap())
-            addView(text(".", size, 500, palette.ink), wrap())
-        }
-        val card = card(20).apply {
-            // The travelling word may pass outside the card: nothing clips it.
-            clipChildren = false
-            clipToPadding = false
-        }
-        // One line; the turning words may go past the edge of the screen on their way round.
-        card.addView(line)
-        box.clipChildren = false
-        box.add(card, top = 24)
+        }.apply { minimumHeight = dp(150) }
+        box.add(carousel, top = 24)
         box
     }
 
