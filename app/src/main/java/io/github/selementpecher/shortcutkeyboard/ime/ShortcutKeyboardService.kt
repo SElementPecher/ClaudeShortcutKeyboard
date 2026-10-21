@@ -105,7 +105,7 @@ class ShortcutKeyboardService : InputMethodService() {
         // Called again after a change such as dark mode: the state stays, the views are rebuilt.
         val screenHeight = resources.configuration.screenHeightDp
         compact = KeyboardMetrics.isCompact(screenHeight)
-        val view = KeyboardView(this, compact, LookStore.current(this))
+        val view = KeyboardView(this, compact, LookStore.keyboard(this))
         view.gridDragCallbacks = dragCallbacks
         ui = view
         styleNavigationBar()
@@ -823,7 +823,7 @@ class ShortcutKeyboardService : InputMethodService() {
     private fun styleNavigationBar() {
         val imeWindow = window?.window ?: return
         // The colour behind the buttons is the Look's panel colour; dark buttons only when that is light.
-        val panel = LookStore.current(this).palette(this).bg
+        val panel = LookStore.keyboard(this).palette(this).bg
         val night = TileStyle.luminance(panel) < 0.5f
         try {
             if (Build.VERSION.SDK_INT < VERSION_EDGE_TO_EDGE) {

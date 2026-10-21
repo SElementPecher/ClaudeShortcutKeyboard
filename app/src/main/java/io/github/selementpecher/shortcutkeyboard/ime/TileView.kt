@@ -173,13 +173,13 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
     }
 
     fun bind(spec: TileSpec) {
-        sticky = Highlighter.on && spec.look.kind == TileLook.Kind.ANSWER
+        sticky = theme.look.ruled && spec.look.kind == TileLook.Kind.ANSWER
         rotation = when {
             sticky -> Highlighter.stickyAngle(spec.label)
             // A folder is turned a little, like one dropped on the desk.
-            Highlighter.on && spec.look.kind == TileLook.Kind.FOLDER -> Highlighter.stickyAngle("folder:" + spec.label) * 0.8f
+            theme.look.ruled && spec.look.kind == TileLook.Kind.FOLDER -> Highlighter.stickyAngle("folder:" + spec.label) * 0.8f
             // A quiKey is an index card dropped on the desk, turned a touch.
-            Highlighter.on && spec.look.kind == TileLook.Kind.SHORTCUT -> Highlighter.stickyAngle("card:" + spec.label) * 0.5f
+            theme.look.ruled && spec.look.kind == TileLook.Kind.SHORTCUT -> Highlighter.stickyAngle("card:" + spec.label) * 0.5f
             else -> 0f
         }
         onTap = spec.onClick
@@ -338,8 +338,8 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
         val pressedFill = if (dashed) withAlpha(p.inkSoft, 0x22) else TileStyle.pressed(colours.bg)
         // Folders have a little tab, as in the app.
         // Exercise book: shortcuts are index cards with a highlighter swipe; folders get a coloured binder tab.
-        val card = Highlighter.on && l.kind == TileLook.Kind.SHORTCUT
-        val tabFill = if (Highlighter.on && l.kind == TileLook.Kind.FOLDER) p.tileColorsFor(key, l.custom).bg else 0
+        val card = theme.look.ruled && l.kind == TileLook.Kind.SHORTCUT
+        val tabFill = if (theme.look.ruled && l.kind == TileLook.Kind.FOLDER) p.tileColorsFor(key, l.custom).bg else 0
         val swipe = if (Look.isNight(context)) TileStyle.mix(colours.bg, colours.fg, 0.55f) else colours.bg
         fun body(fill: Int, pressed: Boolean = false): Drawable = when {
             card -> IndexCardDrawable(
@@ -352,7 +352,7 @@ internal class TileView(context: Context, private val theme: KeyboardTheme) : Fr
             )
             l.kind == TileLook.Kind.FOLDER -> FolderDrawable(
                 fill, strokeColour, strokeWidth.toFloat(), radius, theme.dp(tabDp()).toFloat(), tabFill,
-                stackPx = if (Highlighter.on) theme.dp(6).toFloat() else 0f, pageEdge = p.outline,
+                stackPx = if (theme.look.ruled) theme.dp(6).toFloat() else 0f, pageEdge = p.outline,
             )
             else -> shape(fill)
         }

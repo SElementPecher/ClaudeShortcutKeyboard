@@ -117,7 +117,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
     private fun previewTile(model: StepModel): View {
         val plain = model.preview.joinToString("") { it.text }
         val message = TextView(context).apply {
-            text = ResultSpans.build(model.preview, palette.tiles, theme.dp(6).toFloat(), theme.dp(3).toFloat(), theme.dp(1).toFloat())
+            text = ResultSpans.build(model.preview, palette.tiles, theme.dp(6).toFloat(), theme.dp(3).toFloat(), theme.dp(1).toFloat(), look.ruled)
             gravity = Gravity.START or Gravity.CENTER_VERTICAL
             setTextSize(TypedValue.COMPLEX_UNIT_SP, theme.sp(look.type.bodySp))
             setTextColor(palette.ink)
@@ -166,7 +166,7 @@ internal class KeyboardView(context: Context, private val compact: Boolean, val 
         // The message sits in a card as tall as the message itself; what changes is highlighted.
         val plain = model.pieces.joinToString("") { it.text }
         val message = TextView(context).apply {
-            text = ResultSpans.build(model.pieces, palette.tiles, theme.dp(7).toFloat(), theme.dp(4).toFloat(), theme.dp(2).toFloat())
+            text = ResultSpans.build(model.pieces, palette.tiles, theme.dp(7).toFloat(), theme.dp(4).toFloat(), theme.dp(2).toFloat(), look.ruled)
             gravity = Gravity.START
             setTextSize(TypedValue.COMPLEX_UNIT_SP, theme.sp(look.type.bodySp + if (compact) 1f else 4f))
             setTextColor(palette.ink)

@@ -226,7 +226,8 @@ internal class LookPreview(
         tp.typeface = typefaceOf(look.type.tileWeight)
         tp.color = colour
         var size = textSize()
-        val floor = 7.5f * density
+        // Small enough for the narrow previews (two to a row inside a card), so a word is never split.
+        val floor = 5f * density
         var layout: StaticLayout
         while (true) {
             tp.textSize = size

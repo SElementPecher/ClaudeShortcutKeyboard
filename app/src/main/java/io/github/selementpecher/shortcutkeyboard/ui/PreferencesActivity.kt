@@ -72,6 +72,7 @@ class PreferencesActivity : Activity() {
         content.add(textSizeCard(), top = 8)
         content.add(sendCard(), top = 16)
         content.add(lookCard(), top = 16)
+        content.add(keyboardLookCard(), top = 16)
     }
 
     private fun lookCard(): View = with(ui) {
@@ -80,6 +81,67 @@ class PreferencesActivity : Activity() {
         card.add(small(getString(R.string.settings_look_help)), top = 4)
         for (option in Looks.all) card.add(lookOption(option), top = 14)
         card
+    }
+
+    /** Mix and match: the keyboard can follow the app's Look or have its own. */
+    private fun keyboardLookCard(): View = with(ui) {
+        val card = card()
+        card.add(heading(getString(R.string.settings_keyboard_look_title)))
+        card.add(small(getString(R.string.settings_keyboard_look_help)), top = 4)
+        val follows = LookStore.keyboardFollowsApp(this@PreferencesActivity)
+        val ownId = LookStore.keyboard(this@PreferencesActivity).id
+
+        // "Same as the app": a plain row with a tick when chosen.
+        val same = row().apply {
+            val r = 18f
+            background = rippled(
+                shape(if (follows) blend(palette.surface, palette.accent, 0.06f) else palette.surface, r, if (follows) palette.accent else palette.outline, if (follows) 3f else 1.5f),
+                r,
+            )
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+            gravity = Gravity.CENTER_VERTICAL
+            isClickable = true
+            isFocusable = true
+            val name = getString(R.string.keyboard_look_same)
+            contentDescription = getString(if (follows) R.string.look_chosen else R.string.look_choose, name)
+            setOnClickListener { chooseKeyboardLook(null) }
+            addView(text(name, look.type.headingSp, look.type.headingWeight, palette.ink).apply { layoutParams = lp(width = 0, weight = 1f) })
+            if (follows) addView(checkBadge(28))
+        }
+        card.add(same, top = 14)
+
+        // Or one of the Looks: small previews, two to a row.
+        val labels = listOf(
+            getString(R.string.look_preview_shortcut_1),
+            getString(R.string.look_preview_shortcut_2),
+            getString(R.string.look_preview_folder),
+        )
+        val choices = Looks.all.map { option ->
+            val chosen = !follows && option.id == ownId
+            column().apply {
+                background = rippled(
+                    shape(palette.surface, 16f, if (chosen) palette.accent else palette.outline, if (chosen) 3f else 1.5f),
+                    16f,
+                )
+                setPadding(dp(8), dp(8), dp(8), dp(10))
+                isClickable = true
+                isFocusable = true
+                contentDescription = getString(if (chosen) R.string.look_chosen else R.string.look_choose, option.displayName)
+                setOnClickListener { chooseKeyboardLook(option) }
+                addView(LookPreview(this@PreferencesActivity, option, labels).apply { layoutParams = lp() })
+                add(text(option.displayName, look.type.bodySp, 700, palette.ink).apply { gravity = Gravity.CENTER }, top = 8)
+            }
+        }
+        card.add(grid(2, choices), top = 12)
+        card
+    }
+
+    private fun chooseKeyboardLook(option: Look?) {
+        val follows = LookStore.keyboardFollowsApp(this)
+        if (option == null && follows) return
+        if (option != null && !follows && option.id == LookStore.keyboard(this).id) return
+        LookStore.setKeyboard(this, option)
+        recreate()
     }
 
     /** One selectable Look: a live mini preview, its name and tagline, a ring when chosen. */

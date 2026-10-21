@@ -23,6 +23,8 @@ internal class PillSpan(
     private val padY: Float,
     private val roundStart: Boolean,
     private val roundEnd: Boolean,
+    /** The Exercise book's hand-drawn highlighter shape (the keyboard's own Look, not the app's). */
+    private val uneven: Boolean = false,
 ) : ReplacementSpan() {
     private val path = Path()
     private val rect = RectF()
@@ -45,7 +47,7 @@ internal class PillSpan(
         val metrics = paint.fontMetrics
         rect.set(x, y + metrics.ascent - padY, x + width + startPad() + endPad(), y + metrics.descent + padY)
         path.reset()
-        Highlighter.addShape(path, rect, radius, roundStart, roundEnd)
+        Highlighter.addShape(path, rect, radius, roundStart, roundEnd, uneven)
         val oldColor = paint.color
         paint.color = colors.bg
         canvas.drawPath(path, paint)
@@ -62,7 +64,7 @@ internal class PillSpan(
 internal object ResultSpans {
 
     /** The pieces as one text, every filled-in value on a rounded highlight in the tile colour of its blank. */
-    fun build(pieces: List<ResultPiece>, tiles: List<TileColors>, radius: Float, padX: Float, padY: Float): CharSequence {
+    fun build(pieces: List<ResultPiece>, tiles: List<TileColors>, radius: Float, padX: Float, padY: Float, uneven: Boolean = false): CharSequence {
         val text = SpannableStringBuilder()
         for (piece in pieces) {
             if (!piece.isFilled || tiles.isEmpty()) {
@@ -77,7 +79,7 @@ internal object ResultSpans {
                 val start = text.length
                 text.append(chunk.replace(' ', '\u00A0'))
                 text.setSpan(
-                    PillSpan(colors, radius, padX, padY, roundStart = true, roundEnd = true),
+                    PillSpan(colors, radius, padX, padY, roundStart = true, roundEnd = true, uneven = uneven),
                     start, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
                 )
             }

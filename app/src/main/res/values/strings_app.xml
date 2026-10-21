@@ -129,8 +129,11 @@
     <string name="settings_title">Settings</string>
     <string name="preferences_title">Preferences</string>
     <string name="settings_preferences_button">Preferences</string>
-    <string name="settings_look_title">Look</string>
-    <string name="settings_look_help">Pick how the app and the keyboard look. It changes straight away.</string>
+    <string name="settings_look_title">App look</string>
+    <string name="settings_look_help">Pick how the app looks. It changes straight away.</string>
+    <string name="settings_keyboard_look_title">Keyboard look</string>
+    <string name="settings_keyboard_look_help">Use the same look as the app, or mix and match.</string>
+    <string name="keyboard_look_same">Same as the app</string>
     <string name="look_chosen">%1$s. This one is chosen.</string>
     <string name="look_choose">%1$s. Tap to use this look.</string>
     <string name="look_preview_shortcut_1">Medicine</string>
