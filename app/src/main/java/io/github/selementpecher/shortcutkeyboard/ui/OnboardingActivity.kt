@@ -265,7 +265,7 @@ class OnboardingActivity : Activity() {
                     shape(palette.surface, 16f, if (chosen) palette.accent else palette.outline, if (chosen) 3f else 1.5f),
                     16f,
                 )
-                setPadding(dp(12), dp(12), dp(12), dp(12))
+                setPadding(dp(8), dp(8), dp(8), dp(10))
                 isClickable = true
                 isFocusable = true
                 contentDescription = getString(if (chosen) R.string.look_chosen else R.string.look_choose, option.displayName)
@@ -279,7 +279,7 @@ class OnboardingActivity : Activity() {
                 add(text(option.displayName, look.type.bodySp, 700, palette.ink).apply { gravity = Gravity.CENTER }, top = 8)
             }
         }
-        choices.forEachIndexed { index, choice -> box.add(choice, top = if (index == 0) 24 else 12) }
+        box.add(grid(2, choices), top = 24)
         box
     }
 

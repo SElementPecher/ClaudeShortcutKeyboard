@@ -23,9 +23,9 @@ internal object Highlighter {
      * A rounded shape for [rect] added to [into]. With the Look off it is the usual shape (the same radius at every end).
      * With it on, the corners are a little different from each other, like a pen stroke.
      */
-    fun addShape(into: Path, rect: RectF, radius: Float, roundStart: Boolean = true, roundEnd: Boolean = true) {
+    fun addShape(into: Path, rect: RectF, radius: Float, roundStart: Boolean = true, roundEnd: Boolean = true, uneven: Boolean = on) {
         val h = rect.height()
-        if (!on) {
+        if (!uneven) {
             val l = if (roundStart) radius else 0f
             val r = if (roundEnd) radius else 0f
             into.addRoundRect(rect, floatArrayOf(l, l, r, r, r, r, l, l), Path.Direction.CW)
