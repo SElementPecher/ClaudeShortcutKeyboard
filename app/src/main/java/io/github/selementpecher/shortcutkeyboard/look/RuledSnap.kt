@@ -12,7 +12,7 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 
 /**
- * Makes text with no background of its own sit on a ruled line, like handwriting on paper.
+ * Makes text with no background of its own sit between two ruled lines, like writing in the gaps of ruled paper.
  * "Plain" text is a TextView with no background, and none behind it (a tile, card or button is not plain).
  */
 internal object RuledSnap {
@@ -53,6 +53,14 @@ internal object RuledSnap {
         return found
     }
 
+    /**
+     * How far above its baseline the middle of [t]'s letters is (about 0.35 of the text size). Text sits between two
+     * rules when this middle is halfway between them.
+     */
+    fun middleAboveBaseline(t: TextView): Float = MIDDLE_OF_LETTERS * t.textSize
+
+    private const val MIDDLE_OF_LETTERS = 0.35f
+
     /** Where [t]'s first baseline is, measured from the top of [root] (not counting any scrolling). */
     fun baselineIn(root: View, t: TextView): Float {
         var y = t.baseline.toFloat()
@@ -67,7 +75,7 @@ internal object RuledSnap {
 
 /**
  * Keeps an app screen's text on the lines. Each plain text gets a line height equal to the rule spacing (so more lines
- * stay on the rules), then is pushed down, a little at a time, until its baseline rests on a rule. The paper inside the
+ * stay between the rules), then is pushed down, a little at a time, until it sits between two rules. The paper inside the
  * scrolling area is shifted so its rules line up with the page's, so they stay lined up as it scrolls.
  */
 internal class RuledPageSnap(
@@ -105,8 +113,10 @@ internal class RuledPageSnap(
                 return false
             }
             val base = RuledSnap.baselineIn(root, t)
-            val line = ceil((base - 1f) / gap) * gap
-            val delta = line - base
+            // The baseline that puts the middle of the letters halfway between two rules (not sitting on one).
+            val offset = RuledSnap.middleAboveBaseline(t) - gap / 2f
+            val target = ceil((base - 1f - offset) / gap) * gap + offset
+            val delta = target - base
             val used = tries[t] ?: 0
             if (delta > 1f && used < MAX_TRIES) {
                 tries[t] = used + 1
@@ -145,7 +155,9 @@ internal class RuledKeyboardSnap(private val root: ViewGroup, private val paper:
     override fun onPreDraw(): Boolean {
         val gap = paper.gapPx
         val first = RuledSnap.plainTexts(root).firstOrNull()
-        paper.phasePx = if (first == null) 0f else ((RuledSnap.baselineIn(root, first) % gap) + gap) % gap
+        // A rule half a line below the middle of the question's letters, so the question sits between two rules.
+        val phase = if (first == null) 0f else RuledSnap.baselineIn(root, first) - RuledSnap.middleAboveBaseline(first) + gap / 2f
+        paper.phasePx = ((phase % gap) + gap) % gap
         return true
     }
 }
